@@ -2,6 +2,8 @@
 
 A React frontend application for LensBridge - a media upload platform designed for UTM MSA students to share event photos and videos for potential featuring on social media.
 
+> See Also: [LensBridge Backend](https://github.com/IbraTech/LensBridgeBackend) - The backend API for this application.
+
 ## Features
 
 - 📸 **Media Upload**: Drag-and-drop or click to upload photos and videos
@@ -23,28 +25,31 @@ A React frontend application for LensBridge - a media upload platform designed f
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation
 
 1. Clone the repository
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/Ibratech04/LensBridgeFrontend.git
 cd LensBridgeFrontend
 ```
 
 2. Install dependencies
+
 ```bash
 npm install
 ```
 
 3. Start the development server
+
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser
+4. Open your browser to the correct URL
 
 ## Available Scripts
 
@@ -71,6 +76,7 @@ src/
 ## Key Features
 
 ### Media Upload
+
 - Drag-and-drop interface for easy file selection
 - Support for images (JPG, PNG, GIF) and videos (MP4, MOV, AVI)
 - File size limit: 100MB per file
@@ -78,23 +84,17 @@ src/
 - Form validation with user consent
 
 ### Gallery
+
 - Grid layout for media display
 - Search and filter functionality
 - Featured content highlighting
 - Media statistics
 
 ### Responsive Design
+
 - Mobile-first approach
 - Optimized for tablets and desktops
 - Touch-friendly interactions
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## License
 
