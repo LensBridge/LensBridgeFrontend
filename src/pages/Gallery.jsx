@@ -1,113 +1,45 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Image, Video, Calendar, User, Star, Eye, Heart, Share2, Award, TrendingUp, Sparkles } from 'lucide-react';
+import { Search, Filter, Image, Video, Calendar, User, Star, Eye, Heart, Share2, Award, TrendingUp, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 
 function Gallery() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [galleryItems, setGalleryItems] = useState([]);
   const [hoveredItem, setHoveredItem] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
-  // Mock data for demonstration
+  // Fetch gallery data from API
   useEffect(() => {
-    const mockGalleryItems = [
-      {
-        id: 1,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=500&h=400&fit=crop',
-        title: 'MSA Community Iftar',
-        author: 'Ahmad K.',
-        date: '2024-03-15',
-        event: 'Ramadan Iftar 2024',
-        featured: true,
-        likes: 145,
-        views: 2340
-      },
-      {
-        id: 2,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=500&h=400&fit=crop',
-        title: 'Islamic Awareness Week',
-        author: 'Fatima S.',
-        date: '2024-02-20',
-        event: 'Islamic Awareness Week',
-        featured: false,
-        likes: 89,
-        views: 1520
-      },
-      {
-        id: 3,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=500&h=400&fit=crop',
-        title: 'Study Session',
-        author: 'Omar M.',
-        date: '2024-01-10',
-        event: 'Winter Study Sessions',
-        featured: true,
-        likes: 203,
-        views: 3100
-      },
-      {
-        id: 4,
-        type: 'video',
-        src: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500&h=400&fit=crop',
-        title: 'Eid Celebration',
-        author: 'Aisha R.',
-        date: '2024-04-10',
-        event: 'Eid ul-Fitr Celebration',
-        featured: false,
-        likes: 178,
-        views: 2890
-      },
-      {
-        id: 5,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=500&h=400&fit=crop',
-        title: 'Volunteer Day',
-        author: 'Yusuf A.',
-        date: '2024-03-05',
-        event: 'Community Service Day',
-        featured: true,
-        likes: 95,
-        views: 1750
-      },
-      {
-        id: 6,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=500&h=400&fit=crop',
-        title: 'Cultural Night',
-        author: 'Zainab H.',
-        date: '2024-02-14',
-        event: 'Cultural Diversity Night',
-        featured: false,
-        likes: 124,
-        views: 2100
-      },
-      {
-        id: 7,
-        type: 'image',
-        src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=400&fit=crop',
-        title: 'Prayer Time',
-        author: 'Hassan M.',
-        date: '2024-01-25',
-        event: 'Daily Prayer',
-        featured: true,
-        likes: 267,
-        views: 4200
-      },
-      {
-        id: 8,
-        type: 'video',
-        src: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500&h=400&fit=crop',
-        title: 'Talent Show',
-        author: 'Layla K.',
-        date: '2024-03-20',
-        event: 'MSA Talent Night',
-        featured: false,
-        likes: 156,
-        views: 2650
+    const fetchGalleryData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch('http://localhost:8080/api/gallery');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Handle both direct array and object with items property
+        const items = Array.isArray(data) ? data : data.items || [];
+        setGalleryItems(items);
+        
+      } catch (err) {
+        console.error('Error fetching gallery data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
       }
-    ];
-    setGalleryItems(mockGalleryItems);
+    };
+
+    fetchGalleryData();
   }, []);
 
   const filteredItems = galleryItems.filter(item => {
@@ -126,6 +58,69 @@ function Gallery() {
   const featuredItems = galleryItems.filter(item => item.featured);
   const totalLikes = galleryItems.reduce((sum, item) => sum + item.likes, 0);
   const totalViews = galleryItems.reduce((sum, item) => sum + item.views, 0);
+
+  const openViewer = (item) => {
+    const index = filteredItems.findIndex(i => i.id === item.id);
+    setCurrentIndex(index);
+    setSelectedItem(item);
+    setIsVideoPlaying(false);
+  };
+
+  const closeViewer = () => {
+    setSelectedItem(null);
+    setIsVideoPlaying(false);
+  };
+
+  const navigateViewer = (direction) => {
+    const newIndex = direction === 'next' 
+      ? (currentIndex + 1) % filteredItems.length
+      : (currentIndex - 1 + filteredItems.length) % filteredItems.length;
+    
+    setCurrentIndex(newIndex);
+    setSelectedItem(filteredItems[newIndex]);
+    setIsVideoPlaying(false);
+  };
+
+  const toggleVideoPlayback = () => {
+    const video = document.querySelector('.viewer-video');
+    if (video) {
+      if (isVideoPlaying) {
+        video.pause();
+        setIsVideoPlaying(false);
+      } else {
+        video.play();
+        setIsVideoPlaying(true);
+      }
+    }
+  };
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!selectedItem) return;
+      
+      switch (e.key) {
+        case 'Escape':
+          closeViewer();
+          break;
+        case 'ArrowLeft':
+          navigateViewer('prev');
+          break;
+        case 'ArrowRight':
+          navigateViewer('next');
+          break;
+        case ' ':
+          if (selectedItem.type === 'video') {
+            e.preventDefault();
+            toggleVideoPlayback();
+          }
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedItem, currentIndex, isVideoPlaying]);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -155,28 +150,52 @@ function Gallery() {
             <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Image className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{galleryItems.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {isLoading ? (
+                <div className="animate-pulse bg-gray-300 h-8 w-12 rounded mx-auto"></div>
+              ) : (
+                galleryItems.length
+              )}
+            </div>
             <div className="text-sm text-gray-600">Total Media</div>
           </div>
           <div className="text-center">
             <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Award className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{featuredItems.length}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {isLoading ? (
+                <div className="animate-pulse bg-gray-300 h-8 w-12 rounded mx-auto"></div>
+              ) : (
+                featuredItems.length
+              )}
+            </div>
             <div className="text-sm text-gray-600">Featured</div>
           </div>
           <div className="text-center">
             <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Heart className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{totalLikes.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {isLoading ? (
+                <div className="animate-pulse bg-gray-300 h-8 w-16 rounded mx-auto"></div>
+              ) : (
+                totalLikes.toLocaleString()
+              )}
+            </div>
             <div className="text-sm text-gray-600">Total Likes</div>
           </div>
           <div className="text-center">
             <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Eye className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">{totalViews.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {isLoading ? (
+                <div className="animate-pulse bg-gray-300 h-8 w-16 rounded mx-auto"></div>
+              ) : (
+                totalViews.toLocaleString()
+              )}
+            </div>
             <div className="text-sm text-gray-600">Total Views</div>
           </div>
         </div>
@@ -215,7 +234,33 @@ function Gallery() {
       </div>
 
       {/* Gallery Grid */}
-      {filteredItems.length === 0 ? (
+      {error ? (
+        <div className="text-center py-20">
+          <div className="bg-gradient-to-br from-red-100 to-red-200 rounded-full p-8 w-fit mx-auto mb-6">
+            <Image className="h-16 w-16 text-red-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Gallery</h3>
+          <p className="text-gray-600 text-lg mb-6">
+            {error}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+          >
+            Try Again
+          </button>
+        </div>
+      ) : isLoading ? (
+        <div className="text-center py-20">
+          <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
+            <Image className="h-16 w-16 text-blue-400" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Loading Gallery...</h3>
+          <p className="text-gray-600 text-lg">
+            Fetching amazing MSA moments for you
+          </p>
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-20">
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-gray-400" />
@@ -230,16 +275,47 @@ function Gallery() {
           {filteredItems.map((item) => (
             <div 
               key={item.id} 
-              className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-200 overflow-hidden"
-              onMouseEnter={() => setHoveredItem(item.id)}
-              onMouseLeave={() => setHoveredItem(null)}
+              className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-200 overflow-hidden cursor-pointer"
+              onClick={() => openViewer(item)}
+              onMouseEnter={(e) => {
+                setHoveredItem(item.id);
+                if (item.type === 'video') {
+                  const video = e.currentTarget.querySelector('video');
+                  if (video) {
+                    video.currentTime = 0;
+                    video.play().catch(console.error);
+                  }
+                }
+              }}
+              onMouseLeave={(e) => {
+                setHoveredItem(null);
+                if (item.type === 'video') {
+                  const video = e.currentTarget.querySelector('video');
+                  if (video) {
+                    video.pause();
+                    video.currentTime = 0;
+                  }
+                }
+              }}
             >
               <div className="relative aspect-square overflow-hidden">
-                <img
-                  src={item.src}
-                  alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
+                {item.type === 'video' ? (
+                  <video
+                    src={item.src}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                  />
+                ) : (
+                  <img
+                    src={item.src}
+                    alt={item.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                )}
                 
                 {/* Overlay */}
                 <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent transition-opacity duration-300 ${
@@ -321,13 +397,46 @@ function Gallery() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {featuredItems.slice(0, 3).map((item) => (
-              <div key={item.id} className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 overflow-hidden">
+              <div 
+                key={item.id} 
+                className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 overflow-hidden"
+                onMouseEnter={(e) => {
+                  if (item.type === 'video') {
+                    const video = e.currentTarget.querySelector('video');
+                    if (video) {
+                      video.currentTime = 0;
+                      video.play().catch(console.error);
+                    }
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (item.type === 'video') {
+                    const video = e.currentTarget.querySelector('video');
+                    if (video) {
+                      video.pause();
+                      video.currentTime = 0;
+                    }
+                  }
+                }}
+              >
                 <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={item.src}
-                    alt={item.title}
-                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
+                  {item.type === 'video' ? (
+                    <video
+                      src={item.src}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={item.src}
+                      alt={item.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                    />
+                  )}
                   <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
                     <TrendingUp className="h-3 w-3" />
                     <span>{item.likes}</span>
@@ -339,6 +448,130 @@ function Gallery() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Media Viewer Modal */}
+      {selectedItem && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full h-full max-w-6xl max-h-full flex items-center justify-center">
+            
+            {/* Close Button */}
+            <button
+              onClick={closeViewer}
+              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all duration-300 hover:scale-110"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Navigation Arrows */}
+            {filteredItems.length > 1 && (
+              <>
+                <button
+                  onClick={() => navigateViewer('prev')}
+                  className="absolute left-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={() => navigateViewer('next')}
+                  className="absolute right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            {/* Media Content */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              {selectedItem.type === 'video' ? (
+                <div className="relative w-full h-full max-w-4xl max-h-4xl">
+                  <video
+                    src={selectedItem.src}
+                    className="viewer-video w-full h-full object-contain rounded-lg"
+                    controls
+                    autoPlay
+                    loop
+                    onPlay={() => setIsVideoPlaying(true)}
+                    onPause={() => setIsVideoPlaying(false)}
+                  />
+                  
+                  {/* Video Controls Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                    <button
+                      onClick={toggleVideoPlayback}
+                      className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-4 transition-all duration-300 hover:scale-110"
+                    >
+                      {isVideoPlaying ? (
+                        <Pause className="h-8 w-8" />
+                      ) : (
+                        <Play className="h-8 w-8" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={selectedItem.src}
+                  alt={selectedItem.title}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                />
+              )}
+            </div>
+
+            {/* Media Info */}
+            <div className="absolute bottom-4 left-4 right-4 z-10">
+              <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-2xl p-6 text-white">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold mb-2">{selectedItem.title}</h2>
+                    <p className="text-blue-300 font-medium mb-2 bg-blue-600 bg-opacity-30 px-3 py-1 rounded-full w-fit">
+                      {selectedItem.event}
+                    </p>
+                  </div>
+                  {selectedItem.featured && (
+                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-bold flex items-center space-x-1">
+                      <Star className="h-3 w-3" />
+                      <span>Featured</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-4 w-4" />
+                      <span className="font-medium">{selectedItem.author}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(selectedItem.date).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center space-x-2">
+                      <Heart className="h-4 w-4" />
+                      <span>{selectedItem.likes}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Eye className="h-4 w-4" />
+                      <span>{selectedItem.views}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Indicator */}
+            {filteredItems.length > 1 && (
+              <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+                <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
+                  {currentIndex + 1} / {filteredItems.length}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

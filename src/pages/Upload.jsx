@@ -161,7 +161,7 @@ function Upload() {
       
       // Add instagram handle (required by backend)
       uploadData.append('instagramHandle', formData.instagram || '');
-      
+      uploadData.append('description' , formData.description || '');
       // Make actual API call to Spring Boot backend
       const response = await fetch(`http://localhost:8080/api/upload/${formData.eventId}/batch`, {
         method: 'POST',
