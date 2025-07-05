@@ -12,45 +12,19 @@ function Upload() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    instagram: '',
     event: '',
+    eventId: '', // Add eventId to track the selected event's ID
     description: '',
     consent: false
   });
+  const [emailError, setEmailError] = useState('');
   const fileInputRef = useRef(null);
-
-  // Mock API call to fetch events
-  const fetchEvents = async () => {
-    try {
-      setLoadingEvents(true);
-      
-      // Simulate API call - replace with your actual API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock event data - this would come from your Spring Boot API
-      const mockEvents = [
-        { id: 1, name: 'MSA Welcome Week', date: '2025-09-15', status: 'upcoming' },
-        { id: 2, name: 'Cultural Night 2025', date: '2025-10-20', status: 'upcoming' },
-        { id: 3, name: 'Charity Fundraiser', date: '2025-11-10', status: 'upcoming' },
-        { id: 4, name: 'Islamic Awareness Week', date: '2025-11-25', status: 'upcoming' },
-        { id: 5, name: 'End of Year Banquet', date: '2025-12-15', status: 'upcoming' },
-        { id: 6, name: 'Study Session - Midterms', date: '2025-10-05', status: 'ongoing' },
-      ];
-      
-      setEvents(mockEvents);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      setEvents([]);
-    } finally {
-      setLoadingEvents(false);
-    }
-  };
-
-  // Real API call function (commented out for now)
-  /*
+  
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/events/current`);
+      const response = await fetch(`http://localhost:8080/api/events`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch events');
@@ -65,11 +39,11 @@ function Upload() {
       setLoadingEvents(false);
     }
   };
-  */
+
 
   // Fetch events when component mounts
   useEffect(() => {
-    fetchEvents();
+    fetchEventsFromAPI();
   }, []);
 
   const handleDragOver = (e) => {
@@ -128,62 +102,89 @@ function Upload() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    // Email validation
+    if (name === 'email') {
+      validateEmail(value);
+    }
   };
 
-  const handleEventSelect = (eventName) => {
+  const validateEmail = (email) => {
+    // Regex for University of Toronto email addresses
+    const uoftEmailRegex = /^[a-zA-Z0-9._%+-]+@(mail\.utoronto\.ca|utoronto\.ca)$/;
+    
+    if (!email) {
+      setEmailError('');
+      return;
+    }
+    
+    if (!uoftEmailRegex.test(email)) {
+      setEmailError('Please enter a valid University of Toronto email address (@mail.utoronto.ca or @utoronto.ca)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handleEventSelect = (eventName, eventId) => {
     setFormData(prev => ({
       ...prev,
-      event: eventName
+      event: eventName,
+      eventId: eventId
     }));
     setEventDropdownOpen(false);
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Parse the date and interpret it as EST
+    const date = new Date(dateString + 'T00:00:00-05:00'); // Force EST timezone
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
+      timeZone: 'America/New_York' // EST/EDT timezone
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (files.length === 0 || !formData.consent) return;
+    if (files.length === 0 || !formData.consent || !formData.eventId) return;
 
     setIsUploading(true);
     
     try {
-      // TODO: Replace with actual API call
       const uploadData = new FormData();
       
-      // Add form data
-      uploadData.append('name', formData.name);
-      uploadData.append('email', formData.email);
-      uploadData.append('event', formData.event);
-      uploadData.append('description', formData.description);
-      uploadData.append('consent', formData.consent);
-      
-      // Add files
-      files.forEach((file, index) => {
-        uploadData.append(`files[${index}]`, file.file);
+      // Add files - Spring Boot expects 'files' parameter
+      files.forEach((file) => {
+        uploadData.append('files', file.file);
       });
       
-      // Simulate upload process for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Add instagram handle (required by backend)
+      uploadData.append('instagramHandle', formData.instagram || '');
       
-      // TODO: Make actual API call
-      /*
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/upload`, {
+      // Make actual API call to Spring Boot backend
+      const response = await fetch(`http://localhost:8080/api/upload/${formData.eventId}/batch`, {
         method: 'POST',
         body: uploadData,
       });
       
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.text();
+        throw new Error(`Upload failed: ${errorData}`);
       }
       
-      const result = await response.json();
-      */
+      // Handle different response types from backend
+      let result;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        // Backend returned plain text or HTML
+        result = { message: await response.text() };
+      }
+      
+      console.log('Upload successful:', result);
       
       setIsUploading(false);
       setUploadComplete(true);
@@ -194,21 +195,24 @@ function Upload() {
         setFormData({
           name: '',
           email: '',
+          instagram: '',
           event: '',
+          eventId: '',
           description: '',
           consent: false
         });
+        setEmailError('');
         setUploadComplete(false);
       }, 3000);
       
     } catch (error) {
       console.error('Upload error:', error);
       setIsUploading(false);
-      // TODO: Show error message to user
+      alert(`Upload failed: ${error.message}`);
     }
   };
 
-  const isFormValid = files.length > 0 && formData.name && formData.email && formData.event && formData.consent;
+  const isFormValid = files.length > 0 && formData.name && formData.email && formData.event && formData.eventId && formData.consent && !emailError;
 
   if (uploadComplete) {
     return (
@@ -343,9 +347,44 @@ function Upload() {
                 value={formData.email}
                 onChange={handleInputChange}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                placeholder="your.email@example.com"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
+                  emailError 
+                    ? 'border-red-500 focus:ring-red-500 bg-red-50' 
+                    : 'border-gray-300 focus:ring-blue-600'
+                }`}
+                placeholder="your.email@mail.utoronto.ca"
               />
+              {emailError ? (
+                <p className="text-xs text-red-600 mt-1 flex items-center space-x-1">
+                  <AlertCircle className="h-3 w-3" />
+                  <span>{emailError}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-1">
+                  Must be a valid University of Toronto email address
+                </p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-2">
+                Instagram Handle (Optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
+                <input
+                  type="text"
+                  id="instagram"
+                  name="instagram"
+                  value={formData.instagram}
+                  onChange={handleInputChange}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  placeholder="your_instagram_handle"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                If you'd like to be tagged when your content is featured on our social media
+              </p>
             </div>
           </div>
 
@@ -374,15 +413,17 @@ function Upload() {
                       <button
                         key={event.id}
                         type="button"
-                        onClick={() => handleEventSelect(event.name)}
+                        onClick={() => handleEventSelect(event.name, event.id)}
                         className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-gray-900">{event.name}</span>
                           <div className="flex items-center space-x-2">
                             <span className={`px-2 py-1 text-xs rounded-full ${
-                              event.status === 'ongoing' 
+                              event.status === 'ONGOING' 
                                 ? 'bg-green-100 text-green-800' 
+                                : event.status === 'PAST'
+                                ? 'bg-yellow-100 text-yellow-800'
                                 : 'bg-blue-100 text-blue-800'
                             }`}>
                               {event.status}
