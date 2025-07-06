@@ -25,7 +25,9 @@ function Upload() {
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`, {
+        headers: API_CONFIG.HEADERS
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch events');
@@ -166,6 +168,7 @@ function Upload() {
       // Make actual API call to Spring Boot backend
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`, {
         method: 'POST',
+        headers: API_CONFIG.HEADERS,
         body: uploadData,
       });
       

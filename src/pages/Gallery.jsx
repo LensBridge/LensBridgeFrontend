@@ -20,7 +20,9 @@ function Gallery() {
         setIsLoading(true);
         setError(null);
         
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GALLERY}`);
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GALLERY}`, {
+          headers: API_CONFIG.HEADERS
+        });
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

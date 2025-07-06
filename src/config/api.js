@@ -5,6 +5,9 @@ const API_CONFIG = {
     GALLERY: '/api/gallery',
     EVENTS: '/api/events',
     UPLOAD: '/api/upload'
+  },
+  HEADERS: {
+    'ngrok-skip-browser-warning': 'true'
   }
 };
 
