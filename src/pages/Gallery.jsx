@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Filter, Image, Video, Calendar, User, Star, Eye, Heart, Share2, Award, TrendingUp, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
+import API_CONFIG from '../config/api';
 
 function Gallery() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,7 @@ function Gallery() {
         setIsLoading(true);
         setError(null);
         
-        const response = await fetch('http://localhost:8080/api/gallery');
+        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GALLERY}`);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

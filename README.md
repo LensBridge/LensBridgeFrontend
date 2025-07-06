@@ -96,6 +96,61 @@ src/
 - Optimized for tablets and desktops
 - Touch-friendly interactions
 
+## Environment Variables
+
+The application uses OS environment variables to configure the API endpoints.
+
+### Setting Environment Variables
+
+#### Windows (PowerShell)
+
+```powershell
+# Set environment variable for current session
+$env:VITE_API_BASE_URL = "http://localhost:8080"
+
+# Set environment variable permanently (requires restart)
+[System.Environment]::SetEnvironmentVariable("VITE_API_BASE_URL", "http://localhost:8080", [System.EnvironmentVariableTarget]::User)
+```
+
+#### Windows (Command Prompt)
+
+```cmd
+# Set environment variable for current session
+set VITE_API_BASE_URL=http://localhost:8080
+
+# Set environment variable permanently
+setx VITE_API_BASE_URL "http://localhost:8080"
+```
+
+#### Linux/macOS
+
+```bash
+# Set environment variable for current session
+export VITE_API_BASE_URL=http://localhost:8080
+
+# Add to ~/.bashrc or ~/.zshrc for permanent setting
+echo 'export VITE_API_BASE_URL=http://localhost:8080' >> ~/.bashrc
+```
+
+### Available Environment Variables
+
+- `VITE_API_BASE_URL` - Base URL for the backend API (default: `http://localhost:8080`)
+
+### Examples
+
+```bash
+# Development
+VITE_API_BASE_URL=http://localhost:8080
+
+# Production
+VITE_API_BASE_URL=https://your-production-api.com
+
+# Staging
+VITE_API_BASE_URL=https://staging-api.your-domain.com
+```
+
+**Note**: Vite requires environment variables to be prefixed with `VITE_` to be accessible in the browser.
+
 ## License
 
 This project is licensed under the MIT License.

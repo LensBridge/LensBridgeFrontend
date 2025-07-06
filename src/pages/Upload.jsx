@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload as UploadIcon, X, Image, Video, Check, AlertCircle, ChevronDown } from 'lucide-react';
+import API_CONFIG from '../config/api';
 
 function Upload() {
   const [files, setFiles] = useState([]);
@@ -24,7 +25,7 @@ function Upload() {
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
-      const response = await fetch(`http://localhost:8080/api/events`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch events');
@@ -163,7 +164,7 @@ function Upload() {
       uploadData.append('instagramHandle', formData.instagram || '');
       uploadData.append('description' , formData.description || '');
       // Make actual API call to Spring Boot backend
-      const response = await fetch(`http://localhost:8080/api/upload/${formData.eventId}/batch`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`, {
         method: 'POST',
         body: uploadData,
       });
