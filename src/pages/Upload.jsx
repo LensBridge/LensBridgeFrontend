@@ -29,7 +29,8 @@ function Upload() {
       const tokenType = localStorage.getItem('tokenType') || 'Bearer';
       
       const headers = {
-        ...API_CONFIG.HEADERS
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
       };
       
       if (token) {
@@ -178,6 +179,16 @@ function Upload() {
     e.preventDefault();
     if (files.length === 0 || !formData.consent || !formData.eventId) return;
 
+    // Validate authentication before starting upload
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('user');
+    
+    if (!token || !userInfo) {
+      alert('Authentication expired. Please sign in again.');
+      window.location.href = '/login';
+      return;
+    }
+
     setIsUploading(true);
     
     try {
@@ -193,11 +204,11 @@ function Upload() {
       uploadData.append('description' , formData.description || '');
       
       // Get authentication token
-      const token = localStorage.getItem('token');
       const tokenType = localStorage.getItem('tokenType') || 'Bearer';
       
+      // For FormData uploads, don't set Content-Type - let browser set it automatically
       const headers = {
-        ...API_CONFIG.HEADERS
+        'ngrok-skip-browser-warning': 'true'
       };
       
       if (token) {
@@ -226,8 +237,6 @@ function Upload() {
         // Backend returned plain text or HTML
         result = { message: await response.text() };
       }
-      
-      console.log('Upload successful:', result);
       
       setIsUploading(false);
       setUploadComplete(true);
