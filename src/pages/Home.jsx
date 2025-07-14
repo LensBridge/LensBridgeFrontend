@@ -195,9 +195,9 @@ function Home() {
                   1
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Upload Your Media</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Create Your Account</h3>
               <p className="text-gray-600 leading-relaxed">
-                Select and upload your favorite photos or videos from UTM MSA events with our easy drag-and-drop interface.
+                Sign up for a free account to start sharing your amazing moments. It only takes a minute!
               </p>
             </div>
             
@@ -208,9 +208,9 @@ function Home() {
                   2
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Add Details</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Upload Your Media</h3>
               <p className="text-gray-600 leading-relaxed">
-                Provide event details, your name, and any special notes to give context to your amazing moments.
+                Drag and drop your photos and videos, add details, and submit them for review. It's that easy!
               </p>
             </div>
             
