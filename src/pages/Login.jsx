@@ -1,0 +1,272 @@
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { User, Lock, Eye, EyeOff, Mail, ArrowRight, Camera, CheckCircle } from 'lucide-react';
+
+function Login() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+
+  // Check for confirmation message from email confirmation
+  useEffect(() => {
+    if (location.state?.message) {
+      setConfirmationMessage(location.state.message);
+      // Clear the message after 5 seconds
+      setTimeout(() => {
+        setConfirmationMessage('');
+      }, 5000);
+    }
+  }, [location.state]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+
+    // Validate email for UofT domain
+    if (name === 'email') {
+      if (value && !value.endsWith('@mail.utoronto.ca') && !value.endsWith('@utoronto.ca')) {
+        setEmailError('Please use a valid University of Toronto email address');
+      } else {
+        setEmailError('');
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Check for email validation errors
+    if (emailError) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+      const response = await fetch(`${apiBaseUrl}/api/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store authentication token with Bearer type
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('tokenType', data.type || 'Bearer');
+        }
+        
+        // Store user info
+        const userInfo = {
+          id: data.id,
+          email: data.email,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          roles: data.roles || []
+        };
+        localStorage.setItem('user', JSON.stringify(userInfo));
+
+        // Trigger a custom event to update the header immediately
+        window.dispatchEvent(new Event('auth-change'));
+
+        // Redirect to home page or intended destination
+        const redirectTo = location.state?.from?.pathname || '/';
+        navigate(redirectTo, { replace: true });
+      } else {
+        // Handle specific error cases
+        const errorMessage = data.message || data.error || 'Login failed. Please try again.';
+        
+        if (response.status === 401) {
+          alert('Invalid email or password. Please check your credentials and try again.');
+        } else if (response.status === 403 && errorMessage.toLowerCase().includes('not verified')) {
+          alert('Please verify your email address before signing in. Check your inbox for the confirmation email.');
+        } else {
+          alert(errorMessage);
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex items-center justify-center py-4 px-4">
+      <div className="max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl blur-sm opacity-20"></div>
+              <div className="relative bg-gradient-to-r from-blue-600 to-green-600 p-4 rounded-2xl">
+                <Camera className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          </div>
+          <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
+            Welcome Back
+          </h2>
+          <p className="text-gray-600 mt-2">Sign in to your LensBridge account</p>
+        </div>
+
+        {/* Login Form */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+          {/* Confirmation Message */}
+          {confirmationMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <p className="text-green-800 text-sm font-medium">{confirmationMessage}</p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email Field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    emailError 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
+                  }`}
+                  placeholder="Enter your UofT email"
+                />
+              </div>
+              {emailError && (
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {emailError}
+                </p>
+              )}
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Remember Me & Forgot Password */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                  Remember me
+                </label>
+              </div>
+              <Link
+                to="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              ) : (
+                <>
+                  <User className="h-5 w-5" />
+                  <span>Sign In</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Don't have an account?{' '}
+              <Link to="/signup" className="text-blue-600 hover:text-blue-500 font-medium">
+                Sign up for LensBridge
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        {/* MSA Info */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-500">
+            Exclusive platform for UTM MSA students
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default Login;

@@ -25,8 +25,20 @@ function Upload() {
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
+      const token = localStorage.getItem('token');
+      const tokenType = localStorage.getItem('tokenType') || 'Bearer';
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `${tokenType} ${token}`;
+      }
+      
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`, {
-        headers: API_CONFIG.HEADERS
+        headers
       });
       
       if (!response.ok) {
@@ -47,6 +59,21 @@ function Upload() {
   // Fetch events when component mounts
   useEffect(() => {
     fetchEventsFromAPI();
+    
+    // Auto-populate user info from authentication
+    const userInfo = localStorage.getItem('user');
+    if (userInfo) {
+      try {
+        const user = JSON.parse(userInfo);
+        setFormData(prev => ({
+          ...prev,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          email: user.email
+        }));
+      } catch (error) {
+        console.error('Error parsing user info:', error);
+      }
+    }
   }, []);
 
   const handleDragOver = (e) => {
@@ -152,6 +179,16 @@ function Upload() {
     e.preventDefault();
     if (files.length === 0 || !formData.consent || !formData.eventId) return;
 
+    // Validate authentication before starting upload
+    const token = localStorage.getItem('token');
+    const userInfo = localStorage.getItem('user');
+    
+    if (!token || !userInfo) {
+      alert('Authentication expired. Please sign in again.');
+      window.location.href = '/login';
+      return;
+    }
+
     setIsUploading(true);
     
     try {
@@ -165,10 +202,23 @@ function Upload() {
       // Add instagram handle (required by backend)
       uploadData.append('instagramHandle', formData.instagram || '');
       uploadData.append('description' , formData.description || '');
+      
+      // Get authentication token
+      const tokenType = localStorage.getItem('tokenType') || 'Bearer';
+      
+      // For FormData uploads, don't set Content-Type - let browser set it automatically
+      const headers = {
+        'ngrok-skip-browser-warning': 'true'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `${tokenType} ${token}`;
+      }
+      
       // Make actual API call to Spring Boot backend
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`, {
         method: 'POST',
-        headers: API_CONFIG.HEADERS,
+        headers,
         body: uploadData,
       });
       
@@ -187,8 +237,6 @@ function Upload() {
         // Backend returned plain text or HTML
         result = { message: await response.text() };
       }
-      
-      console.log('Upload successful:', result);
       
       setIsUploading(false);
       setUploadComplete(true);
