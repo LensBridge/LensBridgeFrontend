@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Image, Video, Calendar, User, Star, Eye, Heart, Share2, Award, TrendingUp, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
+import { Search, Filter, Image, Video, Calendar, User, Star, Share2, Award, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import API_CONFIG from '../config/api';
 
 function Gallery() {
@@ -59,8 +59,6 @@ function Gallery() {
   });
 
   const featuredItems = galleryItems.filter(item => item.featured);
-  const totalLikes = galleryItems.reduce((sum, item) => sum + item.likes, 0);
-  const totalViews = galleryItems.reduce((sum, item) => sum + item.views, 0);
 
   const openViewer = (item) => {
     const index = filteredItems.findIndex(i => i.id === item.id);
@@ -148,7 +146,7 @@ function Gallery() {
 
       {/* Stats Bar */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Image className="h-6 w-6" />
@@ -174,32 +172,6 @@ function Gallery() {
               )}
             </div>
             <div className="text-sm text-gray-600">Featured</div>
-          </div>
-          <div className="text-center">
-            <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
-              <Heart className="h-6 w-6" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {isLoading ? (
-                <div className="animate-pulse bg-gray-300 h-8 w-16 rounded mx-auto"></div>
-              ) : (
-                totalLikes.toLocaleString()
-              )}
-            </div>
-            <div className="text-sm text-gray-600">Total Likes</div>
-          </div>
-          <div className="text-center">
-            <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
-              <Eye className="h-6 w-6" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              {isLoading ? (
-                <div className="animate-pulse bg-gray-300 h-8 w-16 rounded mx-auto"></div>
-              ) : (
-                totalViews.toLocaleString()
-              )}
-            </div>
-            <div className="text-sm text-gray-600">Total Views</div>
           </div>
         </div>
       </div>
@@ -325,17 +297,7 @@ function Gallery() {
                   hoveredItem === item.id ? 'opacity-100' : 'opacity-0'
                 }`}>
                   <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-1">
-                          <Heart className="h-4 w-4" />
-                          <span className="text-sm font-medium">{item.likes}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Eye className="h-4 w-4" />
-                          <span className="text-sm font-medium">{item.views}</span>
-                        </div>
-                      </div>
+                    <div className="flex items-center justify-end mb-2">
                       <Share2 className="h-4 w-4 cursor-pointer hover:scale-110 transition-transform" />
                     </div>
                   </div>
@@ -441,8 +403,8 @@ function Gallery() {
                     />
                   )}
                   <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1">
-                    <TrendingUp className="h-3 w-3" />
-                    <span>{item.likes}</span>
+                    <Star className="h-3 w-3" />
+                    <span>Featured</span>
                   </div>
                 </div>
                 <div className="p-4">
@@ -541,7 +503,6 @@ function Gallery() {
                   )}
                 </div>
                 
-                <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
                     <div className="flex items-center space-x-2">
                       <User className="h-4 w-4" />
@@ -552,18 +513,6 @@ function Gallery() {
                       <span>{new Date(selectedItem.date).toLocaleDateString()}</span>
                     </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-6">
-                    <div className="flex items-center space-x-2">
-                      <Heart className="h-4 w-4" />
-                      <span>{selectedItem.likes}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Eye className="h-4 w-4" />
-                      <span>{selectedItem.views}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
