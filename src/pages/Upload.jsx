@@ -11,15 +11,13 @@ function Upload() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
     instagram: '',
     event: '',
     eventId: '', // Add eventId to track the selected event's ID
     description: '',
+    isAnon: false,
     consent: false
   });
-  const [emailError, setEmailError] = useState('');
   const fileInputRef = useRef(null);
   
   const fetchEventsFromAPI = async () => {
@@ -65,11 +63,7 @@ function Upload() {
     if (userInfo) {
       try {
         const user = JSON.parse(userInfo);
-        setFormData(prev => ({
-          ...prev,
-          name: `${user.firstName} ${user.lastName}`.trim(),
-          email: user.email
-        }));
+        // No need to auto-populate name and email anymore since they're removed
       } catch (error) {
         console.error('Error parsing user info:', error);
       }
@@ -128,31 +122,24 @@ function Upload() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Handle Instagram validation (similar to backend pattern)
+    if (name === 'instagram') {
+      // Only allow letters, numbers, dots, and underscores
+      const instagramPattern = /^[a-zA-Z0-9._]*$/;
+      if (value && !instagramPattern.test(value)) {
+        return; // Don't update if invalid characters
+      }
+      // Limit to 30 characters
+      if (value.length > 30) {
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-
-    // Email validation
-    if (name === 'email') {
-      validateEmail(value);
-    }
-  };
-
-  const validateEmail = (email) => {
-    // Regex for University of Toronto email addresses
-    const uoftEmailRegex = /^[a-zA-Z0-9._%+-]+@(mail\.utoronto\.ca|utoronto\.ca)$/;
-    
-    if (!email) {
-      setEmailError('');
-      return;
-    }
-    
-    if (!uoftEmailRegex.test(email)) {
-      setEmailError('Please enter a valid University of Toronto email address (@mail.utoronto.ca or @utoronto.ca)');
-    } else {
-      setEmailError('');
-    }
   };
 
   const handleEventSelect = (eventName, eventId) => {
@@ -192,16 +179,28 @@ function Upload() {
     setIsUploading(true);
     
     try {
+      // For Spring Boot endpoint with @PathVariable and @RequestParam,
+      // we send individual form parameters instead of a JSON object.
+
+      // Create FormData for multipart request
       const uploadData = new FormData();
       
-      // Add files - Spring Boot expects 'files' parameter
+      // Add files as request parameters
       files.forEach((file) => {
         uploadData.append('files', file.file);
       });
       
-      // Add instagram handle (required by backend)
-      uploadData.append('instagramHandle', formData.instagram || '');
-      uploadData.append('description' , formData.description || '');
+      // Add other parameters as individual form fields
+      if (formData.instagram) {
+        uploadData.append('instagramHandle', formData.instagram);
+      }
+      
+      if (formData.description) {
+        uploadData.append('description', formData.description);
+      }
+      
+      // Add anon parameter (required, so always send it)
+      uploadData.append('anon', formData.isAnon);
       
       // Get authentication token
       const tokenType = localStorage.getItem('tokenType') || 'Bearer';
@@ -215,7 +214,7 @@ function Upload() {
         headers['Authorization'] = `${tokenType} ${token}`;
       }
       
-      // Make actual API call to Spring Boot backend
+      // Make actual API call to Spring Boot backend with eventId in path
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`, {
         method: 'POST',
         headers,
@@ -245,15 +244,13 @@ function Upload() {
       setTimeout(() => {
         setFiles([]);
         setFormData({
-          name: '',
-          email: '',
           instagram: '',
           event: '',
           eventId: '',
           description: '',
+          isAnon: false,
           consent: false
         });
-        setEmailError('');
         setUploadComplete(false);
       }, 3000);
       
@@ -264,7 +261,7 @@ function Upload() {
     }
   };
 
-  const isFormValid = files.length > 0 && formData.name && formData.email && formData.event && formData.eventId && formData.consent && !emailError;
+  const isFormValid = files.length > 0 && formData.event && formData.eventId && formData.consent;
 
   if (uploadComplete) {
     return (
@@ -293,7 +290,7 @@ function Upload() {
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Your Media</h1>
         <p className="text-gray-600">
-          Share your UTM MSA event photos and videos with the community
+          Share your UTM MSA event photos and videos with the community. Choose whether to be credited or remain anonymous.
         </p>
       </div>
 
@@ -371,56 +368,11 @@ function Upload() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Event Details</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">
+            {/* Instagram Handle */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                Your Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
-                placeholder="Enter your full name"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                required
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-colors ${
-                  emailError 
-                    ? 'border-red-500 focus:ring-red-500 bg-red-50' 
-                    : 'border-gray-300 focus:ring-blue-600'
-                }`}
-                placeholder="your.email@mail.utoronto.ca"
-              />
-              {emailError ? (
-                <p className="text-xs text-red-600 mt-1 flex items-center space-x-1">
-                  <AlertCircle className="h-3 w-3" />
-                  <span>{emailError}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-gray-500 mt-1">
-                  Must be a valid University of Toronto email address
-                </p>
-              )}
-            </div>
-
-            <div className="md:col-span-2">
               <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 mb-2">
-                Instagram Handle (Optional)
+                Instagram Handle
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">@</span>
@@ -435,8 +387,29 @@ function Upload() {
                 />
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                If you'd like to be tagged when your content is featured on our social media
+                Optional - Only provide if you'd like to be tagged when your content is featured on our social media. Only letters, numbers, dots, and underscores allowed (max 30 characters).
               </p>
+            </div>
+
+            {/* Anonymous Mode */}
+            <div>
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  name="isAnon"
+                  checked={formData.isAnon}
+                  onChange={handleInputChange}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">
+                    Submit anonymously
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Check this if you don't want your name to appear if your content is featured in the gallery
+                  </p>
+                </div>
+              </label>
             </div>
           </div>
 
@@ -522,7 +495,7 @@ function Upload() {
                 className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
               />
               <span className="text-sm text-gray-700">
-                I consent to UTM MSA using my submitted media for promotional purposes on social media platforms. *
+                I consent to UTM MSA using my submitted media for promotional purposes on social media platforms. I understand that my content may be featured on UTM MSA's social media accounts, and I agree to the terms of use. I have permission to share these files from everyone in the attached media. *
               </span>
             </label>
           </div>
