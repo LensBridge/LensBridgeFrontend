@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { Upload as UploadIcon, X, Image, Video, Check, AlertCircle, ChevronDown } from 'lucide-react';
+import heic2any from 'heic2any';
 import API_CONFIG from '../config/api';
+
+// Test if heic2any is working
+console.log('heic2any library loaded:', typeof heic2any);
 
 function Upload() {
   const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
@@ -80,34 +85,117 @@ function Upload() {
     setIsDragging(false);
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     setIsDragging(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
-    handleFiles(droppedFiles);
+    console.log('Files dropped:', droppedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
+    await handleFiles(droppedFiles);
   };
 
-  const handleFileSelect = (e) => {
+  const handleFileSelect = async (e) => {
     const selectedFiles = Array.from(e.target.files);
-    handleFiles(selectedFiles);
+    await handleFiles(selectedFiles);
   };
 
-  const handleFiles = (newFiles) => {
+  const handleFiles = async (newFiles) => {
+    setIsProcessingFiles(true);
+    
     const validFiles = newFiles.filter(file => {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
+      
+      // Check for HEIC files by extension since MIME type might not be recognized
+      const fileName = file.name.toLowerCase();
+      const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif');
+      
       const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit
-      return (isImage || isVideo) && isValidSize;
+      
+      // Enhanced logging for debugging
+      console.log(`File validation - Name: ${file.name}, Type: "${file.type}", Size: ${file.size}, isImage: ${isImage}, isVideo: ${isVideo}, isHeic: ${isHeic}, isValidSize: ${isValidSize}`);
+      
+      return (isImage || isVideo || isHeic) && isValidSize;
     });
 
-    const filesWithPreviews = validFiles.map(file => ({
-      file,
-      id: Date.now() + Math.random(),
-      preview: URL.createObjectURL(file),
-      type: file.type.startsWith('image/') ? 'image' : 'video'
+    const filesWithPreviews = await Promise.all(validFiles.map(async (file) => {
+      try {
+        const fileName = file.name.toLowerCase();
+        const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif');
+        
+        let processedFile = file;
+        let preview = null;
+        
+        if (isHeic) {
+          try {
+            console.log(`Converting HEIC file: ${file.name}, size: ${file.size} bytes`);
+            
+            // Check if heic2any is available
+            if (typeof heic2any !== 'function') {
+              throw new Error('heic2any library not available');
+            }
+            
+            // Convert HEIC to JPEG for preview
+            console.log('Starting HEIC conversion...');
+            const convertedBlob = await heic2any({
+              blob: file,
+              toType: "image/jpeg",
+              quality: 0.8
+            });
+            
+            console.log('Conversion result:', convertedBlob);
+            
+            // heic2any sometimes returns an array, sometimes a single blob
+            const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+            
+            // Verify the conversion result
+            if (finalBlob && finalBlob instanceof Blob && finalBlob.size > 0) {
+              preview = URL.createObjectURL(finalBlob);
+              console.log(`✅ HEIC conversion successful for: ${file.name}, converted size: ${finalBlob.size} bytes, preview URL: ${preview}`);
+            } else {
+              console.warn(`❌ HEIC conversion result is not a valid blob for: ${file.name}`, finalBlob);
+              preview = null;
+            }
+            
+          } catch (conversionError) {
+            console.error(`❌ HEIC conversion failed for ${file.name}:`, conversionError);
+            console.error('Error details:', {
+              name: conversionError.name,
+              message: conversionError.message,
+              stack: conversionError.stack
+            });
+            preview = null; // Will show fallback
+          }
+        } else {
+          try {
+            // For non-HEIC files, create normal preview
+            preview = URL.createObjectURL(file);
+            console.log(`✅ Normal preview created for: ${file.name}`);
+          } catch (previewError) {
+            console.error(`❌ Failed to create preview for: ${file.name}`, previewError);
+            preview = null;
+          }
+        }
+        
+        return {
+          file: processedFile, // Always keep original file
+          id: Date.now() + Math.random(),
+          preview: preview,
+          type: (file.type.startsWith('image/') || isHeic) ? 'image' : 'video'
+        };
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        return {
+          file,
+          id: Date.now() + Math.random(),
+          preview: null, // No preview if processing fails
+          type: (file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) ? 'image' : 'video'
+        };
+      }
     }));
 
+    console.log(`Added ${filesWithPreviews.length} files out of ${newFiles.length} dropped files`);
     setFiles(prev => [...prev, ...filesWithPreviews]);
+    setIsProcessingFiles(false);
   };
 
   const removeFile = (fileId) => {
@@ -309,25 +397,35 @@ function Upload() {
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
           >
-            <UploadIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-2">
-              Drag and drop your files here, or{' '}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                browse
-              </button>
-            </p>
-            <p className="text-sm text-gray-500">
-              Supports: Images (JPG, PNG, GIF) and Videos (MP4, MOV, AVI) up to 100MB
-            </p>
+            {isProcessingFiles ? (
+              <>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 mb-2">Processing files...</p>
+                <p className="text-sm text-gray-500">Converting HEIC images for preview</p>
+              </>
+            ) : (
+              <>
+                <UploadIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 mb-2">
+                  Drag and drop your files here, or{' '}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    browse
+                  </button>
+                </p>
+                <p className="text-sm text-gray-500">
+                  Supports: Images (JPG, PNG, HEIC) and Videos (MP4, MOV, AVI) up to 100MB
+                </p>
+              </>
+            )}
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/*,video/*"
+              accept="image/*,video/*,.heic,.heif"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -339,16 +437,29 @@ function Upload() {
                 <div key={file.id} className="relative group">
                   <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
                     {file.type === 'image' ? (
-                      <img
-                        src={file.preview}
-                        alt={file.file.name}
-                        className="w-full h-full object-cover"
-                      />
+                      file.preview ? (
+                        <img
+                          src={file.preview}
+                          alt={file.file.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.log(`Preview failed for ${file.file.name}, showing placeholder`);
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Video className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
+                    {/* Fallback for images that can't be previewed (like HEIC) */}
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-2" style={{display: file.type === 'image' && !file.preview ? 'flex' : 'none'}}>
+                      <Image className="h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-xs text-gray-500 font-medium">{file.file.name}</p>
+                      <p className="text-xs text-gray-400">{(file.file.size / 1024 / 1024).toFixed(1)} MB</p>
+                    </div>
                   </div>
                   <button
                     type="button"

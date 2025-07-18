@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Image, Video, Calendar, User, Star, Share2, Award, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
+import heic2any from 'heic2any';
 import API_CONFIG from '../config/api';
 
 function Gallery() {
@@ -24,6 +25,63 @@ function Gallery() {
     size: 12,
     sort: 'date,desc'
   });
+
+  // HEIC conversion utility
+  const convertHeicToJpeg = async (imageUrl) => {
+    try {
+      console.log('Converting HEIC image:', imageUrl);
+      
+      // Check if heic2any library is available
+      if (!heic2any) {
+        console.warn('heic2any library not available, returning original URL');
+        return imageUrl;
+      }
+      
+      // Fetch the HEIC file
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // Check if it's actually a HEIC file
+      if (!blob.type.includes('heic') && !blob.type.includes('heif')) {
+        console.log('Not a HEIC file, returning original URL');
+        return imageUrl;
+      }
+      
+      console.log('Converting HEIC blob to JPEG...');
+      
+      // Convert HEIC to JPEG
+      const convertedBlob = await heic2any({
+        blob: blob,
+        toType: 'image/jpeg',
+        quality: 0.8
+      });
+      
+      // Create object URL for the converted image
+      const convertedUrl = URL.createObjectURL(convertedBlob);
+      console.log('HEIC conversion successful:', convertedUrl);
+      
+      return convertedUrl;
+    } catch (error) {
+      console.error('Error converting HEIC image:', error);
+      // Return original URL as fallback
+      return imageUrl;
+    }
+  };
+
+  // Process gallery items to convert HEIC images
+  const processGalleryItems = async (items) => {
+    const processedItems = await Promise.all(
+      items.map(async (item) => {
+        if (item.type === 'image' && (item.src.toLowerCase().includes('.heic') || item.src.toLowerCase().includes('.heif'))) {
+          const convertedSrc = await convertHeicToJpeg(item.src);
+          return { ...item, src: convertedSrc, originalSrc: item.src };
+        }
+        return item;
+      })
+    );
+    
+    return processedItems;
+  };
 
   // Fetch gallery data from API with pagination
   useEffect(() => {
@@ -71,7 +129,8 @@ function Gallery() {
         
         // Handle Spring Boot Page response
         if (data.content) {
-          setGalleryItems(data.content);
+          const processedItems = await processGalleryItems(data.content);
+          setGalleryItems(processedItems);
           setCurrentPage(data.number);
           setTotalPages(data.totalPages);
           setTotalElements(data.totalElements);
@@ -79,8 +138,9 @@ function Gallery() {
         } else {
           // Fallback for non-paginated response
           const items = Array.isArray(data) ? data : data.items || [];
-          setGalleryItems(items);
-          setTotalElements(items.length);
+          const processedItems = await processGalleryItems(items);
+          setGalleryItems(processedItems);
+          setTotalElements(processedItems.length);
           setTotalPages(1);
         }
         
@@ -143,6 +203,11 @@ function Gallery() {
   const closeViewer = () => {
     setSelectedItem(null);
     setIsVideoPlaying(false);
+    
+    // Clean up any HEIC object URLs to prevent memory leaks
+    if (selectedItem && selectedItem.src && selectedItem.src.startsWith('blob:')) {
+      URL.revokeObjectURL(selectedItem.src);
+    }
   };
 
   const navigateViewer = (direction) => {
@@ -195,6 +260,17 @@ function Gallery() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedItem, currentIndex, isVideoPlaying]);
+
+  // Cleanup HEIC object URLs on component unmount
+  useEffect(() => {
+    return () => {
+      galleryItems.forEach(item => {
+        if (item.src && item.src.startsWith('blob:')) {
+          URL.revokeObjectURL(item.src);
+        }
+      });
+    };
+  }, [galleryItems]);
 
   return (
     <div className="max-w-7xl mx-auto">

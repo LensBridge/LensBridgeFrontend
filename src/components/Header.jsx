@@ -41,7 +41,11 @@ function Header() {
   }, []);
 
   const isAdmin = (user) => {
-    return user && user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN');
+    return user && (
+      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
+      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
+      user.role === 'ROLE_ADMIN'
+    );
   };
 
   const handleLogout = () => {
@@ -115,6 +119,25 @@ function Header() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
+                {/* Admin Dashboard Link (only for admins) */}
+                {isAdmin(user) && (
+                  <Link
+                    to="/admin"
+                    className={`group relative flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      isActive('/admin')
+                        ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
+                        : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
+                    }`}
+                    title="Admin Dashboard"
+                  >
+                    <Shield className={`h-4 w-4 ${isActive('/admin') ? 'text-white' : 'text-red-500'}`} />
+                    <span className="text-xs">Admin</span>
+                    {isActive('/admin') && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl animate-pulse opacity-20"></div>
+                    )}
+                  </Link>
+                )}
+                
                 {/* User Info */}
                 <div className="flex items-center space-x-3">
                   <div className="text-right">
@@ -203,6 +226,22 @@ function Header() {
                   </Link>
                 );
               })}
+              
+              {/* Admin Dashboard Link in Mobile (only for admins) */}
+              {user && isAdmin(user) && (
+                <Link
+                  to="/admin"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    isActive('/admin')
+                      ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
+                      : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
+                  }`}
+                >
+                  <Shield className={`h-5 w-5 ${isActive('/admin') ? 'text-white' : 'text-red-500'}`} />
+                  <span>Admin Dashboard</span>
+                </Link>
+              )}
               
               {user ? (
                 <>
