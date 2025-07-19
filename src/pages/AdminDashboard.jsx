@@ -4,7 +4,8 @@ import {
   ChevronLeft, ChevronRight, CheckCircle, X, Star, 
   Calendar, Activity, AlertTriangle, Plus, Filter,
   Search, Download, Eye, Trash2, Instagram, ExternalLink,
-  Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon
+  Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon,
+  XCircle, StarOff
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
 
@@ -182,6 +183,50 @@ function AdminDashboard() {
     try {
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
         method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      const result = await response.json();
+      showMessage(result.message);
+      fetchUploads();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
+  const unapproveUpload = async (uploadId) => {
+    if (!confirm('Are you sure you want to unapprove this upload?')) return;
+    
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+
+      const result = await response.json();
+      showMessage(result.message);
+      fetchUploads();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
+  const unfeatureUpload = async (uploadId) => {
+    if (!confirm('Are you sure you want to unfeature this upload?')) return;
+    
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
+        method: 'DELETE',
         headers: getAuthHeaders()
       });
 
@@ -381,19 +426,21 @@ function AdminDashboard() {
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
-      <div className="relative overflow-hidden mb-8">
+      <div className="relative overflow-hidden mb-8 rounded-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-60"></div>
-        <div className="relative text-center py-12">
-          <div className="mb-4">
+        <div className="relative flex flex-col items-center justify-center text-center py-12 px-4">
+          <div className="mb-4 flex justify-center">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               <Crown className="h-4 w-4" />
               <span>Admin Dashboard</span>
             </div>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">LensBridge Admin</span>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 max-w-4xl">
+            <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              LensBridge Admin
+            </span>
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Welcome back, {user?.firstName || 'Admin'}! Manage your platform
           </p>
         </div>
@@ -551,7 +598,7 @@ function AdminDashboard() {
                     <DownloadIcon className="h-4 w-4" />
                     <span>Download</span>
                   </button>
-                  {!selectedMedia.approved && (
+                  {!selectedMedia.approved ? (
                     <button
                       onClick={() => {
                         approveUpload(selectedMedia.uuid);
@@ -561,8 +608,18 @@ function AdminDashboard() {
                     >
                       Approve
                     </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        unapproveUpload(selectedMedia.uuid);
+                        closeMediaViewer();
+                      }}
+                      className="bg-yellow-600 text-white px-3 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                      Unapprove
+                    </button>
                   )}
-                  {selectedMedia.approved && !selectedMedia.featured && (
+                  {selectedMedia.approved && !selectedMedia.featured ? (
                     <button
                       onClick={() => {
                         featureUpload(selectedMedia.uuid);
@@ -572,7 +629,17 @@ function AdminDashboard() {
                     >
                       Feature
                     </button>
-                  )}
+                  ) : selectedMedia.featured ? (
+                    <button
+                      onClick={() => {
+                        unfeatureUpload(selectedMedia.uuid);
+                        closeMediaViewer();
+                      }}
+                      className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      Unfeature
+                    </button>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -645,175 +712,290 @@ function AdminDashboard() {
         </div>
 
         {/* Uploads Table */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Media
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Details
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Author
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Event
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Download
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {uploads.content.map((upload) => (
-                <tr key={upload.uuid} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div 
-                        className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
-                        onClick={() => openMediaViewer(upload)}
-                      >
-                        {upload.contentType === 'IMAGE' ? (
-                          <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
-                        ) : upload.contentType === 'VIDEO' ? (
-                          <div className="h-full w-full relative">
-                            <video 
-                              src={upload.fileUrl} 
-                              className="h-full w-full object-cover"
-                              muted
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                              <Play className="h-6 w-6 text-white" />
+        <div className="hidden lg:block">
+          {/* Desktop Table View */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                    Media
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Details & Author
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                    Event & Date
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {uploads.content.map((upload) => (
+                  <tr key={upload.uuid} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div 
+                          className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
+                          onClick={() => openMediaViewer(upload)}
+                        >
+                          {upload.contentType === 'IMAGE' ? (
+                            <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                          ) : upload.contentType === 'VIDEO' ? (
+                            <div className="h-full w-full relative">
+                              <video 
+                                src={upload.fileUrl} 
+                                className="h-full w-full object-cover"
+                                muted
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                                <Play className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <Image className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Eye className="h-4 w-4 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                          {upload.uploadDescription || 'No description'}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate">
+                          {upload.fileName}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {upload.contentType}
+                          {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
+                        </div>
+                        {/* Author Info */}
+                        {upload.anon ? (
+                          <div className="text-xs">
+                            <span className="text-gray-500 italic">Anonymous</span>
+                            <div 
+                              className="inline-block cursor-help group ml-1"
+                              title="Hover to reveal uploader identity"
+                            >
+                              <span className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-1 rounded text-xs">
+                                {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
+                              </span>
                             </div>
                           </div>
                         ) : (
-                          <div className="h-full w-full flex items-center justify-center">
-                            <Image className="h-8 w-8 text-gray-400" />
+                          <div className="text-xs text-gray-600">
+                            {getDisplayName(upload)}
+                            {upload.instagramHandle && (
+                              <span className="text-blue-600 ml-1">@{upload.instagramHandle.replace('@', '')}</span>
+                            )}
                           </div>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Eye className="h-6 w-6 text-white" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {upload.eventName || 'No Event'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatDate(upload.createdDate)}
                         </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <StatusBadge approved={upload.approved} featured={upload.featured} />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                          className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
+                          title="Download"
+                        >
+                          <DownloadIcon className="h-3 w-3" />
+                        </button>
+                        {!upload.approved ? (
+                          <button
+                            onClick={() => approveUpload(upload.uuid)}
+                            className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors"
+                            title="Approve"
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => unapproveUpload(upload.uuid)}
+                            className="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 transition-colors"
+                            title="Unapprove"
+                          >
+                            <XCircle className="h-3 w-3" />
+                          </button>
+                        )}
+                        {upload.approved && !upload.featured ? (
+                          <button
+                            onClick={() => featureUpload(upload.uuid)}
+                            className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors"
+                            title="Feature"
+                          >
+                            <Star className="h-3 w-3" />
+                          </button>
+                        ) : upload.featured ? (
+                          <button
+                            onClick={() => unfeatureUpload(upload.uuid)}
+                            className="bg-orange-600 text-white p-2 rounded hover:bg-orange-700 transition-colors"
+                            title="Unfeature"
+                          >
+                            <StarOff className="h-3 w-3" />
+                          </button>
+                        ) : null}
+                        <button
+                          onClick={() => deleteUpload(upload.uuid)}
+                          className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="lg:hidden space-y-4">
+          {uploads.content.map((upload) => (
+            <div key={upload.uuid} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+              <div className="flex space-x-3">
+                {/* Media Thumbnail */}
+                <div 
+                  className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group flex-shrink-0"
+                  onClick={() => openMediaViewer(upload)}
+                >
+                  {upload.contentType === 'IMAGE' ? (
+                    <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                  ) : upload.contentType === 'VIDEO' ? (
+                    <div className="h-full w-full relative">
+                      <video 
+                        src={upload.fileUrl} 
+                        className="h-full w-full object-cover"
+                        muted
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                        <Play className="h-5 w-5 text-white" />
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{upload.uploadDescription || 'No description'}</div>
-                    <div className="text-sm text-gray-500">{upload.fileName}</div>
-                    <div className="text-xs text-gray-400">Type: {upload.contentType}</div>
-                    {upload.anon && (
-                      <div className="text-xs text-blue-600 font-medium">Anonymous Upload</div>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center">
+                      <Image className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Eye className="h-5 w-5 text-white" />
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0 mr-2">
+                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                        {upload.uploadDescription || 'No description'}
+                      </h3>
+                      <p className="text-xs text-gray-500 truncate">{upload.fileName}</p>
+                    </div>
+                    <StatusBadge approved={upload.approved} featured={upload.featured} />
+                  </div>
+
+                  <div className="space-y-1 text-xs text-gray-600">
+                    <div>Event: {upload.eventName || 'No Event'}</div>
+                    <div>Date: {formatDate(upload.createdDate)}</div>
+                    <div>Type: {upload.contentType}</div>
+                    
+                    {/* Author Info */}
                     {upload.anon ? (
-                      <div className="text-sm">
-                        <div className="text-gray-500 italic mb-1">Anonymous</div>
-                        {/* Spoiler text effect for anonymous uploader info */}
-                        <div 
-                          className="relative inline-block cursor-help group"
+                      <div>
+                        Author: <span className="text-gray-500 italic">Anonymous</span>
+                        <span 
+                          className="ml-1 bg-black text-black select-none hover:bg-transparent hover:text-gray-600 transition-all duration-200 px-1 rounded cursor-help"
                           title="Hover to reveal uploader identity"
                         >
-                          <div className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-2 py-1 rounded text-xs">
-                            {getDisplayName({ 
-                              ...upload, 
-                              anon: false 
-                            }) || 'Unknown User'}
-                          </div>
-                          {upload.uploaderEmail && (
-                            <div className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-500 transition-all duration-200 px-2 py-1 rounded text-xs mt-1">
-                              {upload.uploaderEmail}
-                            </div>
-                          )}
-                        </div>
+                          {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
+                        </span>
                       </div>
                     ) : (
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {getDisplayName(upload)}
-                        </div>
-                        {upload.uploaderEmail && (
-                          <div className="text-xs text-gray-500">{upload.uploaderEmail}</div>
-                        )}
+                        Author: {getDisplayName(upload)}
                         {upload.instagramHandle && (
-                          <div className="text-sm text-blue-600 mt-1">
-                            <a 
-                              href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline flex items-center space-x-1"
-                            >
-                              <Instagram className="h-3 w-3" />
-                              <span>@{upload.instagramHandle.replace('@', '')}</span>
-                              <ExternalLink className="h-3 w-3 opacity-60" />
-                            </a>
-                          </div>
+                          <span className="text-blue-600 ml-1">@{upload.instagramHandle.replace('@', '')}</span>
                         )}
                       </div>
                     )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {upload.eventName || 'No Event'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge approved={upload.approved} featured={upload.featured} />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(upload.createdDate)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
-                      {!upload.approved && (
-                        <button
-                          onClick={() => approveUpload(upload.uuid)}
-                          className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors"
-                        >
-                          Approve
-                        </button>
-                      )}
-                      {upload.approved && !upload.featured && (
-                        <button
-                          onClick={() => featureUpload(upload.uuid)}
-                          className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
-                        >
-                          Feature
-                        </button>
-                      )}
-                      <button
-                        onClick={() => deleteUpload(upload.uuid)}
-                        className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex space-x-2 mt-3 flex-wrap">
                     <button
                       onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
-                      className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
-                      title="Download original file"
+                      className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                     >
-                      <DownloadIcon className="h-4 w-4" />
-                      <span className="hidden sm:inline">Download</span>
+                      <DownloadIcon className="h-3 w-3" />
+                      <span>Download</span>
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {!upload.approved ? (
+                      <button
+                        onClick={() => approveUpload(upload.uuid)}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                      >
+                        Approve
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => unapproveUpload(upload.uuid)}
+                        className="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700 transition-colors"
+                      >
+                        Unapprove
+                      </button>
+                    )}
+                    {upload.approved && !upload.featured ? (
+                      <button
+                        onClick={() => featureUpload(upload.uuid)}
+                        className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                      >
+                        Feature
+                      </button>
+                    ) : upload.featured ? (
+                      <button
+                        onClick={() => unfeatureUpload(upload.uuid)}
+                        className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
+                      >
+                        Unfeature
+                      </button>
+                    ) : null}
+                    <button
+                      onClick={() => deleteUpload(upload.uuid)}
+                      className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Pagination */}
