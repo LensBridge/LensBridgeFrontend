@@ -709,8 +709,8 @@ function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{upload.fileName}</div>
-                    <div className="text-sm text-gray-500">{upload.uploadDescription || 'No description'}</div>
+                    <div className="text-sm font-medium text-gray-900">{upload.uploadDescription || 'No description'}</div>
+                    <div className="text-sm text-gray-500">{upload.fileName}</div>
                     <div className="text-xs text-gray-400">Type: {upload.contentType}</div>
                     {upload.anon && (
                       <div className="text-xs text-blue-600 font-medium">Anonymous Upload</div>
@@ -718,11 +718,25 @@ function AdminDashboard() {
                   </td>
                   <td className="px-6 py-4">
                     {upload.anon ? (
-                      <div 
-                        className="text-sm text-gray-500 italic cursor-help" 
-                        title={getTooltipText(upload)}
-                      >
-                        Anonymous
+                      <div className="text-sm">
+                        <div className="text-gray-500 italic mb-1">Anonymous</div>
+                        {/* Spoiler text effect for anonymous uploader info */}
+                        <div 
+                          className="relative inline-block cursor-help group"
+                          title="Hover to reveal uploader identity"
+                        >
+                          <div className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-2 py-1 rounded text-xs">
+                            {getDisplayName({ 
+                              ...upload, 
+                              anon: false 
+                            }) || 'Unknown User'}
+                          </div>
+                          {upload.uploaderEmail && (
+                            <div className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-500 transition-all duration-200 px-2 py-1 rounded text-xs mt-1">
+                              {upload.uploaderEmail}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div>

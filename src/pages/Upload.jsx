@@ -273,9 +273,23 @@ function Upload() {
       // Create FormData for multipart request
       const uploadData = new FormData();
       
-      // Add files as request parameters
+      // Add files as request parameters with corrected MIME types
       files.forEach((file) => {
-        uploadData.append('files', file.file);
+        const fileName = file.file.name.toLowerCase();
+        const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif');
+        
+        // Fix MIME type for HEIC files if browser didn't set it correctly
+        if (isHeic && (file.file.type === 'application/octet-stream' || file.file.type === '' || !file.file.type.startsWith('image/'))) {
+          // Create a new File object with the correct MIME type
+          const correctedFile = new File([file.file], file.file.name, {
+            type: 'image/heic',
+            lastModified: file.file.lastModified
+          });
+          console.log(`Fixed MIME type for HEIC file: ${file.file.name} from "${file.file.type}" to "image/heic"`);
+          uploadData.append('files', correctedFile);
+        } else {
+          uploadData.append('files', file.file);
+        }
       });
       
       // Add other parameters as individual form fields
