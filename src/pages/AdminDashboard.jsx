@@ -3,7 +3,8 @@ import {
   Shield, Users, Image, BarChart3, Settings, Crown, 
   ChevronLeft, ChevronRight, CheckCircle, X, Star, 
   Calendar, Activity, AlertTriangle, Plus, Filter,
-  Search, Download, Eye, Trash2, Instagram, ExternalLink
+  Search, Download, Eye, Trash2, Instagram, ExternalLink,
+  Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
 
@@ -40,6 +41,10 @@ function AdminDashboard() {
     featuredUploads: 0,
     totalEvents: 0
   });
+
+  // Media Viewer State
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [showMediaViewer, setShowMediaViewer] = useState(false);
 
   useEffect(() => {
     const userInfo = localStorage.getItem('user');
@@ -330,6 +335,34 @@ function AdminDashboard() {
     return null;
   };
 
+  const downloadFile = async (fileUrl, fileName) => {
+    try {
+      const response = await fetch(fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showMessage('File downloaded successfully');
+    } catch (error) {
+      showMessage('Failed to download file', true);
+    }
+  };
+
+  const openMediaViewer = (upload) => {
+    setSelectedMedia(upload);
+    setShowMediaViewer(true);
+  };
+
+  const closeMediaViewer = () => {
+    setSelectedMedia(null);
+    setShowMediaViewer(false);
+  };
+
   const StatusBadge = ({ approved, featured }) => (
     <div className="flex gap-2">
       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
@@ -440,6 +473,112 @@ function AdminDashboard() {
 
         <div className="p-6">{renderTabContent()}</div>
       </div>
+
+      {/* Media Viewer Modal */}
+      {showMediaViewer && selectedMedia && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
+            {/* Close Button */}
+            <button
+              onClick={closeMediaViewer}
+              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Media Content */}
+            <div className="relative max-w-full max-h-full">
+              {selectedMedia.contentType === 'IMAGE' ? (
+                <img
+                  src={selectedMedia.fileUrl}
+                  alt={selectedMedia.fileName}
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                />
+              ) : selectedMedia.contentType === 'VIDEO' ? (
+                <video
+                  src={selectedMedia.fileUrl}
+                  controls
+                  autoPlay
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  style={{ maxHeight: '80vh' }}
+                >
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="bg-white p-8 rounded-lg">
+                  <div className="text-center">
+                    <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      {selectedMedia.fileName}
+                    </p>
+                    <p className="text-gray-600 mb-4">
+                      Preview not available for this file type
+                    </p>
+                    <button
+                      onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 mx-auto"
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                      <span>Download File</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Media Info Overlay */}
+            <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-75 text-white p-4 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">{selectedMedia.fileName}</h3>
+                  <p className="text-sm text-gray-300 mb-2">
+                    {selectedMedia.uploadDescription || 'No description'}
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                    <span>Type: {selectedMedia.contentType}</span>
+                    <span>Uploaded: {formatDate(selectedMedia.createdDate)}</span>
+                    <span>Event: {selectedMedia.eventName || 'No Event'}</span>
+                    {!selectedMedia.anon && (
+                      <span>By: {getDisplayName(selectedMedia)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                    className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
+                  >
+                    <DownloadIcon className="h-4 w-4" />
+                    <span>Download</span>
+                  </button>
+                  {!selectedMedia.approved && (
+                    <button
+                      onClick={() => {
+                        approveUpload(selectedMedia.uuid);
+                        closeMediaViewer();
+                      }}
+                      className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      Approve
+                    </button>
+                  )}
+                  {selectedMedia.approved && !selectedMedia.featured && (
+                    <button
+                      onClick={() => {
+                        featureUpload(selectedMedia.uuid);
+                        closeMediaViewer();
+                      }}
+                      className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      Feature
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -531,6 +670,9 @@ function AdminDashboard() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Download
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -538,14 +680,31 @@ function AdminDashboard() {
                 <tr key={upload.uuid} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200">
+                      <div 
+                        className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
+                        onClick={() => openMediaViewer(upload)}
+                      >
                         {upload.contentType === 'IMAGE' ? (
                           <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                        ) : upload.contentType === 'VIDEO' ? (
+                          <div className="h-full w-full relative">
+                            <video 
+                              src={upload.fileUrl} 
+                              className="h-full w-full object-cover"
+                              muted
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                              <Play className="h-6 w-6 text-white" />
+                            </div>
+                          </div>
                         ) : (
                           <div className="h-full w-full flex items-center justify-center">
                             <Image className="h-8 w-8 text-gray-400" />
                           </div>
                         )}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Eye className="h-6 w-6 text-white" />
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -626,6 +785,16 @@ function AdminDashboard() {
                         Delete
                       </button>
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                      className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
+                      title="Download original file"
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                      <span className="hidden sm:inline">Download</span>
+                    </button>
                   </td>
                 </tr>
               ))}
