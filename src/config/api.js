@@ -15,6 +15,7 @@ const API_CONFIG = {
       UPLOAD_REMOVE_FEATURED: '/api/admin/upload',
       EVENTS: '/api/admin/events',
       CREATE_EVENT: '/api/admin/create-event',
+      USERS: '/api/admin/users',
       AUDIT: '/api/admin/audit',
       AUDIT_FAILED: '/api/admin/audit/failed',
       AUDIT_UPLOAD: '/api/admin/audit/upload',

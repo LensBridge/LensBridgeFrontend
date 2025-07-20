@@ -369,16 +369,16 @@ function Upload() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-          <div className="bg-green-600 p-4 rounded-full w-fit mx-auto mb-4">
+          <div className="bg-green-600 p-4 rounded-full w-fit mx-auto mb-6">
             <Check className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Successful!</h2>
-          <p className="text-gray-600 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Upload Successful!</h2>
+          <p className="text-gray-600 mb-6">
             Thank you for sharing your memories! We'll review your submission and may feature it on our social media.
           </p>
           <button
             onClick={() => setUploadComplete(false)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Upload More
           </button>
@@ -389,7 +389,20 @@ function Upload() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="text-center mb-8">
+      {/* Bismillah */}
+      <div className="text-center mb-12">
+        <div className="mb-8">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/Bismillah_Calligraphy1.svg" 
+              alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
+              className="h-20 md:h-24 lg:h-28 w-auto mx-auto"
+            />
+          </div>
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-700 mt-4 font-medium">
+            In the name of Allah, the Most Gracious, the Most Merciful
+          </p>
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload Your Media</h1>
         <p className="text-gray-600">
           Share your UTM MSA event photos and videos with the community. Choose whether to be credited or remain anonymous.
@@ -404,8 +417,8 @@ function Upload() {
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               isDragging
-                ? 'border-blue-600 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-600 hover:bg-gray-50'
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-300 hover:border-blue-400 hover:bg-gray-50'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -413,7 +426,7 @@ function Upload() {
           >
             {isProcessingFiles ? (
               <>
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
                 <p className="text-gray-600 mb-2">Processing files...</p>
                 <p className="text-sm text-gray-500">Converting HEIC images for preview</p>
               </>
@@ -425,7 +438,7 @@ function Upload() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-blue-600 hover:text-blue-700 font-medium underline"
                   >
                     browse
                   </button>
@@ -449,7 +462,7 @@ function Upload() {
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200">
+                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors">
                     {file.type === 'image' ? (
                       file.preview ? (
                         <img
@@ -464,25 +477,25 @@ function Upload() {
                         />
                       ) : null
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
                         <Video className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
                     {/* Fallback for images that can't be previewed (like HEIC) */}
-                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-2" style={{display: file.type === 'image' && !file.preview ? 'flex' : 'none'}}>
+                    <div className="w-full h-full flex flex-col items-center justify-center text-center p-2 bg-gray-50" style={{display: file.type === 'image' && !file.preview ? 'flex' : 'none'}}>
                       <Image className="h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-xs text-gray-500 font-medium">{file.file.name}</p>
-                      <p className="text-xs text-gray-400">{(file.file.size / 1024 / 1024).toFixed(1)} MB</p>
+                      <p className="text-xs text-gray-600 font-medium truncate w-full">{file.file.name}</p>
+                      <p className="text-xs text-gray-500">{(file.file.size / 1024 / 1024).toFixed(1)} MB</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
                   >
                     <X className="h-4 w-4" />
                   </button>
-                  <p className="text-xs text-gray-600 mt-1 truncate">{file.file.name}</p>
+                  <p className="text-xs text-gray-600 mt-2 truncate font-medium">{file.file.name}</p>
                 </div>
               ))}
             </div>
@@ -507,7 +520,7 @@ function Upload() {
                   name="instagram"
                   value={formData.instagram}
                   onChange={handleInputChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="your_instagram_handle"
                 />
               </div>
@@ -524,7 +537,7 @@ function Upload() {
                   name="isAnon"
                   checked={formData.isAnon}
                   onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <div>
                   <span className="text-sm font-medium text-gray-700">
@@ -547,7 +560,7 @@ function Upload() {
               <button
                 type="button"
                 onClick={() => setEventDropdownOpen(!eventDropdownOpen)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-left flex items-center justify-between"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-left flex items-center justify-between transition-colors"
                 disabled={loadingEvents}
               >
                 <span className={formData.event ? 'text-gray-900' : 'text-gray-500'}>
@@ -605,7 +618,7 @@ function Upload() {
               value={formData.description}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               placeholder="Tell us about these photos/videos..."
             />
           </div>
@@ -617,7 +630,7 @@ function Upload() {
                 name="consent"
                 checked={formData.consent}
                 onChange={handleInputChange}
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
+                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <span className="text-sm text-gray-700">
                 I consent to UTM MSA using my submitted media for promotional purposes on social media platforms. I understand that my content may be featured on UTM MSA's social media accounts, and I agree to the terms of use. I have permission to share these files from everyone in the attached media. *
@@ -631,9 +644,9 @@ function Upload() {
           <button
             type="submit"
             disabled={!isFormValid || isUploading}
-            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-lg font-semibold transition-colors ${
+            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
               isFormValid && !isUploading
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >

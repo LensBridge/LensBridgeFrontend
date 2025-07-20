@@ -35,6 +35,12 @@ function AdminDashboard() {
   const [selectedAction, setSelectedAction] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
+  // User Management State
+  const [users, setUsers] = useState({ content: [], totalElements: 0, totalPages: 0 });
+  const [userPage, setUserPage] = useState(0);
+  const [userSize] = useState(20);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+
   // Stats State
   const [stats, setStats] = useState({
     totalUploads: 0,
@@ -66,6 +72,29 @@ function AdminDashboard() {
       fetchAudits();
     }
   }, []);
+
+  // Helper function to check if user has ROLE_ROOT permissions
+  const hasRootPermissions = (user) => {
+    if (!user) return false;
+    
+    return (
+      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ROOT')) ||
+      (user.roles && user.roles.some(role => role === 'ROLE_ROOT' || role === 'ROOT')) ||
+      user.role === 'ROLE_ROOT'
+    );
+  };
+
+  // Helper function to check if user has admin permissions (ROLE_ADMIN or ROLE_ROOT)
+  const hasAdminPermissions = (user) => {
+    if (!user) return false;
+    
+    return (
+      hasRootPermissions(user) ||
+      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
+      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
+      user.role === 'ROLE_ADMIN'
+    );
+  };
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('token');
@@ -338,11 +367,50 @@ function AdminDashboard() {
     }
   };
 
+  // User Management Functions
+  const fetchUsers = useCallback(async (page = userPage, searchTerm = userSearchTerm) => {
+    if (!hasRootPermissions(user)) return;
+    
+    setLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        size: userSize.toString(),
+        sort: 'firstName,asc'
+      });
+
+      if (searchTerm.trim()) {
+        queryParams.append('search', searchTerm.trim());
+      }
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`, {
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch users');
+
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      showMessage('Failed to fetch users', true);
+    } finally {
+      setLoading(false);
+    }
+  }, [userPage, userSize, userSearchTerm, user]);
+
+  const handleUserSearch = (searchTerm) => {
+    setUserSearchTerm(searchTerm);
+    setUserPage(0);
+    fetchUsers(0, searchTerm);
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAudits();
+    } else if (activeTab === 'users' && hasRootPermissions(user)) {
+      fetchUsers();
     }
-  }, [activeTab, fetchAudits]);
+  }, [activeTab, fetchAudits, fetchUsers, user]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -433,6 +501,11 @@ function AdminDashboard() {
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               <Crown className="h-4 w-4" />
               <span>Admin Dashboard</span>
+              {hasRootPermissions(user) && (
+                <div className="ml-2 bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                  ROOT
+                </div>
+              )}
             </div>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 max-w-4xl">
@@ -442,6 +515,11 @@ function AdminDashboard() {
           </h1>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Welcome back, {user?.firstName || 'Admin'}! Manage your platform
+            {hasRootPermissions(user) && (
+              <span className="block text-sm text-yellow-600 font-medium mt-1">
+                🔑 Root Access Enabled - Full System Control
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -498,10 +576,19 @@ function AdminDashboard() {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { id: 'uploads', label: 'Upload Management', icon: Image },
-              { id: 'events', label: 'Event Management', icon: Calendar },
-              { id: 'audit', label: 'Audit Logs', icon: Activity }
-            ].map(({ id, label, icon: Icon }) => (
+              { id: 'uploads', label: 'Upload Management', icon: Image, requiredRole: 'admin' },
+              { id: 'events', label: 'Event Management', icon: Calendar, requiredRole: 'admin' },
+              { id: 'audit', label: 'Audit Logs', icon: Activity, requiredRole: 'admin' },
+              ...(hasRootPermissions(user) ? [
+                { id: 'users', label: 'User Management', icon: Users, requiredRole: 'root' },
+                { id: 'system', label: 'System Settings', icon: Settings, requiredRole: 'root' },
+                { id: 'permissions', label: 'Role Management', icon: Crown, requiredRole: 'root' }
+              ] : [])
+            ].filter(tab => {
+              if (tab.requiredRole === 'root') return hasRootPermissions(user);
+              if (tab.requiredRole === 'admin') return hasAdminPermissions(user);
+              return true;
+            }).map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
@@ -513,6 +600,9 @@ function AdminDashboard() {
               >
                 <Icon className="h-4 w-4" />
                 <span>{label}</span>
+                {hasRootPermissions(user) && (id === 'users' || id === 'system' || id === 'permissions') && (
+                  <Crown className="h-3 w-3 text-yellow-500" title="Root Access Required" />
+                )}
               </button>
             ))}
           </nav>
@@ -657,6 +747,12 @@ function AdminDashboard() {
         return renderEventsTab();
       case 'audit':
         return renderAuditTab();
+      case 'users':
+        return hasRootPermissions(user) ? renderUsersTab() : renderAccessDenied();
+      case 'system':
+        return hasRootPermissions(user) ? renderSystemTab() : renderAccessDenied();
+      case 'permissions':
+        return hasRootPermissions(user) ? renderPermissionsTab() : renderAccessDenied();
       default:
         return null;
     }
@@ -797,7 +893,16 @@ function AdminDashboard() {
                           <div className="text-xs text-gray-600">
                             {getDisplayName(upload)}
                             {upload.instagramHandle && (
-                              <span className="text-blue-600 ml-1">@{upload.instagramHandle.replace('@', '')}</span>
+                              <a 
+                                href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                                title="View Instagram profile"
+                              >
+                                @{upload.instagramHandle.replace('@', '')}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
                             )}
                           </div>
                         )}
@@ -940,7 +1045,16 @@ function AdminDashboard() {
                       <div>
                         Author: {getDisplayName(upload)}
                         {upload.instagramHandle && (
-                          <span className="text-blue-600 ml-1">@{upload.instagramHandle.replace('@', '')}</span>
+                          <a 
+                            href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                            title="View Instagram profile"
+                          >
+                            @{upload.instagramHandle.replace('@', '')}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
                         )}
                       </div>
                     )}
@@ -1260,6 +1374,285 @@ function AdminDashboard() {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // Access denied component for unauthorized access to root-only features
+  function renderAccessDenied() {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Shield className="h-16 w-16 text-red-500 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
+        <p className="text-gray-600 max-w-md">
+          This section requires ROOT permissions. Please contact a system administrator if you need access.
+        </p>
+      </div>
+    );
+  }
+
+  // Root-only: User Management Tab
+  function renderUsersTab() {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Crown className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
+          </div>
+          <button
+            onClick={() => fetchUsers()}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+
+        {/* Search Bar */}
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search users by name, email, or student number..."
+            value={userSearchTerm}
+            onChange={(e) => handleUserSearch(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Users Table */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    User
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Student Number
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Roles
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {users.content.map((user) => (
+                  <tr key={user.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-green-600 flex items-center justify-center">
+                            <span className="text-white font-medium text-sm">
+                              {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">
+                            {user.firstName} {user.lastName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            ID: {user.id.substring(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {user.studentNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {user.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.map((role, index) => (
+                          <span
+                            key={index}
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              role === 'ROLE_ROOT'
+                                ? 'bg-red-100 text-red-800'
+                                : role === 'ROLE_ADMIN'
+                                ? 'bg-purple-100 text-purple-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {role === 'ROLE_ROOT' && <Crown className="h-3 w-3 mr-1" />}
+                            {role.replace('ROLE_', '')}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.verified
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {user.verified ? (
+                          <>
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Verified
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Pending
+                          </>
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className="text-blue-600 hover:text-blue-900"
+                          title="Edit User"
+                        >
+                          <Settings className="h-4 w-4" />
+                        </button>
+                        <button
+                          className="text-red-600 hover:text-red-900"
+                          title="Delete User"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Empty State */}
+          {users.content.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+              <p className="text-gray-500">
+                {userSearchTerm ? 'Try adjusting your search criteria.' : 'No users are currently in the system.'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Pagination */}
+        {users.totalPages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Showing {userPage * userSize + 1} to {Math.min((userPage + 1) * userSize, users.totalElements)} of {users.totalElements} users
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => {
+                  const newPage = userPage - 1;
+                  setUserPage(newPage);
+                  fetchUsers(newPage);
+                }}
+                disabled={userPage === 0 || loading}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm text-gray-700">
+                Page {userPage + 1} of {users.totalPages}
+              </span>
+              <button
+                onClick={() => {
+                  const newPage = userPage + 1;
+                  setUserPage(newPage);
+                  fetchUsers(newPage);
+                }}
+                disabled={userPage >= users.totalPages - 1 || loading}
+                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Root-only: System Settings Tab
+  function renderSystemTab() {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Crown className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-gray-900">System Settings</h3>
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
+          </div>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800">Root Access Feature</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                System settings management is currently under development. This feature will allow ROOT users to:
+              </p>
+              <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
+                <li>Configure application settings</li>
+                <li>Manage file upload limits</li>
+                <li>Configure email templates</li>
+                <li>Database maintenance tools</li>
+                <li>System backup and restore</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Root-only: Permissions/Role Management Tab
+  function renderPermissionsTab() {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Crown className="h-5 w-5 text-yellow-500" />
+            <h3 className="text-lg font-semibold text-gray-900">Role Management</h3>
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
+          </div>
+        </div>
+        
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
+            <div>
+              <h4 className="text-sm font-medium text-yellow-800">Root Access Feature</h4>
+              <p className="text-sm text-yellow-700 mt-1">
+                Role and permission management is currently under development. This feature will allow ROOT users to:
+              </p>
+              <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
+                <li>Create and modify user roles</li>
+                <li>Assign permissions to roles</li>
+                <li>View role hierarchy</li>
+                <li>Manage access control policies</li>
+                <li>Audit permission changes</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
