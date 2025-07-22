@@ -24,7 +24,6 @@ function ConfirmEmail() {
 
   const confirmEmail = async (confirmationToken) => {
     try {
-      console.log('Starting email confirmation with token:', confirmationToken);
       
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify-email`, {
         method: 'POST',
@@ -54,8 +53,6 @@ function ConfirmEmail() {
         console.log('Response is not JSON, treating as plain text');
         data = { message: await response.text() };
       }
-
-      console.log('Parsed data:', data);
 
       if (response.ok) {
         setStatus('success');

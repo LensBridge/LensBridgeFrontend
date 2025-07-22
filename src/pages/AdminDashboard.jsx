@@ -40,6 +40,19 @@ function AdminDashboard() {
   const [userPage, setUserPage] = useState(0);
   const [userSize] = useState(20);
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [showRemoveRole, setShowRemoveRole] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [newUser, setNewUser] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    studentNumber: ''
+  });
+  const [selectedRole, setSelectedRole] = useState('');
 
   // Stats State
   const [stats, setStats] = useState({
@@ -68,8 +81,13 @@ function AdminDashboard() {
     fetchUploads();
     fetchEvents();
     fetchAuditActions();
+    if (hasRootPermissions(user)) {
+      fetchAvailableRoles();
+    }
     if (activeTab === 'audit') {
       fetchAudits();
+    } else if (activeTab === 'users' && hasRootPermissions(user)) {
+      fetchUsers();
     }
   }, []);
 
@@ -404,11 +422,122 @@ function AdminDashboard() {
     fetchUsers(0, searchTerm);
   };
 
+  const fetchAvailableRoles = async () => {
+    if (!hasRootPermissions(user)) return;
+    
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`, {
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch roles');
+
+      const data = await response.json();
+      setAvailableRoles(data);
+      if (data.length > 0) {
+        setSelectedRole(data[0]);
+      }
+    } catch (error) {
+      showMessage('Failed to fetch available roles', true);
+    }
+  };
+
+  const createUser = async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(newUser)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to create user');
+      }
+
+      showMessage(data.message || 'User created successfully');
+      setNewUser({ firstName: '', lastName: '', email: '', studentNumber: '' });
+      setShowCreateUser(false);
+      fetchUsers();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
+  const addRoleToUser = async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(selectedRole)
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to add role');
+      }
+
+      showMessage('Role added successfully');
+      setShowAddRole(false);
+      setSelectedUserId(null);
+      setSelectedRole('');
+      fetchUsers();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
+  const removeRoleFromUser = async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(selectedRole)
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to remove role');
+      }
+
+      showMessage('Role removed successfully');
+      setShowRemoveRole(false);
+      setSelectedUserId(null);
+      setSelectedUser(null);
+      setSelectedRole('');
+      fetchUsers();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
+  const verifyUser = async (userId) => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ userId })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to verify user');
+      }
+
+      showMessage('User verified successfully');
+      fetchUsers();
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'audit') {
       fetchAudits();
     } else if (activeTab === 'users' && hasRootPermissions(user)) {
       fetchUsers();
+      fetchAvailableRoles();
     }
   }, [activeTab, fetchAudits, fetchUsers, user]);
 
@@ -820,6 +949,9 @@ function AdminDashboard() {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Details & Author
                   </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                    Upload UUID
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Event & Date
                   </th>
@@ -906,6 +1038,11 @@ function AdminDashboard() {
                             )}
                           </div>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="text-xs font-mono text-gray-600 break-all">
+                        {upload.uuid}
                       </div>
                     </td>
                     <td className="px-4 py-4">
@@ -1058,6 +1195,7 @@ function AdminDashboard() {
                         )}
                       </div>
                     )}
+                    <div>UUID: <span className="font-mono text-xs">{upload.uuid}</span></div>
                   </div>
 
                   {/* Actions */}
@@ -1401,13 +1539,22 @@ function AdminDashboard() {
             <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
             <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
           </div>
-          <button
-            onClick={() => fetchUsers()}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            disabled={loading}
-          >
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowCreateUser(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create User</span>
+            </button>
+            <button
+              onClick={() => fetchUsers()}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -1467,7 +1614,7 @@ function AdminDashboard() {
                             {user.firstName} {user.lastName}
                           </div>
                           <div className="text-sm text-gray-500">
-                            ID: {user.id.substring(0, 8)}...
+                            ID: {user.id}
                           </div>
                         </div>
                       </div>
@@ -1519,7 +1666,39 @@ function AdminDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center space-x-2">
                         <button
-                          className="text-blue-600 hover:text-blue-900"
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setShowAddRole(true);
+                          }}
+                          className="text-green-600 hover:text-green-900"
+                          title="Add Role"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                        {user.roles.length > 0 && (
+                          <button
+                            onClick={() => {
+                              setSelectedUserId(user.id);
+                              setSelectedUser(user);
+                              setShowRemoveRole(true);
+                            }}
+                            className="text-orange-600 hover:text-orange-900"
+                            title="Remove Role"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                        {!user.verified && (
+                          <button
+                            onClick={() => verifyUser(user.id)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Verify User"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          className="text-gray-600 hover:text-gray-900"
                           title="Edit User"
                         >
                           <Settings className="h-4 w-4" />
@@ -1582,6 +1761,234 @@ function AdminDashboard() {
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Create User Modal */}
+        {showCreateUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
+                <button
+                  onClick={() => setShowCreateUser(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.firstName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter first name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.lastName}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter last name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter email address"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Student Number
+                  </label>
+                  <input
+                    type="text"
+                    value={newUser.studentNumber}
+                    onChange={(e) => setNewUser(prev => ({ ...prev, studentNumber: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter student number"
+                  />
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> The user account will be created in a disabled state. The user must reset their password via the "Forgot Password" link to activate their account.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateUser(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={createUser}
+                  disabled={!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.studentNumber}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create User
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Role Modal */}
+        {showAddRole && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Add Role to User</h3>
+                <button
+                  onClick={() => setShowAddRole(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Role
+                  </label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a role</option>
+                    {availableRoles.map((role) => (
+                      <option key={role} value={role}>
+                        {role.replace('ROLE_', '')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Warning:</strong> Adding roles will grant additional permissions to the user. Be careful when assigning ADMIN or ROOT roles.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowAddRole(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={addRoleToUser}
+                  disabled={!selectedRole}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Role
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Remove Role Modal */}
+        {showRemoveRole && selectedUser && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Remove Role from User</h3>
+                <button
+                  onClick={() => {
+                    setShowRemoveRole(false);
+                    setSelectedUserId(null);
+                    setSelectedUser(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                  <p className="text-sm text-gray-700">
+                    <strong>User:</strong> {selectedUser.firstName} {selectedUser.lastName}
+                  </p>
+                  <p className="text-sm text-gray-700">
+                    <strong>Email:</strong> {selectedUser.email}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select Role to Remove
+                  </label>
+                  <select
+                    value={selectedRole}
+                    onChange={(e) => setSelectedRole(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a role to remove</option>
+                    {selectedUser.roles.map((role) => (
+                      <option key={role} value={role}>
+                        {role.replace('ROLE_', '')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">
+                    <strong>Warning:</strong> Removing roles will revoke permissions from the user. This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => {
+                    setShowRemoveRole(false);
+                    setSelectedUserId(null);
+                    setSelectedUser(null);
+                  }}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={removeRoleFromUser}
+                  disabled={!selectedRole}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Remove Role
+                </button>
+              </div>
             </div>
           </div>
         )}
