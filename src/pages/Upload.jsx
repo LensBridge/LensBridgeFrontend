@@ -639,6 +639,36 @@ function Upload() {
           </div>
         </div>
 
+        {/* Intention Renewal Reminder */}
+        <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-6 text-center">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              🤲 Intention Reminder
+            </h3>
+            <p className="text-gray-700 mb-4">
+              Before uploading, take a moment to renew your niyyah:
+            </p>
+            <div className="text-center mb-3">
+              <p className="text-2xl md:text-3xl text-gray-800 font-arabic leading-relaxed">
+                إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ
+              </p>
+            </div>
+            <blockquote className="text-base text-gray-800 font-medium italic mb-3">
+              "Actions are judged by intentions." – Prophet Muhammad ﷺ
+            </blockquote>
+            <p className="text-xs text-gray-600">
+              <a 
+                href="https://sunnah.com/bukhari:1" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 underline transition-colors"
+              >
+                Sahih Bukhari 1
+              </a>
+            </p>
+          </div>
+        </div>
+
         {/* Submit Button */}
         <div className="text-center">
           <button
