@@ -32,23 +32,14 @@ function Login() {
       [name]: value
     }));
 
-    // Validate email for UofT domain
-    if (name === 'email') {
-      if (value && !value.endsWith('@mail.utoronto.ca') && !value.endsWith('@utoronto.ca')) {
-        setEmailError('Please use a valid University of Toronto email address');
-      } else {
-        setEmailError('');
-      }
+    // Clear any existing email error when user types
+    if (name === 'email' && emailError) {
+      setEmailError('');
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check for email validation errors
-    if (emailError) {
-      return;
-    }
     
     setIsLoading(true);
     
@@ -159,20 +150,10 @@ function Login() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`block w-full pl-10 pr-3 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
-                    emailError 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
-                  }`}
-                  placeholder="Enter your UofT email"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your email address"
                 />
               </div>
-              {emailError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
-                  <span className="mr-1">⚠️</span>
-                  {emailError}
-                </p>
-              )}
             </div>
 
             {/* Password Field */}

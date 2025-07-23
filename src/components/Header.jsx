@@ -74,25 +74,27 @@ function Header() {
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-18">
+        <div className="flex items-center h-18 relative">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl blur-sm opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
-                <img src="/lensbridge-logo.svg" alt="LensBridge" className="h-8 w-8 text-white" />
+          <div className="flex items-center flex-shrink-0">
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl blur-sm opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                <div className="relative bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+                  <img src="/lensbridge-logo.svg" alt="LensBridge" className="h-8 w-8 text-white" />
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
-                LensBridge
-              </span>
-              <span className="text-xs text-gray-500 -mt-1">Beta</span>
-            </div>
-          </Link>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
+                  LensBridge
+                </span>
+                <span className="text-xs text-gray-500 -mt-1">Beta</span>
+              </div>
+            </Link>
+          </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-2">
+          {/* Desktop Navigation - Absolutely Centered */}
+          <nav className="hidden md:flex items-center justify-center space-x-2 absolute left-1/2 transform -translate-x-1/2">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -115,8 +117,11 @@ function Header() {
             })}
           </nav>
 
-          {/* CTA Button */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Spacer to push CTA to right */}
+          <div className="flex-1"></div>
+
+          {/* CTA Button - Right side */}
+          <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
             {user ? (
               <>
                 {/* Admin Dashboard Link (only for admins) */}
@@ -192,16 +197,18 @@ function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            {isMobileMenuOpen ? (
-              <X className="h-6 w-6 text-gray-600" />
-            ) : (
-              <Menu className="h-6 w-6 text-gray-600" />
-            )}
-          </button>
+          <div className="md:hidden flex items-center ml-auto">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              {isMobileMenuOpen ? (
+                <X className="h-6 w-6 text-gray-600" />
+              ) : (
+                <Menu className="h-6 w-6 text-gray-600" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}

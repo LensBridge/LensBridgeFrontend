@@ -25,7 +25,7 @@ function PrivacyPolicy() {
               <p className="text-gray-600">LensBridge - UTM MSA Media Platform</p>
             </div>
           </div>
-          <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500">Last updated: 2025-07-19</p>
         </div>
 
         {/* Content */}
@@ -41,6 +41,8 @@ function PrivacyPolicy() {
               The University of Toronto Mississauga Muslim Students Association (UTM MSA) respects your privacy and is 
               committed to protecting your personal information. This privacy policy explains how we collect, use, and 
               safeguard your information when you use LensBridge, our exclusive media sharing platform for MSA members.
+              It is required that all LensBridge users read and agree to this policy before creating an account. Creating 
+              an account implies your consent to the terms outlined in this policy.
             </p>
           </section>
 
@@ -56,8 +58,7 @@ function PrivacyPolicy() {
                 <h3 className="font-medium text-gray-800 mb-2">Personal Information:</h3>
                 <ul className="text-gray-600 leading-relaxed space-y-1 ml-4">
                   <li>• Full name (first and last name)</li>
-                  <li>• University of Toronto email address</li>
-                  <li>• Phone number</li>
+                  <li>• University of Toronto email address <code>(*@mail.utoronto.ca)</code></li>
                   <li>• Student number</li>
                   <li>• Account password (encrypted)</li>
                 </ul>
@@ -68,6 +69,7 @@ function PrivacyPolicy() {
                 <ul className="text-gray-600 leading-relaxed space-y-1 ml-4">
                   <li>• Photos and videos you upload</li>
                   <li>• Metadata associated with your uploads (date, time, file information)</li>
+                  <li>• Instagram Handles (Should you choose to include)</li>
                   <li>• Captions and descriptions you provide</li>
                 </ul>
               </div>
@@ -114,7 +116,7 @@ function PrivacyPolicy() {
               <h3 className="font-medium text-gray-800">We may share information in these limited circumstances:</h3>
               <ul className="text-gray-600 leading-relaxed space-y-2 ml-4">
                 <li>• <strong>MSA Social Media:</strong> Your uploaded content may be featured on official UTM MSA Instagram, Facebook, and other social media accounts</li>
-                <li>• <strong>MSA Executive Team:</strong> Authorized MSA executives may access content for promotional purposes</li>
+                <li>• <strong>MSA Executives and Directors:</strong> Authorized MSA members may access content for promotional purposes</li>
                 <li>• <strong>University Compliance:</strong> If required by University of Toronto policies or legal obligations</li>
                 <li>• <strong>Safety Concerns:</strong> If necessary to protect the safety of users or the community</li>
               </ul>
@@ -132,7 +134,7 @@ function PrivacyPolicy() {
                 We implement appropriate security measures to protect your personal information:
               </p>
               <ul className="text-gray-600 leading-relaxed space-y-2 ml-4">
-                <li>• Encrypted password storage</li>
+                <li>• Hashed and Salted password storage using <code>BCrypt</code></li>
                 <li>• Secure HTTPS connections</li>
                 <li>• Regular security updates and monitoring</li>
                 <li>• Limited access to authorized personnel only</li>
@@ -227,7 +229,7 @@ function PrivacyPolicy() {
               <div className="bg-gray-50 rounded-lg p-4">
                 <p className="text-gray-700">
                   <strong>UTM MSA Executive Team</strong><br />
-                  Email: <a href="mailto:msa@utoronto.ca" className="text-blue-600 hover:text-blue-500">msa@utoronto.ca</a><br />
+                  Email: <a href="mailto:support@lensbridge.tech" className="text-blue-600 hover:text-blue-500">support@lensbridge.tech</a><br />
                   Subject Line: "LensBridge Privacy Inquiry"
                 </p>
               </div>

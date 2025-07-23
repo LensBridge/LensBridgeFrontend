@@ -25,7 +25,7 @@ function TermsOfService() {
               <p className="text-gray-600">LensBridge - UTM MSA Media Platform</p>
             </div>
           </div>
-          <p className="text-sm text-gray-500">Last updated: {new Date().toLocaleDateString()}</p>
+          <p className="text-sm text-gray-500">Last updated: 2025-07-19</p>
         </div>
 
         {/* Content */}
@@ -71,6 +71,7 @@ function TermsOfService() {
               
               <h3 className="font-medium text-gray-800 mt-6">Prohibited Content:</h3>
               <ul className="text-gray-600 leading-relaxed space-y-1 ml-4">
+                <li>• Content which you do <strong>not</strong> have permission to share. This means you must have consent of everyone pictured in the media you upload.</li>
                 <li>• Inappropriate, offensive, or harmful material</li>
                 <li>• Content that violates Islamic principles</li>
                 <li>• Copyrighted material without permission</li>
@@ -142,6 +143,7 @@ function TermsOfService() {
               <li>• Upload inappropriate or harmful content</li>
               <li>• Are no longer eligible (graduated, not MSA member, etc.)</li>
               <li>• Engage in abusive or harmful behavior</li>
+              <li>• Abuse the <em>LensBridge</em> Platform</li>
             </ul>
           </section>
 

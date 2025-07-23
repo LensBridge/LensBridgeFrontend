@@ -1,5 +1,60 @@
 import { Link } from 'react-router-dom';
-import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp } from 'lucide-react';
+import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, ExternalLink, Zap, Shield } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+
+// Animated Counter Component
+function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }) {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const counterRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (counterRef.current) {
+      observer.observe(counterRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    let startTime;
+    const startCount = 0;
+    
+    const updateCount = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const progress = Math.min((timestamp - startTime) / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const currentCount = Math.floor(easeOutQuart * end);
+      
+      setCount(currentCount);
+      
+      if (progress < 1) {
+        requestAnimationFrame(updateCount);
+      }
+    };
+    
+    requestAnimationFrame(updateCount);
+  }, [isVisible, end, duration]);
+
+  return (
+    <span ref={counterRef} className="tabular-nums">
+      {prefix}{count.toLocaleString()}{suffix}
+    </span>
+  );
+}
 
 function Home() {
   return (
@@ -32,7 +87,7 @@ function Home() {
           </h1>
           
           <p className="text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-            Connect, share, and celebrate your UTM MSA journey! Upload your amazing event photos and videos for a chance to be featured on our social media stories.
+            Connect, share, and celebrate UTM MSA events! Upload your amazing event photos and videos for a chance to be featured on our <a href="https://instagram.com/utmmsa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Instagram</a> and <a href="https://facebook.com/utmmsa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook</a> stories.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -64,7 +119,9 @@ function Home() {
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Camera className="h-8 w-8" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">1,200+</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                <AnimatedCounter end={1200} suffix="+" duration={2500} />
+              </h3>
               <p className="text-gray-600 font-medium">Photos Shared</p>
             </div>
           </div>
@@ -74,7 +131,9 @@ function Home() {
               <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Users className="h-8 w-8" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">500+</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                <AnimatedCounter end={500} suffix="+" duration={2200} />
+              </h3>
               <p className="text-gray-600 font-medium">Active Members</p>
             </div>
           </div>
@@ -84,7 +143,9 @@ function Home() {
               <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Star className="h-8 w-8" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">150+</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                <AnimatedCounter end={150} suffix="+" duration={1800} />
+              </h3>
               <p className="text-gray-600 font-medium">Featured Stories</p>
             </div>
           </div>
@@ -94,7 +155,9 @@ function Home() {
               <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Heart className="h-8 w-8" />
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-2">50+</h3>
+              <h3 className="text-3xl font-bold text-gray-900 mb-2">
+                <AnimatedCounter end={50} suffix="+" duration={1500} />
+              </h3>
               <p className="text-gray-600 font-medium">Events Covered</p>
             </div>
           </div>
@@ -105,10 +168,10 @@ function Home() {
       <div className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
-            Why Choose <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">LensBridge</span>?
+            Why Upload to <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">LensBridge</span>?
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Experience the easiest way to share your MSA memories with our community
+            Turn your event memories into social media fame and connect with the UTM MSA community
           </p>
         </div>
         
@@ -116,18 +179,43 @@ function Home() {
           <div className="group">
             <div className="bg-white p-10 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-100">
               <div className="relative mb-8">
-                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div className="relative bg-gradient-to-r from-green-600 to-emerald-500 p-5 rounded-2xl w-fit mx-auto">
-                  <Upload className="h-10 w-10 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 p-5 rounded-2xl w-fit mx-auto">
+                  <Star className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Lightning Fast Upload</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Featured on Social Media</h3>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Drag, drop, and done! Our intuitive interface makes uploading your photos and videos a breeze. No complicated steps, just simple and fast.
+                Your photos and videos could be featured on UTM MSA's official Instagram and Facebook, reaching thousands of students and gaining you recognition in the community.
               </p>
-              <div className="flex items-center text-green-600 font-semibold group-hover:translate-x-2 transition-transform">
-                <span>Try it now</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="space-y-2">
+                <Link
+                  to="/gallery"
+                  className="inline-flex items-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform hover:text-purple-700 block"
+                >
+                  <span>See featured content</span>
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+                <div className="flex space-x-4 text-sm">
+                  <a
+                    href="https://instagram.com/utmmsa"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-purple-600 hover:text-purple-700"
+                  >
+                    <span>@utmmsa Instagram</span>
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                  <a
+                    href="https://facebook.com/utmmsa"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-purple-600 hover:text-purple-700"
+                  >
+                    <span>Facebook Page</span>
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
@@ -137,16 +225,24 @@ function Home() {
               <div className="relative mb-8">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
                 <div className="relative bg-gradient-to-r from-blue-600 to-indigo-500 p-5 rounded-2xl w-fit mx-auto">
-                  <Users className="h-10 w-10 text-white" />
+                  <Heart className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Community Driven</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Preserve MSA Memories</h3>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Join a vibrant community of UTM MSA students. Share your experiences, connect with peers, and build lasting memories together.
+                Help document and preserve the amazing moments from UTM MSA events. Your contributions become part of our community's digital legacy for future students to see.
               </p>
-              <div className="flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
-                <span>Join community</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="space-y-2">
+                <Link
+                  to="/gallery"
+                  className="inline-flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform hover:text-blue-700 block"
+                >
+                  <span>Browse our memories</span>
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+                <div className="text-sm text-blue-600">
+                  📸 50+ events documented • 1,200+ photos shared
+                </div>
               </div>
             </div>
           </div>
@@ -154,18 +250,26 @@ function Home() {
           <div className="group">
             <div className="bg-white p-10 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-100">
               <div className="relative mb-8">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                <div className="relative bg-gradient-to-r from-purple-500 to-pink-500 p-5 rounded-2xl w-fit mx-auto">
-                  <Star className="h-10 w-10 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity"></div>
+                <div className="relative bg-gradient-to-r from-green-600 to-emerald-500 p-5 rounded-2xl w-fit mx-auto">
+                  <Users className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">Get Featured</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Connect & Get Credit</h3>
               <p className="text-gray-600 leading-relaxed mb-6">
-                Your amazing moments could be the next big thing on our social media! Get featured and inspire others with your creativity.
+                Get tagged and credited when your content is featured! Connect with fellow students, build your photography/videography portfolio, and become known in the MSA community.
               </p>
-              <div className="flex items-center text-purple-600 font-semibold group-hover:translate-x-2 transition-transform">
-                <span>Get featured</span>
-                <ArrowRight className="h-4 w-4 ml-2" />
+              <div className="space-y-2">
+                <Link
+                  to="/upload"
+                  className="inline-flex items-center text-green-600 font-semibold group-hover:translate-x-2 transition-transform hover:text-green-700 block"
+                >
+                  <span>Start uploading now</span>
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+                <div className="text-sm text-green-600">
+                  ✨ Choose to be credited or stay anonymous
+                </div>
               </div>
             </div>
           </div>
@@ -250,6 +354,30 @@ function Home() {
             <span>Start Uploading Now</span>
             <ArrowRight className="h-5 w-5" />
           </Link>
+        </div>
+      </div>
+
+      {/* Sadaqa Jariyah Section */}
+      <div className="py-16 bg-gradient-to-r from-green-50 to-blue-50 border-t border-b border-green-200">
+        <div className="max-w-3xl mx-auto text-center px-4">
+          <div className="flex justify-center mb-4">
+            <Heart className="h-10 w-10 text-green-600" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Sadaqa Jariyah: Ongoing Charity</h2>
+          <p className="text-lg text-gray-700 mb-4">
+            Every photo or video you share can inspire, educate, and uplift others—long after the event is over. By contributing your memories, you’re taking part in <span className="font-semibold text-green-700">Sadaqa Jariyah</span> (ongoing charity):
+          </p>
+          <blockquote className="text-xl md:text-2xl text-gray-800 font-arabic leading-relaxed mb-2">
+            إِذَا مَاتَ الإِنسَانُ انْقَطَعَ عَمَلُهُ إِلاَّ مِنْ ثَلاَثَةٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ
+          </blockquote>
+          <p className="text-base text-gray-700 italic mb-2">
+            "When a person dies, all their deeds end except three: ongoing charity, beneficial knowledge, or a righteous child who prays for them." <span className="text-xs">(Muslim 1631)</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            <a href="https://sunnah.com/muslim:1631" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline transition-colors">
+              Sahih Muslim 1631
+            </a>
+          </p>
         </div>
       </div>
     </div>

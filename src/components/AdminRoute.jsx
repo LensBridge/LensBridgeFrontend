@@ -24,7 +24,6 @@ function AdminRoute({ children }) {
                                user.role === 'ROLE_ADMIN';
           
           setIsAdmin(hasAdminRole);
-          console.log('Admin check:', { user, hasAdminRole, authorities: user.authorities, roles: user.roles, role: user.role });
         } catch (error) {
           console.error('Error parsing user info:', error);
           setIsAuthenticated(false);

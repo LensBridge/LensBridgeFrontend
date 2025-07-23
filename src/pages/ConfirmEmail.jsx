@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Camera, Loader2, ArrowRight } from 'lucide-react';
+import API_CONFIG from '../config/api';
 
 function ConfirmEmail() {
   const [searchParams] = useSearchParams();
@@ -23,8 +24,8 @@ function ConfirmEmail() {
 
   const confirmEmail = async (confirmationToken) => {
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/verify-email`, {
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,7 +34,25 @@ function ConfirmEmail() {
         body: JSON.stringify({ token: confirmationToken })
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      // Try to parse response as JSON, but handle cases where it might not be JSON
+      let data;
+      try {
+        const responseText = await response.text();
+        console.log('Raw response:', responseText);
+        
+        // Try to parse as JSON if response has content
+        if (responseText.trim()) {
+          data = JSON.parse(responseText);
+        } else {
+          data = {};
+        }
+      } catch (parseError) {
+        console.log('Response is not JSON, treating as plain text');
+        data = { message: await response.text() };
+      }
 
       if (response.ok) {
         setStatus('success');
@@ -76,8 +95,7 @@ function ConfirmEmail() {
   const resendConfirmation = async () => {
     try {
       setStatus('loading');
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/resend-confirmation`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/resend-confirmation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
