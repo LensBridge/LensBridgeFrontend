@@ -356,6 +356,30 @@ function Home() {
           </Link>
         </div>
       </div>
+
+      {/* Sadaqa Jariyah Section */}
+      <div className="py-16 bg-gradient-to-r from-green-50 to-blue-50 border-t border-b border-green-200">
+        <div className="max-w-3xl mx-auto text-center px-4">
+          <div className="flex justify-center mb-4">
+            <Heart className="h-10 w-10 text-green-600" />
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Sadaqa Jariyah: Ongoing Charity</h2>
+          <p className="text-lg text-gray-700 mb-4">
+            Every photo or video you share can inspire, educate, and uplift others—long after the event is over. By contributing your memories, you’re taking part in <span className="font-semibold text-green-700">Sadaqa Jariyah</span> (ongoing charity):
+          </p>
+          <blockquote className="text-xl md:text-2xl text-gray-800 font-arabic leading-relaxed mb-2">
+            إِذَا مَاتَ الإِنسَانُ انْقَطَعَ عَمَلُهُ إِلاَّ مِنْ ثَلاَثَةٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ
+          </blockquote>
+          <p className="text-base text-gray-700 italic mb-2">
+            "When a person dies, all their deeds end except three: ongoing charity, beneficial knowledge, or a righteous child who prays for them." <span className="text-xs">(Muslim 1631)</span>
+          </p>
+          <p className="text-sm text-gray-600">
+            <a href="https://sunnah.com/muslim:1631" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline transition-colors">
+              Sahih Muslim 1631
+            </a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

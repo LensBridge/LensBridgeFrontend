@@ -648,22 +648,20 @@ function Upload() {
             <p className="text-gray-700 mb-4">
               Before uploading, take a moment to renew your niyyah:
             </p>
-            <div className="text-center mb-3">
-              <p className="text-2xl md:text-3xl text-gray-800 font-arabic leading-relaxed">
-                إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ
-              </p>
-            </div>
-            <blockquote className="text-base text-gray-800 font-medium italic mb-3">
-              "Actions are judged by intentions." – Prophet Muhammad ﷺ
+            <blockquote className="text-2xl md:text-3xl text-gray-800 font-arabic leading-relaxed mb-2 text-center">
+              إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ
             </blockquote>
-            <p className="text-xs text-gray-600">
+            <p className="text-base text-gray-700 italic mb-2 text-center">
+              "Actions are judged by intentions."
+            </p>
+            <p className="text-sm text-gray-600 text-center">
               <a 
                 href="https://sunnah.com/bukhari:1" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:text-blue-800 underline transition-colors"
               >
-                Sahih Bukhari 1
+                Sahih al-Bukhari 1
               </a>
             </p>
           </div>
