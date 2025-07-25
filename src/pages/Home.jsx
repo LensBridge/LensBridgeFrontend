@@ -290,7 +290,7 @@ function Home() {
             إِذَا مَاتَ الإِنسَانُ انْقَطَعَ عَمَلُهُ إِلاَّ مِنْ ثَلاَثَةٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ
           </blockquote>
           <p className="text-base text-gray-700 italic mb-2">
-            "When a person dies, all their deeds end except three: ongoing charity, beneficial knowledge, or a righteous child who prays for them." <span className="text-xs">(Muslim 1631)</span>
+            "When a man dies, his acts come to an end, but three, recurring charity, or knowledge (by which people) benefit, or a pious son, who prays for him (for the deceased)." <span className="text-xs">(Muslim 1631)</span>
           </p>
           <p className="text-sm text-gray-600">
             <a href="https://sunnah.com/muslim:1631" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline transition-colors">
