@@ -24,7 +24,7 @@ function AdminDashboard() {
 
   // Event Management State
   const [events, setEvents] = useState([]);
-  const [newEvent, setNewEvent] = useState({ eventName: '', eventDate: '', status: 'ONGOING' });
+  const [newEvent, setNewEvent] = useState({ eventName: '', eventDate: '', eventTime: '', status: 'ONGOING' });
   const [showCreateEvent, setShowCreateEvent] = useState(false);
 
   // Audit State
@@ -309,9 +309,21 @@ function AdminDashboard() {
 
   const createEvent = async () => {
     try {
+      // Combine date and time into ISO string
+      let isoDateTime = '';
+      if (newEvent.eventDate && newEvent.eventTime) {
+        // e.g. 2025-07-16 and 04:00 => 2025-07-16T04:00:00.000Z
+        const date = new Date(`${newEvent.eventDate}T${newEvent.eventTime}:00.000Z`);
+        isoDateTime = date.toISOString();
+      } else if (newEvent.eventDate) {
+        // Only date, fallback to midnight UTC
+        const date = new Date(`${newEvent.eventDate}T00:00:00.000Z`);
+        isoDateTime = date.toISOString();
+      }
+
       const formData = new URLSearchParams();
       formData.append('eventName', newEvent.eventName);
-      formData.append('eventDate', newEvent.eventDate);
+      formData.append('eventDate', isoDateTime);
       formData.append('status', newEvent.status);
 
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
@@ -328,7 +340,7 @@ function AdminDashboard() {
 
       const result = await response.json();
       showMessage(result.message);
-      setNewEvent({ eventName: '', eventDate: '', status: 'ONGOING' });
+      setNewEvent({ eventName: '', eventDate: '', eventTime: '', status: 'ONGOING' });
       setShowCreateEvent(false);
       fetchEvents();
     } catch (error) {
@@ -1307,7 +1319,7 @@ function AdminDashboard() {
         {showCreateEvent && (
           <div className="bg-gray-50 rounded-lg p-6">
             <h4 className="text-lg font-semibold text-gray-900 mb-4">Create New Event</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <input
                 type="text"
                 placeholder="Event Name"
@@ -1320,6 +1332,13 @@ function AdminDashboard() {
                 value={newEvent.eventDate}
                 onChange={(e) => setNewEvent({ ...newEvent, eventDate: e.target.value })}
                 className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <input
+                type="time"
+                value={newEvent.eventTime || ''}
+                onChange={(e) => setNewEvent({ ...newEvent, eventTime: e.target.value })}
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Event Time"
               />
               <select
                 value={newEvent.status}
@@ -1356,6 +1375,7 @@ function AdminDashboard() {
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-lg font-semibold text-gray-900">{event.name}</h4>
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                  event.status === 'UPCOMING' ? 'bg-yellow-100 text-yellow-800' :
                   event.status === 'ONGOING' ? 'bg-green-100 text-green-800' :
                   event.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
                   'bg-red-100 text-red-800'

@@ -283,13 +283,19 @@ function Upload() {
   };
 
   const formatDate = (dateString) => {
-    // Parse the date and interpret it as EST
-    const date = new Date(dateString + "T00:00:00-05:00"); // Force EST timezone
+    // Support ISO datetime strings with timezone (e.g. 2025-07-16T04:00:00.000+00:00)
+    // If dateString is just a date, fallback to EST
+    let date;
+    if (/T\d{2}:\d{2}:\d{2}/.test(dateString)) {
+      date = new Date(dateString);
+    } else {
+      date = new Date(dateString + "T00:00:00-05:00");
+    }
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
-      timeZone: "America/New_York", // EST/EDT timezone
+      timeZone: "America/New_York",
     });
   };
 
@@ -683,19 +689,19 @@ function Upload() {
                         <div className="flex items-center justify-between">
                           <span className="text-gray-900">{event.name}</span>
                           <div className="flex items-center space-x-2">
+                            <span className="text-sm text-gray-500">
+                              {formatDate(event.date)}
+                            </span>
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 event.status === "ONGOING"
-                                  ? "bg-green-100 text-green-800"
-                                  : event.status === "PAST"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-blue-100 text-blue-800"
+                                ? "bg-green-100 text-green-800"
+                                : event.status === "PAST"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {event.status}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {formatDate(event.date)}
                             </span>
                           </div>
                         </div>
