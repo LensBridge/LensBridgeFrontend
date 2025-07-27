@@ -378,7 +378,7 @@ function Upload() {
 
       if (!response.ok) {
         const errorData = await response.text();
-        throw new Error(`Upload failed: ${errorData}`);
+        throw new Error(`${errorData.message || "Upload failed"}`);
       }
 
       // Handle different response types from backend
@@ -411,7 +411,7 @@ function Upload() {
     } catch (error) {
       console.error("Upload error:", error);
       setIsUploading(false);
-      alert(`Upload failed: ${error.message}`);
+      alert(`${error.message}`);
     }
   };
 

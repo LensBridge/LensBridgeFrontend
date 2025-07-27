@@ -78,7 +78,7 @@ function Signup() {
           }
         });
       } else {
-        alert(data.error || 'Signup failed. Please try again.');
+        alert(data.message || 'Signup failed. Please try again.');
       }
     } catch (error) {
       console.error('Signup error:', error);
