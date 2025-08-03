@@ -239,26 +239,40 @@ function Upload() {
   if (uploadComplete) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-gray-200 p-10 text-center">
-          <div className="relative mb-8">
-            <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-sm opacity-20"></div>
-            <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto">
-              <Check className="h-10 w-10 text-white" />
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-green-50 opacity-60 rounded-3xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 p-12 text-center">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-lg opacity-20"></div>
+              <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto shadow-xl">
+                <Check className="h-12 w-12 text-white" />
+              </div>
             </div>
+            
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
+                <Check className="h-4 w-4" />
+                <span>Upload Complete</span>
+              </div>
+            </div>
+
+            <h2 className="text-4xl font-bold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text mb-6">
+              Upload Successful!
+            </h2>
+            
+            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+              Thank you for sharing your memories! We'll review your submission
+              and may feature it on our social media.
+            </p>
+            
+            <button
+              onClick={() => setUploadComplete(false)}
+              className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-4 rounded-xl hover:scale-105 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
+            >
+              <UploadIcon className="h-5 w-5" />
+              <span>Upload More</span>
+            </button>
           </div>
-          <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text mb-4">
-            Upload Successful!
-          </h2>
-          <p className="text-gray-600 mb-8 text-lg">
-            Thank you for sharing your memories! We'll review your submission
-            and may feature it on our social media.
-          </p>
-          <button
-            onClick={() => setUploadComplete(false)}
-            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-3 rounded-xl hover:scale-105 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl"
-          >
-            Upload More
-          </button>
         </div>
       </div>
     );
@@ -266,27 +280,55 @@ function Upload() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Bismillah */}
-      <div className="text-center mb-12">
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <img
-              src="/Bismillah_Calligraphy1.svg"
-              alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
-              className="h-20 md:h-24 lg:h-28 w-auto mx-auto"
-            />
+      {/* Header Section */}
+      <div className="relative overflow-hidden mb-12">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-60"></div>
+        <div className="relative text-center py-16">
+          <div className="mb-6">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+              <UploadIcon className="h-4 w-4" />
+              <span>Share Your Memories</span>
+            </div>
           </div>
-          <p className="text-lg md:text-xl lg:text-2xl text-gray-700 mt-4 font-medium">
-            In the name of Allah, the Most Gracious, the Most Merciful
+          
+          {/* Bismillah */}
+          <div className="mb-8">
+            <div className="flex justify-center mb-4">
+              <img
+                src="/Bismillah_Calligraphy1.svg"
+                alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
+                className="h-16 md:h-20 lg:h-24 w-auto mx-auto opacity-80"
+              />
+            </div>
+            <p className="text-sm md:text-base text-gray-600 font-medium italic">
+              In the name of Allah, the Most Gracious, the Most Merciful
+            </p>
+          </div>
+
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-green-600 to-blue-600 bg-clip-text mb-6">
+            Upload Your Media
+          </h1>
+          
+          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Share your UTM MSA event photos and videos with the community. 
+            <span className="block mt-2 text-base text-gray-500">
+              Choose whether to be credited or remain anonymous.
+            </span>
           </p>
+
+          {/* Visual Elements */}
+          <div className="flex justify-center items-center space-x-8 mt-8 opacity-60">
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-3 rounded-2xl">
+              <Image className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-3 rounded-2xl">
+              <Video className="h-6 w-6 text-green-600" />
+            </div>
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-3 rounded-2xl">
+              <Users className="h-6 w-6 text-blue-600" />
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Upload Your Media
-        </h1>
-        <p className="text-gray-600">
-          Share your UTM MSA event photos and videos with the community. Choose
-          whether to be credited or remain anonymous.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
