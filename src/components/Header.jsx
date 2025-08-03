@@ -1,64 +1,25 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, logout, isAdmin } = useAuth();
 
-  // Check for user authentication on component mount and when localStorage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const userInfo = localStorage.getItem('user');
-      
-      if (token && userInfo) {
-        try {
-          setUser(JSON.parse(userInfo));
-        } catch (error) {
-          console.error('Error parsing user info:', error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
-    checkAuth();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    window.addEventListener('storage', checkAuth);
-    
-    // Listen for custom auth changes (when user logs in/out in same tab)
-    window.addEventListener('auth-change', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth-change', checkAuth);
-    };
-  }, []);
-
-  const isAdmin = (user) => {
-    return user && (
-      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
-      user.role === 'ROLE_ADMIN'
-    );
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('tokenType');
-    localStorage.removeItem('user');
-    setUser(null);
-    
-    // Trigger a custom event to update auth state immediately
-    window.dispatchEvent(new Event('auth-change'));
-    
-    navigate('/');
-    setIsMobileMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, navigate to home
+      navigate('/');
+    } finally {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   const isActive = (path) => {
@@ -125,7 +86,7 @@ function Header() {
             {user ? (
               <>
                 {/* Admin Dashboard Link (only for admins) */}
-                {isAdmin(user) && (
+                {isAdmin() && (
                   <Link
                     to="/admin"
                     className={`group relative flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
@@ -148,7 +109,7 @@ function Header() {
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-900">
                       {user.firstName} {user.lastName}
-                      {isAdmin(user) && (
+                      {isAdmin() && (
                         <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
                           Admin
                         </span>
@@ -157,9 +118,9 @@ function Header() {
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
                   <div className="relative">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                    <div className={`relative bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
-                      {isAdmin(user) ? (
+                    <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
+                    <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
+                      {isAdmin() ? (
                         <Shield className="h-5 w-5 text-white" />
                       ) : (
                         <User className="h-5 w-5 text-white" />
@@ -235,7 +196,7 @@ function Header() {
               })}
               
               {/* Admin Dashboard Link in Mobile (only for admins) */}
-              {user && isAdmin(user) && (
+              {user && isAdmin() && (
                 <Link
                   to="/admin"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -253,11 +214,11 @@ function Header() {
               {user ? (
                 <>
                   {/* User Info in Mobile */}
-                  <div className={`flex items-center space-x-3 px-4 py-3 ${isAdmin(user) ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl`}>
+                  <div className={`flex items-center space-x-3 px-4 py-3 ${isAdmin() ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl`}>
                     <div className="relative">
-                      <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                      <div className={`relative bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
-                        {isAdmin(user) ? (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
+                      <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
+                        {isAdmin() ? (
                           <Shield className="h-4 w-4 text-white" />
                         ) : (
                           <User className="h-4 w-4 text-white" />
@@ -267,7 +228,7 @@ function Header() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {user.firstName} {user.lastName}
-                        {isAdmin(user) && (
+                        {isAdmin() && (
                           <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
                             Admin
                           </span>

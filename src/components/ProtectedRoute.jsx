@@ -1,43 +1,9 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 function ProtectedRoute({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const userInfo = localStorage.getItem('user');
-      
-      if (token && userInfo) {
-        try {
-          JSON.parse(userInfo); // Validate user info is valid JSON
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error('Error parsing user info:', error);
-          setIsAuthenticated(false);
-        }
-      } else {
-        setIsAuthenticated(false);
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    window.addEventListener('storage', checkAuth);
-    
-    // Listen for custom auth changes (when user logs in/out in same tab)
-    window.addEventListener('auth-change', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth-change', checkAuth);
-    };
-  }, []);
 
   if (isLoading) {
     return (

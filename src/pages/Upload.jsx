@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import heic2any from "heic2any";
 import API_CONFIG from "../config/api";
+import { useAuth } from "../context/AuthContext";
 
 // Test if heic2any is working
 console.log("heic2any library loaded:", typeof heic2any);
@@ -32,27 +33,14 @@ function Upload() {
     consent: false,
   });
   const fileInputRef = useRef(null);
+  const { makeAuthenticatedRequest, user, isAuthenticated } = useAuth();
 
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
-      const token = localStorage.getItem("token");
-      const tokenType = localStorage.getItem("tokenType") || "Bearer";
 
-      const headers = {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      };
-
-      if (token) {
-        headers["Authorization"] = `${tokenType} ${token}`;
-      }
-
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`,
-        {
-          headers,
-        }
+      const response = await makeAuthenticatedRequest(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`
       );
 
       if (!response.ok) {
@@ -72,17 +60,6 @@ function Upload() {
   // Fetch events when component mounts
   useEffect(() => {
     fetchEventsFromAPI();
-
-    // Auto-populate user info from authentication
-    const userInfo = localStorage.getItem("user");
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo);
-        // No need to auto-populate name and email anymore since they're removed
-      } catch (error) {
-        console.error("Error parsing user info:", error);
-      }
-    }
   }, []);
 
   const handleDragOver = (e) => {
@@ -304,10 +281,7 @@ function Upload() {
     if (files.length === 0 || !formData.consent || !formData.eventId) return;
 
     // Validate authentication before starting upload
-    const token = localStorage.getItem("token");
-    const userInfo = localStorage.getItem("user");
-
-    if (!token || !userInfo) {
+    if (!isAuthenticated || !user) {
       alert("Authentication expired. Please sign in again.");
       window.location.href = "/login";
       return;
@@ -316,9 +290,6 @@ function Upload() {
     setIsUploading(true);
 
     try {
-      // For Spring Boot endpoint with @PathVariable and @RequestParam,
-      // we send individual form parameters instead of a JSON object.
-
       // Create FormData for multipart request
       const uploadData = new FormData();
 
@@ -360,25 +331,16 @@ function Upload() {
       // Add anon parameter (required, so always send it)
       uploadData.append("anon", formData.isAnon);
 
-      // Get authentication token
-      const tokenType = localStorage.getItem("tokenType") || "Bearer";
-
-      // For FormData uploads, don't set Content-Type - let browser set it automatically
-      const headers = {
-        "ngrok-skip-browser-warning": "true",
-      };
-
-      if (token) {
-        headers["Authorization"] = `${tokenType} ${token}`;
-      }
-
-      // Make actual API call to Spring Boot backend with eventId in path
-      const response = await fetch(
+      // Make API call using auth service
+      const response = await makeAuthenticatedRequest(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`,
         {
           method: "POST",
-          headers,
           body: uploadData,
+          // Don't set Content-Type for FormData - let browser set it automatically
+          headers: {
+            // Remove Content-Type to let browser set it automatically for FormData
+          },
         }
       );
 

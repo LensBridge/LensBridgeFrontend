@@ -23,7 +23,7 @@ function Gallery() {
   const [pageable, setPageable] = useState({
     page: 0,
     size: 12,
-    sort: 'date,desc'
+    sort: 'createdDate,desc'
   });
 
   // HEIC conversion utility

@@ -8,9 +8,10 @@ import {
   XCircle, StarOff
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
+import { useAuth } from '../context/AuthContext';
 
 function AdminDashboard() {
-  const [user, setUser] = useState(null);
+  const { user, makeAuthenticatedRequest, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('uploads');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,32 +68,22 @@ function AdminDashboard() {
   const [showMediaViewer, setShowMediaViewer] = useState(false);
 
   useEffect(() => {
-    const userInfo = localStorage.getItem('user');
-    if (userInfo) {
-      try {
-        const parsedUser = JSON.parse(userInfo);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user info:', error);
-      }
-    }
-    
     // Load initial data
     fetchUploads();
     fetchEvents();
     fetchAuditActions();
-    if (hasRootPermissions(user)) {
+    if (hasRootPermissions()) {
       fetchAvailableRoles();
     }
     if (activeTab === 'audit') {
       fetchAudits();
-    } else if (activeTab === 'users' && hasRootPermissions(user)) {
+    } else if (activeTab === 'users' && hasRootPermissions()) {
       fetchUsers();
     }
   }, []);
 
   // Helper function to check if user has ROLE_ROOT permissions
-  const hasRootPermissions = (user) => {
+  const hasRootPermissions = () => {
     if (!user) return false;
     
     return (
@@ -103,24 +94,13 @@ function AdminDashboard() {
   };
 
   // Helper function to check if user has admin permissions (ROLE_ADMIN or ROLE_ROOT)
-  const hasAdminPermissions = (user) => {
+  const hasAdminPermissions = () => {
     if (!user) return false;
     
     return (
-      hasRootPermissions(user) ||
-      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
-      user.role === 'ROLE_ADMIN'
+      hasRootPermissions() ||
+      isAdmin()
     );
-  };
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...API_CONFIG.HEADERS
-    };
   };
 
   const showMessage = (message, isError = false) => {
@@ -162,9 +142,7 @@ function AdminDashboard() {
           endpoint = '/api/admin/uploads';
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch uploads');
 
@@ -185,13 +163,12 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [uploadPage, uploadSize, uploadFilter]);
+  }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
 
   const approveUpload = async (uploadId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'POST',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -211,9 +188,8 @@ function AdminDashboard() {
     if (!confirm('Are you sure you want to delete this upload?')) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) throw new Error('Failed to delete upload');
@@ -228,9 +204,8 @@ function AdminDashboard() {
 
   const featureUpload = async (uploadId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
-        method: 'POST',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -250,9 +225,8 @@ function AdminDashboard() {
     if (!confirm('Are you sure you want to unapprove this upload?')) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -272,9 +246,8 @@ function AdminDashboard() {
     if (!confirm('Are you sure you want to unfeature this upload?')) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -293,9 +266,7 @@ function AdminDashboard() {
   // Event Management Functions
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/events`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/events`);
 
       if (!response.ok) throw new Error('Failed to fetch events');
 
@@ -326,12 +297,10 @@ function AdminDashboard() {
       formData.append('eventDate', isoDateTime);
       formData.append('status', newEvent.status);
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...API_CONFIG.HEADERS
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData
       });
@@ -367,9 +336,7 @@ function AdminDashboard() {
         queryParams.append('end', dateRange.end);
       }
 
-      const response = await fetch(`${url}?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${url}?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch audit logs');
 
@@ -380,13 +347,11 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [auditPage, auditSize, selectedAction, dateRange]);
+  }, [auditPage, auditSize, selectedAction, dateRange, makeAuthenticatedRequest]);
 
   const fetchAuditActions = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`);
 
       if (!response.ok) throw new Error('Failed to fetch audit actions');
 
@@ -413,9 +378,7 @@ function AdminDashboard() {
         queryParams.append('search', searchTerm.trim());
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch users');
 
@@ -426,7 +389,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [userPage, userSize, userSearchTerm, user]);
+  }, [userPage, userSize, userSearchTerm, user, makeAuthenticatedRequest]);
 
   const handleUserSearch = (searchTerm) => {
     setUserSearchTerm(searchTerm);
@@ -438,9 +401,7 @@ function AdminDashboard() {
     if (!hasRootPermissions(user)) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`);
 
       if (!response.ok) throw new Error('Failed to fetch roles');
 
@@ -456,9 +417,8 @@ function AdminDashboard() {
 
   const createUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(newUser)
       });
 
@@ -479,9 +439,8 @@ function AdminDashboard() {
 
   const addRoleToUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(selectedRole)
       });
 
@@ -502,9 +461,8 @@ function AdminDashboard() {
 
   const removeRoleFromUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(selectedRole)
       });
 
@@ -526,9 +484,8 @@ function AdminDashboard() {
 
   const verifyUser = async (userId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ userId })
       });
 

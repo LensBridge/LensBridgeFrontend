@@ -121,3 +121,4 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
 /email-templates/*
+admin-update-guide.js

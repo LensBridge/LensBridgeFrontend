@@ -1,54 +1,10 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Shield } from 'lucide-react';
 
 function AdminRoute({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const location = useLocation();
-
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const userInfo = localStorage.getItem('user');
-      
-      if (token && userInfo) {
-        try {
-          const user = JSON.parse(userInfo);
-          setIsAuthenticated(true);
-          
-          // Check if user has ROLE_ADMIN
-          const hasAdminRole = user.authorities?.some(auth => auth.authority === 'ROLE_ADMIN') ||
-                               user.roles?.some(role => role === 'ROLE_ADMIN') ||
-                               user.role === 'ROLE_ADMIN';
-          
-          setIsAdmin(hasAdminRole);
-        } catch (error) {
-          console.error('Error parsing user info:', error);
-          setIsAuthenticated(false);
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAuthenticated(false);
-        setIsAdmin(false);
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    window.addEventListener('storage', checkAuth);
-    
-    // Listen for custom auth changes (when user logs in/out in same tab)
-    window.addEventListener('auth-change', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth-change', checkAuth);
-    };
-  }, []);
 
   if (isLoading) {
     return (
@@ -66,7 +22,7 @@ function AdminRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!isAdmin) {
+  if (!isAdmin()) {
     // Show access denied for non-admin users
     return (
       <div className="flex-1 flex items-center justify-center py-8">
