@@ -9,6 +9,7 @@ import {
   ChevronDown,
   RefreshCw,
   Users,
+  Calendar,
 } from "lucide-react";
 import API_CONFIG from "../config/api";
 import { useAuth } from "../context/AuthContext";
@@ -185,7 +186,7 @@ function Upload() {
       });
 
       // Add form fields
-      if (formData.instagram) {
+      if (formData.instagram && !formData.isAnon) {
         uploadData.append("instagramHandle", formData.instagram);
       }
       if (formData.description) {
@@ -461,57 +462,18 @@ function Upload() {
           )}
         </div>
 
-        {/* Form Section */}
+        {/* User Details Section */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
           <div className="flex items-center space-x-3 mb-6">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Users className="h-6 w-6 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
-              Event Details
+              User Details
             </h2>
           </div>
 
           <div className="space-y-6">
-            {/* Instagram Handle */}
-            <div>
-              <label
-                htmlFor="instagram"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Instagram Handle
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  @
-                </span>
-                <input
-                  type="text"
-                  id="instagram"
-                  name="instagram"
-                  value={formData.instagram}
-                  onChange={handleInputChange}
-                  className={`w-full pl-8 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    validationErrors.instagram
-                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
-                      : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
-                  }`}
-                  placeholder="your_instagram_handle"
-                />
-              </div>
-              {validationErrors.instagram && (
-                <p className="text-xs text-red-600 mt-1 flex items-center">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  {validationErrors.instagram}
-                </p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Optional - Only provide if you'd like to be tagged when your
-                content is featured on our social media. Only letters, numbers,
-                dots, and underscores allowed (max 30 characters).
-              </p>
-            </div>
-
             {/* Anonymous Mode */}
             <div>
               <label className="flex items-start space-x-3">
@@ -533,10 +495,71 @@ function Upload() {
                 </div>
               </label>
             </div>
+
+            {/* Instagram Handle */}
+            <div>
+              <label
+                htmlFor="instagram"
+                className={`block text-sm font-medium mb-2 transition-colors ${
+                  formData.isAnon ? 'text-gray-400' : 'text-gray-700'
+                }`}
+              >
+                Instagram Handle
+              </label>
+              <div className="relative">
+                <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                  formData.isAnon ? 'text-gray-300' : 'text-gray-500'
+                }`}>
+                  @
+                </span>
+                <input
+                  type="text"
+                  id="instagram"
+                  name="instagram"
+                  value={formData.isAnon ? '' : formData.instagram}
+                  onChange={handleInputChange}
+                  disabled={formData.isAnon}
+                  className={`w-full pl-8 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                    formData.isAnon
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      : validationErrors.instagram
+                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                      : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
+                  }`}
+                  placeholder={formData.isAnon ? 'Hidden for anonymous submissions' : 'your_instagram_handle'}
+                />
+              </div>
+              {validationErrors.instagram && !formData.isAnon && (
+                <p className="text-xs text-red-600 mt-1 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {validationErrors.instagram}
+                </p>
+              )}
+              <p className={`text-xs mt-1 transition-colors ${
+                formData.isAnon ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {formData.isAnon 
+                  ? 'Instagram handle is disabled for anonymous submissions'
+                  : 'Optional - Only provide if you\'d like to be tagged when your content is featured on our social media. Only letters, numbers, dots, and underscores allowed (max 30 characters).'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Details Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+              <Calendar className="h-6 w-6 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Event Details
+            </h2>
           </div>
 
           {/* Event Dropdown */}
-          <div className="mt-6">
+          <div>
             <label
               htmlFor="event"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -607,9 +630,16 @@ function Upload() {
                 </div>
               )}
             </div>
+            {validationErrors.event && (
+              <p className="text-xs text-red-600 mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {validationErrors.event}
+              </p>
+            )}
           </div>
 
-          <div className="mt-6">
+          {/* Description */}
+          <div>
             <label
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-2"

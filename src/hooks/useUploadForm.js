@@ -30,10 +30,12 @@ export const useUploadForm = () => {
   const validateForm = useCallback(() => {
     const errors = {};
 
-    // Instagram validation
-    const instagramError = validateInstagram(formData.instagram);
-    if (instagramError) {
-      errors.instagram = instagramError;
+    // Instagram validation (only if not anonymous)
+    if (!formData.isAnon) {
+      const instagramError = validateInstagram(formData.instagram);
+      if (instagramError) {
+        errors.instagram = instagramError;
+      }
     }
 
     // Required fields
@@ -67,10 +69,26 @@ export const useUploadForm = () => {
       }
     }
 
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    // Special handling for anonymous mode
+    if (field === 'isAnon' && value === true) {
+      // Clear Instagram field when enabling anonymous mode
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        instagram: '', // Clear Instagram handle
+      }));
+      // Also clear any Instagram validation errors
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.instagram;
+        return newErrors;
+      });
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
   }, [validationErrors]);
 
   const resetForm = useCallback(() => {
