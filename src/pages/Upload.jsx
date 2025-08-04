@@ -281,10 +281,10 @@ function Upload() {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header Section */}
-      <div className="relative overflow-hidden mb-12">
+      <div className="relative overflow-hidden mb-8">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-60"></div>
-        <div className="relative text-center py-16">
-          <div className="mb-6">
+        <div className="relative text-center py-10">
+          <div className="mb-4">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               <UploadIcon className="h-4 w-4" />
               <span>Share Your Memories</span>
@@ -292,46 +292,46 @@ function Upload() {
           </div>
           
           {/* Bismillah */}
-          <div className="mb-8">
-            <div className="flex justify-center mb-4">
+          <div className="mb-6">
+            <div className="flex justify-center mb-3">
               <img
                 src="/Bismillah_Calligraphy1.svg"
                 alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
-                className="h-16 md:h-20 lg:h-24 w-auto mx-auto opacity-80"
+                className="h-14 md:h-16 lg:h-18 w-auto mx-auto opacity-80"
               />
             </div>
-            <p className="text-sm md:text-base text-gray-600 font-medium italic">
+            <p className="text-sm text-gray-600 font-medium italic">
               In the name of Allah, the Most Gracious, the Most Merciful
             </p>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-green-600 to-blue-600 bg-clip-text mb-6">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-green-600 to-blue-600 bg-clip-text mb-4">
             Upload Your Media
           </h1>
           
-          <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Share your UTM MSA event photos and videos with the community. 
-            <span className="block mt-2 text-base text-gray-500">
+            <span className="block mt-1 text-sm text-gray-500">
               Choose whether to be credited or remain anonymous.
             </span>
           </p>
 
           {/* Visual Elements */}
-          <div className="flex justify-center items-center space-x-8 mt-8 opacity-60">
-            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-3 rounded-2xl">
-              <Image className="h-6 w-6 text-blue-600" />
+          <div className="flex justify-center items-center space-x-6 mt-6 opacity-60">
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+              <Image className="h-5 w-5 text-blue-600" />
             </div>
-            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-3 rounded-2xl">
-              <Video className="h-6 w-6 text-green-600" />
+            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-2 rounded-xl">
+              <Video className="h-5 w-5 text-green-600" />
             </div>
-            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-3 rounded-2xl">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+              <Users className="h-5 w-5 text-blue-600" />
             </div>
           </div>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6">
         {/* Error Display */}
         {(errors.fetch || errors.upload || fileErrors.length > 0) && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -382,18 +382,18 @@ function Upload() {
         )}
 
         {/* File Upload Area */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
-              <UploadIcon className="h-6 w-6 text-white" />
+              <UploadIcon className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               Select Files
             </h2>
           </div>
 
           <div
-            className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
+            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
               isDragging
                 ? "border-blue-500 bg-gradient-to-br from-blue-50 to-green-50 scale-105"
                 : "border-gray-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50"
@@ -441,7 +441,7 @@ function Upload() {
           </div>
 
           {files.length > 0 && (
-            <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
                   <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl">
@@ -495,7 +495,7 @@ function Upload() {
                   >
                     <X className="h-4 w-4" />
                   </button>
-                  <p className="text-sm text-gray-700 mt-3 truncate font-medium text-center">
+                  <p className="text-xs text-gray-700 mt-2 truncate font-medium text-center">
                     {file.file.name}
                   </p>
                 </div>
@@ -505,17 +505,17 @@ function Upload() {
         </div>
 
         {/* User Details Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
-              <Users className="h-6 w-6 text-white" />
+              <Users className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               User Details
             </h2>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Anonymous Mode */}
             <div>
               <label className="flex items-start space-x-3">
@@ -590,12 +590,12 @@ function Upload() {
         </div>
 
         {/* Event Details Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
-              <Calendar className="h-6 w-6 text-white" />
+              <Calendar className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               Event Details
             </h2>
           </div>
@@ -702,18 +702,18 @@ function Upload() {
         </div>
 
         {/* Terms and Consent Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex items-center space-x-3 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
-              <Check className="h-6 w-6 text-white" />
+              <Check className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900">
               Terms & Consent
             </h2>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Media Usage Agreement</h3>
+          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 p-4 mb-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Media Usage Agreement</h3>
             <div className="text-sm text-gray-700 space-y-2">
               <p>By uploading your media, you agree that:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
@@ -758,7 +758,7 @@ function Upload() {
         </div>
 
         {/* Intention Renewal Reminder */}
-        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 p-8 text-center shadow-xl">
+        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 p-6 text-center shadow-xl">
           <div className="mb-6">
             <div className="bg-gradient-to-r from-green-600 to-blue-600 p-3 rounded-full w-fit mx-auto mb-4">
               <span className="text-2xl">🤲</span>

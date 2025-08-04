@@ -80,6 +80,40 @@ function AdminDashboard() {
     } else if (activeTab === 'users' && hasRootPermissions()) {
       fetchUsers();
     }
+
+    // Add keyboard shortcuts
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r':
+            e.preventDefault();
+            fetchUploads();
+            showMessage('🔄 Refreshed uploads');
+            break;
+          case '1':
+            e.preventDefault();
+            setActiveTab('uploads');
+            break;
+          case '2':
+            e.preventDefault();
+            setActiveTab('events');
+            break;
+          case '3':
+            e.preventDefault();
+            if (hasAdminPermissions()) setActiveTab('audit');
+            break;
+          case '4':
+            e.preventDefault();
+            if (hasRootPermissions()) setActiveTab('users');
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
   }, []);
 
   // Helper function to check if user has ROLE_ROOT permissions
@@ -185,7 +219,10 @@ function AdminDashboard() {
   };
 
   const deleteUpload = async (uploadId) => {
-    if (!confirm('Are you sure you want to delete this upload?')) return;
+    const upload = uploads.content.find(u => u.uuid === uploadId);
+    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
+    
+    if (!confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) return;
     
     try {
       const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
@@ -195,10 +232,10 @@ function AdminDashboard() {
       if (!response.ok) throw new Error('Failed to delete upload');
 
       const result = await response.json();
-      showMessage(result.message);
+      showMessage(`🗑️ ${result.message}`);
       fetchUploads();
     } catch (error) {
-      showMessage('Failed to delete upload', true);
+      showMessage('❌ Failed to delete upload', true);
     }
   };
 
@@ -222,7 +259,10 @@ function AdminDashboard() {
   };
 
   const unapproveUpload = async (uploadId) => {
-    if (!confirm('Are you sure you want to unapprove this upload?')) return;
+    const upload = uploads.content.find(u => u.uuid === uploadId);
+    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
+    
+    if (!confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) return;
     
     try {
       const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
@@ -235,10 +275,10 @@ function AdminDashboard() {
       }
 
       const result = await response.json();
-      showMessage(result.message);
+      showMessage(`⏪ ${result.message}`);
       fetchUploads();
     } catch (error) {
-      showMessage(error.message, true);
+      showMessage(`❌ ${error.message}`, true);
     }
   };
 
@@ -619,18 +659,34 @@ function AdminDashboard() {
               </span>
             )}
           </p>
+          {/* Quick Actions */}
+          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+R</kbd>
+            <span className="text-xs text-gray-500">Refresh</span>
+            <span className="text-gray-300 mx-2">•</span>
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+1-4</kbd>
+            <span className="text-xs text-gray-500">Switch tabs</span>
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Enhanced Messages */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center space-x-2">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-          {success}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center space-x-2">
+          <CheckCircle className="h-5 w-5 flex-shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+      {loading && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span>Processing your request...</span>
         </div>
       )}
 
@@ -857,10 +913,25 @@ function AdminDashboard() {
   }
 
   function renderUploadsTab() {
+    const pendingCount = stats.totalUploads - stats.approvedUploads;
+    const approvalRate = stats.totalUploads > 0 ? Math.round((stats.approvedUploads / stats.totalUploads) * 100) : 0;
+    
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-900">Upload Management</h3>
+        {/* Enhanced Header with Mini Stats */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Upload Management</h3>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+              <span>📊 {approvalRate}% approval rate</span>
+              {pendingCount > 0 && (
+                <span className="text-orange-600 font-medium">
+                  ⏳ {pendingCount} pending review
+                </span>
+              )}
+              <span>🎯 {stats.featuredUploads} featured</span>
+            </div>
+          </div>
           <button
             onClick={() => fetchUploads()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
