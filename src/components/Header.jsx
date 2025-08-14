@@ -106,7 +106,10 @@ function Header() {
                 
                 {/* User Info */}
                 <div className="flex items-center space-x-3">
-                  <div className="text-right">
+                  <Link
+                    to="/profile"
+                    className="text-right hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                  >
                     <p className="text-sm font-medium text-gray-900">
                       {user.firstName} {user.lastName}
                       {isAdmin() && (
@@ -116,17 +119,17 @@ function Header() {
                       )}
                     </p>
                     <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                  <div className="relative">
+                  </Link>
+                  <Link to="/profile" className="relative">
                     <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                    <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
+                    <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full hover:scale-105 transition-transform`}>
                       {isAdmin() ? (
                         <Shield className="h-5 w-5 text-white" />
                       ) : (
                         <User className="h-5 w-5 text-white" />
                       )}
                     </div>
-                  </div>
+                  </Link>
                 </div>
                 {/* Logout Button */}
                 <button
@@ -214,7 +217,11 @@ function Header() {
               {user ? (
                 <>
                   {/* User Info in Mobile */}
-                  <div className={`flex items-center space-x-3 px-4 py-3 ${isAdmin() ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl`}>
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center space-x-3 px-4 py-3 ${isAdmin() ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl hover:bg-opacity-80 transition-colors`}
+                  >
                     <div className="relative">
                       <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
                       <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
@@ -235,8 +242,9 @@ function Header() {
                         )}
                       </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-xs text-blue-600 font-medium">View Profile</p>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"

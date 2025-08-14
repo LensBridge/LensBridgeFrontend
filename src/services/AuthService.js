@@ -357,6 +357,17 @@ class AuthService {
     }
   }
 
+  // Update stored user information
+  updateStoredUser(updatedUser) {
+    try {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Trigger auth change event to sync across components
+      window.dispatchEvent(new Event('auth-change'));
+    } catch (error) {
+      console.error('Error updating stored user:', error);
+    }
+  }
+
   // Get access token
   getAccessToken() {
     return localStorage.getItem('accessToken') || localStorage.getItem('token'); // Support legacy token key

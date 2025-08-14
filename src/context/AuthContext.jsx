@@ -18,6 +18,11 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: null,
       };
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        user: action.payload,
+      };
     case 'LOGOUT':
       return {
         ...state,
@@ -195,6 +200,16 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: 'CLEAR_ERROR' });
   }, []);
 
+  // Update user information
+  const updateUser = useCallback((updatedUser) => {
+    dispatch({ 
+      type: 'UPDATE_USER', 
+      payload: updatedUser 
+    });
+    // Update in local storage as well
+    AuthService.updateStoredUser(updatedUser);
+  }, []);
+
   // Make authenticated requests
   const makeAuthenticatedRequest = useCallback(async (url, options = {}) => {
     return await AuthService.makeRequest(url, options);
@@ -205,6 +220,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     logoutAllDevices,
+    updateUser,
     isAdmin,
     clearError,
     makeAuthenticatedRequest,

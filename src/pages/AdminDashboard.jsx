@@ -586,9 +586,9 @@ function AdminDashboard() {
     return null;
   };
 
-  const downloadFile = async (fileUrl, fileName) => {
+  const downloadFile = async (secureUrl, fileName) => {
     try {
-      const response = await fetch(fileUrl);
+      const response = await fetch(secureUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -781,13 +781,13 @@ function AdminDashboard() {
             <div className="relative max-w-full max-h-full">
               {selectedMedia.contentType === 'IMAGE' ? (
                 <img
-                  src={selectedMedia.fileUrl}
+                  src={selectedMedia.secureUrl}
                   alt={selectedMedia.fileName}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               ) : selectedMedia.contentType === 'VIDEO' ? (
                 <video
-                  src={selectedMedia.fileUrl}
+                  src={selectedMedia.secureUrl}
                   controls
                   autoPlay
                   className="max-w-full max-h-full object-contain rounded-lg"
@@ -806,7 +806,7 @@ function AdminDashboard() {
                       Preview not available for this file type
                     </p>
                     <button
-                      onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                      onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 mx-auto"
                     >
                       <DownloadIcon className="h-4 w-4" />
@@ -836,7 +836,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                    onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
                     className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                   >
                     <DownloadIcon className="h-4 w-4" />
@@ -1013,11 +1013,11 @@ function AdminDashboard() {
                           onClick={() => openMediaViewer(upload)}
                         >
                           {upload.contentType === 'IMAGE' ? (
-                            <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                            <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
                           ) : upload.contentType === 'VIDEO' ? (
                             <div className="h-full w-full relative">
                               <video 
-                                src={upload.fileUrl} 
+                                src={upload.secureUrl} 
                                 className="h-full w-full object-cover"
                                 muted
                               />
@@ -1101,7 +1101,7 @@ function AdminDashboard() {
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex space-x-1">
                         <button
-                          onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                          onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
                           className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
                           title="Download"
                         >
@@ -1168,11 +1168,11 @@ function AdminDashboard() {
                   onClick={() => openMediaViewer(upload)}
                 >
                   {upload.contentType === 'IMAGE' ? (
-                    <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                    <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
                   ) : upload.contentType === 'VIDEO' ? (
                     <div className="h-full w-full relative">
                       <video 
-                        src={upload.fileUrl} 
+                        src={upload.secureUrl} 
                         className="h-full w-full object-cover"
                         muted
                       />
@@ -1241,7 +1241,7 @@ function AdminDashboard() {
                   {/* Actions */}
                   <div className="flex space-x-2 mt-3 flex-wrap">
                     <button
-                      onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                      onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
                       className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                     >
                       <DownloadIcon className="h-3 w-3" />
