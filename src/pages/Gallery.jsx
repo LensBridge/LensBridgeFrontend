@@ -1,291 +1,116 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Image, Video, Calendar, User, Star, Share2, Award, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
-import heic2any from 'heic2any';
-import API_CONFIG from '../config/api';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Search, Filter, Image, Video, Calendar, User, Star, Share2, Award, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause, RefreshCw } from 'lucide-react';
+import { useGallery } from '../hooks/useGallery';
+import { useMediaViewer } from '../hooks/useMediaViewer';
+import { useGalleryFilters } from '../hooks/useGalleryFilters';
 
 function Gallery() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
-  const [galleryItems, setGalleryItems] = useState([]);
   const [hoveredItem, setHoveredItem] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPaginating, setIsPaginating] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(12);
-  const [totalPages, setTotalPages] = useState(0);
-  const [totalElements, setTotalElements] = useState(0);
-  const [pageable, setPageable] = useState({
-    page: 0,
-    size: 12,
-    sort: 'date,desc'
-  });
+  // Custom hooks for functionality
+  const {
+    galleryItems,
+    isLoading,
+    isPaginating,
+    error,
+    totalPages,
+    totalElements,
+    currentPage,
+    pageSize,
+    fetchGalleryData,
+    handlePageChange,
+    handlePageSizeChange,
+    cleanupUrls,
+    setError
+  } = useGallery();
 
-  // HEIC conversion utility
-  const convertHeicToJpeg = async (imageUrl) => {
-    try {
-      console.log('Converting HEIC image:', imageUrl);
-      
-      // Check if heic2any library is available
-      if (!heic2any) {
-        console.warn('heic2any library not available, returning original URL');
-        return imageUrl;
-      }
-      
-      // Fetch the HEIC file
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      
-      // Check if it's actually a HEIC file
-      if (!blob.type.includes('heic') && !blob.type.includes('heif')) {
-        console.log('Not a HEIC file, returning original URL');
-        return imageUrl;
-      }
-      
-      console.log('Converting HEIC blob to JPEG...');
-      
-      // Convert HEIC to JPEG
-      const convertedBlob = await heic2any({
-        blob: blob,
-        toType: 'image/jpeg',
-        quality: 0.8
-      });
-      
-      // Create object URL for the converted image
-      const convertedUrl = URL.createObjectURL(convertedBlob);
-      console.log('HEIC conversion successful:', convertedUrl);
-      
-      return convertedUrl;
-    } catch (error) {
-      console.error('Error converting HEIC image:', error);
-      // Return original URL as fallback
-      return imageUrl;
-    }
-  };
+  const {
+    searchTerm,
+    searchInput,
+    selectedFilter,
+    handleSearchChange,
+    handleFilterChange,
+    clearFilters
+  } = useGalleryFilters();
 
-  // Process gallery items to convert HEIC images
-  const processGalleryItems = async (items) => {
-    const processedItems = await Promise.all(
-      items.map(async (item) => {
-        if (item.type === 'image' && (item.src.toLowerCase().includes('.heic') || item.src.toLowerCase().includes('.heif'))) {
-          const convertedSrc = await convertHeicToJpeg(item.src);
-          return { ...item, src: convertedSrc, originalSrc: item.src };
-        }
-        return item;
-      })
-    );
-    
-    return processedItems;
-  };
+  const {
+    selectedItem,
+    currentIndex,
+    isVideoPlaying,
+    openViewer,
+    closeViewer,
+    navigateViewer,
+    toggleVideoPlayback
+  } = useMediaViewer(galleryItems);
 
-  // Fetch gallery data from API with pagination
+  // Fetch gallery data whenever filters or pagination changes
   useEffect(() => {
-    const fetchGalleryData = async () => {
-      try {
-        // Show full loading for initial load, pagination loading for page changes
-        if (galleryItems.length === 0) {
-          setIsLoading(true);
-        } else {
-          setIsPaginating(true);
-        }
-        setError(null);
-        
-        // Build URL with pagination parameters
-        const params = new URLSearchParams({
-          page: pageable.page.toString(),
-          size: pageable.size.toString(),
-          sort: pageable.sort
-        });
-        
-        // Add filter parameters if they exist
-        if (searchTerm) {
-          params.append('search', searchTerm);
-        }
-        
-        if (selectedFilter !== 'all') {
-          if (selectedFilter === 'featured') {
-            params.append('featured', 'true');
-          } else if (selectedFilter === 'images') {
-            params.append('type', 'image');
-          } else if (selectedFilter === 'videos') {
-            params.append('type', 'video');
-          }
-        }
-        
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GALLERY}?${params}`, {
-          headers: API_CONFIG.HEADERS
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Handle Spring Boot Page response
-        if (data.content) {
-          const processedItems = await processGalleryItems(data.content);
-          setGalleryItems(processedItems);
-          setCurrentPage(data.number);
-          setTotalPages(data.totalPages);
-          setTotalElements(data.totalElements);
-          setPageSize(data.size);
-        } else {
-          // Fallback for non-paginated response
-          const items = Array.isArray(data) ? data : data.items || [];
-          const processedItems = await processGalleryItems(items);
-          setGalleryItems(processedItems);
-          setTotalElements(processedItems.length);
-          setTotalPages(1);
-        }
-        
-      } catch (err) {
-        console.error('Error fetching gallery data:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-        setIsPaginating(false);
-      }
-    };
+    fetchGalleryData(currentPage, pageSize, searchTerm, selectedFilter);
+  }, [fetchGalleryData, currentPage, pageSize, searchTerm, selectedFilter]);
 
-    fetchGalleryData();
-  }, [pageable, searchTerm, selectedFilter]);
-
-  // Update search and filter handlers to reset pagination
-  const [searchInput, setSearchInput] = useState('');
-  
-  // Debounce search to avoid too many API calls
+  // Cleanup HEIC object URLs on component unmount
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setSearchTerm(searchInput);
-      setPageable(prev => ({ ...prev, page: 0 }));
-    }, 500);
-    return () => clearTimeout(timeoutId);
-  }, [searchInput]);
-
-  const handleSearchChange = (value) => {
-    setSearchInput(value);
-  };
-
-  const handleFilterChange = (filter) => {
-    setSelectedFilter(filter);
-    setPageable(prev => ({ ...prev, page: 0 }));
-  };
-
-  // Pagination handlers
-  const handlePageChange = (newPage) => {
-    if (newPage >= 0 && newPage < totalPages) {
-      setPageable(prev => ({ ...prev, page: newPage }));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const handlePageSizeChange = (newSize) => {
-    setPageable(prev => ({ ...prev, size: newSize, page: 0 }));
-  };
+    return cleanupUrls;
+  }, [cleanupUrls]);
 
   // Use galleryItems directly since filtering is now done server-side
   const filteredItems = galleryItems;
   const featuredItems = galleryItems.filter(item => item.featured);
 
-  const openViewer = (item) => {
-    const index = filteredItems.findIndex(i => i.id === item.id);
-    setCurrentIndex(index);
-    setSelectedItem(item);
-    setIsVideoPlaying(false);
-  };
+  const handleRetry = useCallback(() => {
+    setError(null);
+    fetchGalleryData(currentPage, pageSize, searchTerm, selectedFilter);
+  }, [setError, fetchGalleryData, currentPage, pageSize, searchTerm, selectedFilter]);
 
-  const closeViewer = () => {
-    setSelectedItem(null);
-    setIsVideoPlaying(false);
-    
-    // Clean up any HEIC object URLs to prevent memory leaks
-    if (selectedItem && selectedItem.src && selectedItem.src.startsWith('blob:')) {
-      URL.revokeObjectURL(selectedItem.src);
-    }
-  };
+  const revealRefs = useRef([]);
+  const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
 
-  const navigateViewer = (direction) => {
-    const newIndex = direction === 'next' 
-      ? (currentIndex + 1) % filteredItems.length
-      : (currentIndex - 1 + filteredItems.length) % filteredItems.length;
-    
-    setCurrentIndex(newIndex);
-    setSelectedItem(filteredItems[newIndex]);
-    setIsVideoPlaying(false);
-  };
-
-  const toggleVideoPlayback = () => {
-    const video = document.querySelector('.viewer-video');
-    if (video) {
-      if (isVideoPlaying) {
-        video.pause();
-        setIsVideoPlaying(false);
-      } else {
-        video.play();
-        setIsVideoPlaying(true);
-      }
-    }
-  };
-
-  // Handle keyboard navigation
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (!selectedItem) return;
-      
-      switch (e.key) {
-        case 'Escape':
-          closeViewer();
-          break;
-        case 'ArrowLeft':
-          navigateViewer('prev');
-          break;
-        case 'ArrowRight':
-          navigateViewer('next');
-          break;
-        case ' ':
-          if (selectedItem.type === 'video') {
-            e.preventDefault();
-            toggleVideoPlayback();
-          }
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [selectedItem, currentIndex, isVideoPlaying]);
-
-  // Cleanup HEIC object URLs on component unmount
-  useEffect(() => {
-    return () => {
-      galleryItems.forEach(item => {
-        if (item.src && item.src.startsWith('blob:')) {
-          URL.revokeObjectURL(item.src);
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in-up-active');
+          entry.target.classList.add('scale-in-active');
+          observer.unobserve(entry.target);
         }
       });
-    };
-  }, [galleryItems]);
+    }, { threshold: 0.2 });
+
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // Fallback: if for any reason observer doesn't activate, force visibility after delay
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('.fade-in-up').forEach(el => {
+        el.classList.add('fade-in-up-active');
+        el.classList.add('scale-in-active');
+      });
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="relative overflow-hidden mb-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 opacity-60"></div>
+      <div className="relative overflow-hidden mb-12 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        {/* Decorative orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
+          <div className="absolute top-1/3 -right-32 w-72 h-72 bg-gradient-to-br from-indigo-500/20 to-purple-400/30 rounded-full blur-3xl animate-orb-2" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/30 rounded-full blur-3xl animate-orb-3" />
+        </div>
         <div className="relative text-center py-16">
           <div className="mb-6">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               <Sparkles className="h-4 w-4" />
               <span>Community Gallery</span>
             </div>
           </div>
           <h1 className="text-5xl font-bold text-gray-900 mb-4">
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Media Gallery</span>
+            <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Media Gallery</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Explore amazing memories from UTM MSA events and activities shared by our vibrant community
@@ -294,10 +119,10 @@ function Gallery() {
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Image className="h-6 w-6" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
@@ -310,7 +135,7 @@ function Gallery() {
             <div className="text-sm text-gray-600">Total Media</div>
           </div>
           <div className="text-center">
-            <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
+            <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Award className="h-6 w-6" />
             </div>
             <div className="text-2xl font-bold text-gray-900">
@@ -326,7 +151,7 @@ function Gallery() {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -338,6 +163,15 @@ function Gallery() {
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
             />
+            {searchInput && (
+              <button
+                onClick={clearFilters}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                title="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
           {/* Filter */}
@@ -353,39 +187,72 @@ function Gallery() {
               <option value="images">📸 Images Only</option>
               <option value="videos">🎥 Videos Only</option>
             </select>
+            
+            {/* Refresh Button with Cache Options */}
+            <div className="relative group">
+              <button
+                onClick={handleRetry}
+                disabled={isLoading}
+                className="p-3 bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1"
+                title="Refresh gallery (hover for more options)"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="text-xs">▼</span>
+              </button>
+              
+              {/* Cache Options Dropdown */}
+              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-48">
+                <div className="p-2 space-y-1">
+                  <button
+                    onClick={handleRetry}
+                    disabled={isLoading}
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    🔄 Refresh
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Gallery Grid */}
       {error ? (
-        <div className="text-center py-20">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-red-100 to-red-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-red-400" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Gallery</h3>
-          <p className="text-gray-600 text-lg mb-6">
+          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
             {error}
           </p>
           <button
-            onClick={() => window.location.reload()}
-            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105"
+            onClick={handleRetry}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center space-x-2"
           >
-            Try Again
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>{isLoading ? 'Retrying...' : 'Try Again'}</span>
           </button>
         </div>
       ) : isLoading ? (
-        <div className="text-center py-20">
-          <div className="bg-gradient-to-br from-blue-100 to-blue-200 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
+          <div className="bg-gradient-to-br from-blue-100 to-green-100 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
             <Image className="h-16 w-16 text-blue-400" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Loading Gallery...</h3>
           <p className="text-gray-600 text-lg">
             Fetching amazing MSA moments for you
           </p>
+          <div className="mt-6">
+            <div className="w-48 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-blue-600 to-green-600 rounded-full animate-pulse"></div>
+            </div>
+          </div>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="text-center py-20">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-gray-400" />
           </div>
@@ -395,12 +262,12 @@ function Gallery() {
           </p>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" /* removed fade-in classes to prevent hiding items */>
           {isPaginating && (
-            <div className="absolute inset-0 bg-white bg-opacity-75 z-10 flex items-center justify-center rounded-2xl">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">Loading...</p>
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+              <div className="text-center bg-white rounded-xl shadow-lg p-6">
+                <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-sm text-gray-600 font-medium">Loading...</p>
               </div>
             </div>
           )}
@@ -507,15 +374,15 @@ function Gallery() {
 
       {/* Pagination Controls */}
       {!error && !isLoading && totalPages > 1 && (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             {/* Page Size Selector */}
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600">Items per page:</span>
+              <span className="text-sm text-gray-600 font-medium">Items per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"
+                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               >
                 <option value={6}>6</option>
                 <option value={12}>12</option>
@@ -525,7 +392,7 @@ function Gallery() {
             </div>
 
             {/* Page Info */}
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 font-medium">
               Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} items
             </div>
 
@@ -570,7 +437,7 @@ function Gallery() {
                       onClick={() => handlePageChange(pageNum)}
                       className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === pageNum
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md'
                           : 'border border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -605,7 +472,7 @@ function Gallery() {
 
       {/* Featured Section - Only show on first page with no filters */}
       {featuredItems.length > 0 && currentPage === 0 && selectedFilter === 'all' && !searchTerm && (
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
               <Star className="h-4 w-4" />
@@ -621,7 +488,8 @@ function Gallery() {
             {featuredItems.slice(0, 3).map((item) => (
               <div 
                 key={item.id} 
-                className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 overflow-hidden"
+                className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 overflow-hidden cursor-pointer"
+                onClick={() => openViewer(item)}
                 onMouseEnter={(e) => {
                   if (item.type === 'video') {
                     const video = e.currentTarget.querySelector('video');
@@ -784,6 +652,7 @@ function Gallery() {
           </div>
         </div>
       )}
+
     </div>
   );
 }

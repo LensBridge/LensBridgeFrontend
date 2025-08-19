@@ -8,9 +8,10 @@ import {
   XCircle, StarOff
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
+import { useAuth } from '../context/AuthContext';
 
 function AdminDashboard() {
-  const [user, setUser] = useState(null);
+  const { user, makeAuthenticatedRequest, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('uploads');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,32 +68,56 @@ function AdminDashboard() {
   const [showMediaViewer, setShowMediaViewer] = useState(false);
 
   useEffect(() => {
-    const userInfo = localStorage.getItem('user');
-    if (userInfo) {
-      try {
-        const parsedUser = JSON.parse(userInfo);
-        setUser(parsedUser);
-      } catch (error) {
-        console.error('Error parsing user info:', error);
-      }
-    }
-    
     // Load initial data
     fetchUploads();
     fetchEvents();
     fetchAuditActions();
-    if (hasRootPermissions(user)) {
+    if (hasRootPermissions()) {
       fetchAvailableRoles();
     }
     if (activeTab === 'audit') {
       fetchAudits();
-    } else if (activeTab === 'users' && hasRootPermissions(user)) {
+    } else if (activeTab === 'users' && hasRootPermissions()) {
       fetchUsers();
     }
+
+    // Add keyboard shortcuts
+    const handleKeyPress = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'r':
+            e.preventDefault();
+            fetchUploads();
+            showMessage('🔄 Refreshed uploads');
+            break;
+          case '1':
+            e.preventDefault();
+            setActiveTab('uploads');
+            break;
+          case '2':
+            e.preventDefault();
+            setActiveTab('events');
+            break;
+          case '3':
+            e.preventDefault();
+            if (hasAdminPermissions()) setActiveTab('audit');
+            break;
+          case '4':
+            e.preventDefault();
+            if (hasRootPermissions()) setActiveTab('users');
+            break;
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
   }, []);
 
   // Helper function to check if user has ROLE_ROOT permissions
-  const hasRootPermissions = (user) => {
+  const hasRootPermissions = () => {
     if (!user) return false;
     
     return (
@@ -103,24 +128,13 @@ function AdminDashboard() {
   };
 
   // Helper function to check if user has admin permissions (ROLE_ADMIN or ROLE_ROOT)
-  const hasAdminPermissions = (user) => {
+  const hasAdminPermissions = () => {
     if (!user) return false;
     
     return (
-      hasRootPermissions(user) ||
-      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
-      user.role === 'ROLE_ADMIN'
+      hasRootPermissions() ||
+      isAdmin()
     );
-  };
-
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...API_CONFIG.HEADERS
-    };
   };
 
   const showMessage = (message, isError = false) => {
@@ -162,9 +176,7 @@ function AdminDashboard() {
           endpoint = '/api/admin/uploads';
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch uploads');
 
@@ -185,13 +197,12 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [uploadPage, uploadSize, uploadFilter]);
+  }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
 
   const approveUpload = async (uploadId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'POST',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -208,29 +219,30 @@ function AdminDashboard() {
   };
 
   const deleteUpload = async (uploadId) => {
-    if (!confirm('Are you sure you want to delete this upload?')) return;
+    const upload = uploads.content.find(u => u.uuid === uploadId);
+    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
+    
+    if (!confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) throw new Error('Failed to delete upload');
 
       const result = await response.json();
-      showMessage(result.message);
+      showMessage(`🗑️ ${result.message}`);
       fetchUploads();
     } catch (error) {
-      showMessage('Failed to delete upload', true);
+      showMessage('❌ Failed to delete upload', true);
     }
   };
 
   const featureUpload = async (uploadId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
-        method: 'POST',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -247,12 +259,14 @@ function AdminDashboard() {
   };
 
   const unapproveUpload = async (uploadId) => {
-    if (!confirm('Are you sure you want to unapprove this upload?')) return;
+    const upload = uploads.content.find(u => u.uuid === uploadId);
+    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
+    
+    if (!confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -261,10 +275,10 @@ function AdminDashboard() {
       }
 
       const result = await response.json();
-      showMessage(result.message);
+      showMessage(`⏪ ${result.message}`);
       fetchUploads();
     } catch (error) {
-      showMessage(error.message, true);
+      showMessage(`❌ ${error.message}`, true);
     }
   };
 
@@ -272,9 +286,8 @@ function AdminDashboard() {
     if (!confirm('Are you sure you want to unfeature this upload?')) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
+        method: 'DELETE'
       });
 
       if (!response.ok) {
@@ -293,9 +306,7 @@ function AdminDashboard() {
   // Event Management Functions
   const fetchEvents = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/events`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/events`);
 
       if (!response.ok) throw new Error('Failed to fetch events');
 
@@ -326,12 +337,10 @@ function AdminDashboard() {
       formData.append('eventDate', isoDateTime);
       formData.append('status', newEvent.status);
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...API_CONFIG.HEADERS
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
         body: formData
       });
@@ -367,9 +376,7 @@ function AdminDashboard() {
         queryParams.append('end', dateRange.end);
       }
 
-      const response = await fetch(`${url}?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${url}?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch audit logs');
 
@@ -380,13 +387,11 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [auditPage, auditSize, selectedAction, dateRange]);
+  }, [auditPage, auditSize, selectedAction, dateRange, makeAuthenticatedRequest]);
 
   const fetchAuditActions = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`);
 
       if (!response.ok) throw new Error('Failed to fetch audit actions');
 
@@ -413,9 +418,7 @@ function AdminDashboard() {
         queryParams.append('search', searchTerm.trim());
       }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`);
 
       if (!response.ok) throw new Error('Failed to fetch users');
 
@@ -426,7 +429,7 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [userPage, userSize, userSearchTerm, user]);
+  }, [userPage, userSize, userSearchTerm, user, makeAuthenticatedRequest]);
 
   const handleUserSearch = (searchTerm) => {
     setUserSearchTerm(searchTerm);
@@ -438,9 +441,7 @@ function AdminDashboard() {
     if (!hasRootPermissions(user)) return;
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`, {
-        headers: getAuthHeaders()
-      });
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`);
 
       if (!response.ok) throw new Error('Failed to fetch roles');
 
@@ -456,9 +457,8 @@ function AdminDashboard() {
 
   const createUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(newUser)
       });
 
@@ -479,9 +479,8 @@ function AdminDashboard() {
 
   const addRoleToUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(selectedRole)
       });
 
@@ -502,9 +501,8 @@ function AdminDashboard() {
 
   const removeRoleFromUser = async () => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify(selectedRole)
       });
 
@@ -526,9 +524,8 @@ function AdminDashboard() {
 
   const verifyUser = async (userId) => {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
         method: 'POST',
-        headers: getAuthHeaders(),
         body: JSON.stringify({ userId })
       });
 
@@ -589,9 +586,9 @@ function AdminDashboard() {
     return null;
   };
 
-  const downloadFile = async (fileUrl, fileName) => {
+  const downloadFile = async (secureUrl, fileName) => {
     try {
-      const response = await fetch(fileUrl);
+      const response = await fetch(secureUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -662,18 +659,34 @@ function AdminDashboard() {
               </span>
             )}
           </p>
+          {/* Quick Actions */}
+          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+R</kbd>
+            <span className="text-xs text-gray-500">Refresh</span>
+            <span className="text-gray-300 mx-2">•</span>
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+1-4</kbd>
+            <span className="text-xs text-gray-500">Switch tabs</span>
+          </div>
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Enhanced Messages */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center space-x-2">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
-          {success}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center space-x-2">
+          <CheckCircle className="h-5 w-5 flex-shrink-0" />
+          <span>{success}</span>
+        </div>
+      )}
+      {loading && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 flex items-center space-x-2">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+          <span>Processing your request...</span>
         </div>
       )}
 
@@ -768,13 +781,13 @@ function AdminDashboard() {
             <div className="relative max-w-full max-h-full">
               {selectedMedia.contentType === 'IMAGE' ? (
                 <img
-                  src={selectedMedia.fileUrl}
+                  src={selectedMedia.secureUrl}
                   alt={selectedMedia.fileName}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               ) : selectedMedia.contentType === 'VIDEO' ? (
                 <video
-                  src={selectedMedia.fileUrl}
+                  src={selectedMedia.secureUrl}
                   controls
                   autoPlay
                   className="max-w-full max-h-full object-contain rounded-lg"
@@ -793,7 +806,7 @@ function AdminDashboard() {
                       Preview not available for this file type
                     </p>
                     <button
-                      onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                      onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 mx-auto"
                     >
                       <DownloadIcon className="h-4 w-4" />
@@ -823,7 +836,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => downloadFile(selectedMedia.fileUrl, selectedMedia.fileName)}
+                    onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
                     className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                   >
                     <DownloadIcon className="h-4 w-4" />
@@ -900,10 +913,25 @@ function AdminDashboard() {
   }
 
   function renderUploadsTab() {
+    const pendingCount = stats.totalUploads - stats.approvedUploads;
+    const approvalRate = stats.totalUploads > 0 ? Math.round((stats.approvedUploads / stats.totalUploads) * 100) : 0;
+    
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-900">Upload Management</h3>
+        {/* Enhanced Header with Mini Stats */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Upload Management</h3>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+              <span>📊 {approvalRate}% approval rate</span>
+              {pendingCount > 0 && (
+                <span className="text-orange-600 font-medium">
+                  ⏳ {pendingCount} pending review
+                </span>
+              )}
+              <span>🎯 {stats.featuredUploads} featured</span>
+            </div>
+          </div>
           <button
             onClick={() => fetchUploads()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -985,11 +1013,11 @@ function AdminDashboard() {
                           onClick={() => openMediaViewer(upload)}
                         >
                           {upload.contentType === 'IMAGE' ? (
-                            <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                            <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
                           ) : upload.contentType === 'VIDEO' ? (
                             <div className="h-full w-full relative">
                               <video 
-                                src={upload.fileUrl} 
+                                src={upload.secureUrl} 
                                 className="h-full w-full object-cover"
                                 muted
                               />
@@ -1073,7 +1101,7 @@ function AdminDashboard() {
                     <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex space-x-1">
                         <button
-                          onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                          onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
                           className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
                           title="Download"
                         >
@@ -1140,11 +1168,11 @@ function AdminDashboard() {
                   onClick={() => openMediaViewer(upload)}
                 >
                   {upload.contentType === 'IMAGE' ? (
-                    <img src={upload.fileUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                    <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
                   ) : upload.contentType === 'VIDEO' ? (
                     <div className="h-full w-full relative">
                       <video 
-                        src={upload.fileUrl} 
+                        src={upload.secureUrl} 
                         className="h-full w-full object-cover"
                         muted
                       />
@@ -1213,7 +1241,7 @@ function AdminDashboard() {
                   {/* Actions */}
                   <div className="flex space-x-2 mt-3 flex-wrap">
                     <button
-                      onClick={() => downloadFile(upload.fileUrl, upload.fileName)}
+                      onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
                       className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                     >
                       <DownloadIcon className="h-3 w-3" />

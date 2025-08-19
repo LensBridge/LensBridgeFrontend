@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Upload as UploadIcon,
   X,
@@ -7,63 +7,88 @@ import {
   Check,
   AlertCircle,
   ChevronDown,
+  RefreshCw,
+  Users,
+  Calendar,
 } from "lucide-react";
-import heic2any from "heic2any";
 import API_CONFIG from "../config/api";
-
-// Test if heic2any is working
-console.log("heic2any library loaded:", typeof heic2any);
+import { useAuth } from "../context/AuthContext";
+import { useFileUpload } from "../hooks/useFileUpload";
+import { useUploadForm } from "../hooks/useUploadForm";
 
 function Upload() {
-  const [files, setFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [isProcessingFiles, setIsProcessingFiles] = useState(false);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
-  const [formData, setFormData] = useState({
-    instagram: "",
-    event: "",
-    eventId: "", // Add eventId to track the selected event's ID
-    description: "",
-    isAnon: false,
-    consent: false,
+  const [errors, setErrors] = useState({
+    fetch: null,
+    upload: null,
+    files: []
   });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // NEW: top ref for scrolling to errors
+  const topRef = useRef(null);
+  const scrollToTopError = useCallback(() => {
+    // Use rAF to ensure DOM updates first
+    requestAnimationFrame(() => {
+      if (topRef.current) {
+        try {
+          topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }, []);
+  
   const fileInputRef = useRef(null);
+  const { makeAuthenticatedRequest, user, isAuthenticated } = useAuth();
+  
+  // Custom hooks
+  const { 
+    files, 
+    isProcessing: isProcessingFiles, 
+    fileErrors, 
+    addFiles, 
+    removeFile, 
+    clearFiles 
+  } = useFileUpload();
+  
+  const { 
+    formData, 
+    validationErrors, 
+    updateField, 
+    validateForm, 
+    resetForm, 
+    isFormValid: isFormValidBase 
+  } = useUploadForm();
 
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
-      const token = localStorage.getItem("token");
-      const tokenType = localStorage.getItem("tokenType") || "Bearer";
-
-      const headers = {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      };
-
-      if (token) {
-        headers["Authorization"] = `${tokenType} ${token}`;
-      }
-
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`,
-        {
-          headers,
-        }
+      setErrors(prev => ({ ...prev, fetch: null }));
+      const response = await makeAuthenticatedRequest(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`
       );
-
       if (!response.ok) {
         throw new Error("Failed to fetch events");
       }
-
       const eventsData = await response.json();
       setEvents(eventsData);
     } catch (error) {
       console.error("Error fetching events:", error);
+      setErrors(prev => ({ 
+        ...prev, 
+        fetch: "Unable to load events. Please refresh the page to try again." 
+      }));
       setEvents([]);
+      scrollToTopError(); // ensure user sees the error banner
     } finally {
       setLoadingEvents(false);
     }
@@ -72,17 +97,6 @@ function Upload() {
   // Fetch events when component mounts
   useEffect(() => {
     fetchEventsFromAPI();
-
-    // Auto-populate user info from authentication
-    const userInfo = localStorage.getItem("user");
-    if (userInfo) {
-      try {
-        const user = JSON.parse(userInfo);
-        // No need to auto-populate name and email anymore since they're removed
-      } catch (error) {
-        console.error("Error parsing user info:", error);
-      }
-    }
   }, []);
 
   const handleDragOver = (e) => {
@@ -99,186 +113,22 @@ function Upload() {
     e.preventDefault();
     setIsDragging(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
-    console.log(
-      "Files dropped:",
-      droppedFiles.map((f) => ({ name: f.name, type: f.type, size: f.size }))
-    );
-    await handleFiles(droppedFiles);
+    await addFiles(droppedFiles);
   };
 
   const handleFileSelect = async (e) => {
     const selectedFiles = Array.from(e.target.files);
-    await handleFiles(selectedFiles);
-  };
-
-  const handleFiles = async (newFiles) => {
-    setIsProcessingFiles(true);
-
-    const validFiles = newFiles.filter((file) => {
-      const isImage = file.type.startsWith("image/");
-      const isVideo = file.type.startsWith("video/");
-
-      // Check for HEIC files by extension since MIME type might not be recognized
-      const fileName = file.name.toLowerCase();
-      const isHeic = fileName.endsWith(".heic") || fileName.endsWith(".heif");
-
-      const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit
-
-      // Enhanced logging for debugging
-      console.log(
-        `File validation - Name: ${file.name}, Type: "${file.type}", Size: ${file.size}, isImage: ${isImage}, isVideo: ${isVideo}, isHeic: ${isHeic}, isValidSize: ${isValidSize}`
-      );
-
-      return (isImage || isVideo || isHeic) && isValidSize;
-    });
-
-    const filesWithPreviews = await Promise.all(
-      validFiles.map(async (file) => {
-        try {
-          const fileName = file.name.toLowerCase();
-          const isHeic =
-            fileName.endsWith(".heic") || fileName.endsWith(".heif");
-
-          let processedFile = file;
-          let preview = null;
-
-          if (isHeic) {
-            try {
-              console.log(
-                `Converting HEIC file: ${file.name}, size: ${file.size} bytes`
-              );
-
-              // Check if heic2any is available
-              if (typeof heic2any !== "function") {
-                throw new Error("heic2any library not available");
-              }
-
-              // Convert HEIC to JPEG for preview
-              console.log("Starting HEIC conversion...");
-              const convertedBlob = await heic2any({
-                blob: file,
-                toType: "image/jpeg",
-                quality: 0.8,
-              });
-
-              console.log("Conversion result:", convertedBlob);
-
-              // heic2any sometimes returns an array, sometimes a single blob
-              const finalBlob = Array.isArray(convertedBlob)
-                ? convertedBlob[0]
-                : convertedBlob;
-
-              // Verify the conversion result
-              if (
-                finalBlob &&
-                finalBlob instanceof Blob &&
-                finalBlob.size > 0
-              ) {
-                preview = URL.createObjectURL(finalBlob);
-                console.log(
-                  `✅ HEIC conversion successful for: ${file.name}, converted size: ${finalBlob.size} bytes, preview URL: ${preview}`
-                );
-              } else {
-                console.warn(
-                  `❌ HEIC conversion result is not a valid blob for: ${file.name}`,
-                  finalBlob
-                );
-                preview = null;
-              }
-            } catch (conversionError) {
-              console.error(
-                `❌ HEIC conversion failed for ${file.name}:`,
-                conversionError
-              );
-              console.error("Error details:", {
-                name: conversionError.name,
-                message: conversionError.message,
-                stack: conversionError.stack,
-              });
-              preview = null; // Will show fallback
-            }
-          } else {
-            try {
-              // For non-HEIC files, create normal preview
-              preview = URL.createObjectURL(file);
-              console.log(`✅ Normal preview created for: ${file.name}`);
-            } catch (previewError) {
-              console.error(
-                `❌ Failed to create preview for: ${file.name}`,
-                previewError
-              );
-              preview = null;
-            }
-          }
-
-          return {
-            file: processedFile, // Always keep original file
-            id: Date.now() + Math.random(),
-            preview: preview,
-            type: file.type.startsWith("image/") || isHeic ? "image" : "video",
-          };
-        } catch (error) {
-          console.error(`Error processing file ${file.name}:`, error);
-          return {
-            file,
-            id: Date.now() + Math.random(),
-            preview: null, // No preview if processing fails
-            type:
-              file.type.startsWith("image/") ||
-              file.name.toLowerCase().endsWith(".heic") ||
-              file.name.toLowerCase().endsWith(".heif")
-                ? "image"
-                : "video",
-          };
-        }
-      })
-    );
-
-    console.log(
-      `Added ${filesWithPreviews.length} files out of ${newFiles.length} dropped files`
-    );
-    setFiles((prev) => [...prev, ...filesWithPreviews]);
-    setIsProcessingFiles(false);
-  };
-
-  const removeFile = (fileId) => {
-    setFiles((prev) => {
-      const fileToRemove = prev.find((f) => f.id === fileId);
-      if (fileToRemove) {
-        URL.revokeObjectURL(fileToRemove.preview);
-      }
-      return prev.filter((f) => f.id !== fileId);
-    });
+    await addFiles(selectedFiles);
   };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-
-    // Handle Instagram validation (similar to backend pattern)
-    if (name === "instagram") {
-      // Only allow letters, numbers, dots, and underscores
-      const instagramPattern = /^[a-zA-Z0-9._]*$/;
-      if (value && !instagramPattern.test(value)) {
-        return; // Don't update if invalid characters
-      }
-      // Limit to 30 characters
-      if (value.length > 30) {
-        return;
-      }
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    updateField(name, type === "checkbox" ? checked : value);
   };
 
   const handleEventSelect = (eventName, eventId) => {
-    setFormData((prev) => ({
-      ...prev,
-      event: eventName,
-      eventId: eventId,
-    }));
+    updateField('event', eventName);
+    updateField('eventId', eventId);
     setEventDropdownOpen(false);
   };
 
@@ -301,28 +151,37 @@ function Upload() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (files.length === 0 || !formData.consent || !formData.eventId) return;
+    
+    // Clear any previous errors
+    setErrors(prev => ({ ...prev, upload: null }));
+    
+    // Validate form
+    if (!validateForm()) {
+      scrollToTopError();
+      return;
+    }
+    
+    if (files.length === 0) {
+      setErrors(prev => ({ ...prev, upload: "Please select at least one file to upload." }));
+      scrollToTopError();
+      return;
+    }
 
     // Validate authentication before starting upload
-    const token = localStorage.getItem("token");
-    const userInfo = localStorage.getItem("user");
-
-    if (!token || !userInfo) {
-      alert("Authentication expired. Please sign in again.");
-      window.location.href = "/login";
+    if (!isAuthenticated || !user) {
+      setErrors(prev => ({ ...prev, upload: "Authentication expired. Please sign in again." }));
+      scrollToTopError();
       return;
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      // For Spring Boot endpoint with @PathVariable and @RequestParam,
-      // we send individual form parameters instead of a JSON object.
-
       // Create FormData for multipart request
       const uploadData = new FormData();
 
-      // Add files as request parameters with corrected MIME types
+      // Add files with corrected MIME types
       files.forEach((file) => {
         const fileName = file.file.name.toLowerCase();
         const isHeic = fileName.endsWith(".heic") || fileName.endsWith(".heif");
@@ -334,158 +193,269 @@ function Upload() {
             file.file.type === "" ||
             !file.file.type.startsWith("image/"))
         ) {
-          // Create a new File object with the correct MIME type
           const correctedFile = new File([file.file], file.file.name, {
             type: "image/heic",
             lastModified: file.file.lastModified,
           });
-          console.log(
-            `Fixed MIME type for HEIC file: ${file.file.name} from "${file.file.type}" to "image/heic"`
-          );
           uploadData.append("files", correctedFile);
         } else {
           uploadData.append("files", file.file);
         }
       });
 
-      // Add other parameters as individual form fields
-      if (formData.instagram) {
+      // Add form fields
+      if (formData.instagram && !formData.isAnon) {
         uploadData.append("instagramHandle", formData.instagram);
       }
-
       if (formData.description) {
         uploadData.append("description", formData.description);
       }
-
-      // Add anon parameter (required, so always send it)
       uploadData.append("anon", formData.isAnon);
 
-      // Get authentication token
-      const tokenType = localStorage.getItem("tokenType") || "Bearer";
-
-      // For FormData uploads, don't set Content-Type - let browser set it automatically
-      const headers = {
-        "ngrok-skip-browser-warning": "true",
-      };
-
-      if (token) {
-        headers["Authorization"] = `${tokenType} ${token}`;
-      }
-
-      // Make actual API call to Spring Boot backend with eventId in path
-      const response = await fetch(
+      const response = await makeAuthenticatedRequest(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`,
         {
           method: "POST",
-          headers,
           body: uploadData,
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`${errorData.message || "Upload failed"}`);
+        const errorText = await response.text();
+        let errorMessage = "Upload failed";
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      // Handle different response types from backend
-      let result;
-      const contentType = response.headers.get("content-type");
-
-      if (contentType && contentType.includes("application/json")) {
-        result = await response.json();
-      } else {
-        // Backend returned plain text or HTML
-        result = { message: await response.text() };
-      }
-
-      setIsUploading(false);
       setUploadComplete(true);
 
       // Clear form after successful upload
       setTimeout(() => {
-        setFiles([]);
-        setFormData({
-          instagram: "",
-          event: "",
-          eventId: "",
-          description: "",
-          isAnon: false,
-          consent: false,
-        });
+        clearFiles();
+        resetForm();
         setUploadComplete(false);
       }, 3000);
+      
     } catch (error) {
       console.error("Upload error:", error);
+      setErrors(prev => ({ ...prev, upload: error.message }));
+      scrollToTopError();
+    } finally {
       setIsUploading(false);
-      alert(`${error.message}`);
+      setUploadProgress(0);
     }
   };
 
-  const isFormValid =
-    files.length > 0 && formData.event && formData.eventId && formData.consent;
+  const isFormValid = isFormValidBase && files.length > 0;
+
+  const revealRefs = useRef([]);
+  const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in-up-active');
+          entry.target.classList.add('scale-in-active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('.fade-in-up').forEach(el => {
+        el.classList.add('fade-in-up-active');
+        el.classList.add('scale-in-active');
+      });
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // NEW: Scroll when fileErrors appear
+  useEffect(() => {
+    if (fileErrors.length > 0) {
+      scrollToTopError();
+    }
+  }, [fileErrors, scrollToTopError]);
 
   if (uploadComplete) {
     return (
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-          <div className="bg-green-600 p-4 rounded-full w-fit mx-auto mb-6">
-            <Check className="h-8 w-8 text-white" />
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-green-50 opacity-60 rounded-3xl"></div>
+          <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 p-12 text-center">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-lg opacity-20"></div>
+              <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto shadow-xl">
+                <Check className="h-12 w-12 text-white" />
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
+                <Check className="h-4 w-4" />
+                <span>Upload Complete</span>
+              </div>
+            </div>
+
+            <h2 className="text-4xl font-bold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text mb-6">
+              Upload Successful!
+            </h2>
+            
+            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+              Thank you for sharing your memories! We'll review your submission
+              and may feature it on our social media.
+            </p>
+            
+            <button
+              onClick={() => setUploadComplete(false)}
+              className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-4 rounded-xl hover:scale-105 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
+            >
+              <UploadIcon className="h-5 w-5" />
+              <span>Upload More</span>
+            </button>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-3">
-            Upload Successful!
-          </h2>
-          <p className="text-gray-600 mb-6">
-            Thank you for sharing your memories! We'll review your submission
-            and may feature it on our social media.
-          </p>
-          <button
-            onClick={() => setUploadComplete(false)}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Upload More
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Bismillah */}
-      <div className="text-center mb-12">
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <img
-              src="/Bismillah_Calligraphy1.svg"
-              alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
-              className="h-20 md:h-24 lg:h-28 w-auto mx-auto"
-            />
-          </div>
-          <p className="text-lg md:text-xl lg:text-2xl text-gray-700 mt-4 font-medium">
-            In the name of Allah, the Most Gracious, the Most Merciful
-          </p>
+    <div className="max-w-4xl mx-auto" ref={topRef}>
+      {/* Header Section */}
+      <div className="relative overflow-hidden mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        {/* Decorative orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
+          <div className="absolute top-1/3 -right-32 w-72 h-72 bg-gradient-to-br from-indigo-500/20 to-purple-400/30 rounded-full blur-3xl animate-orb-2" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/30 rounded-full blur-3xl animate-orb-3" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Upload Your Media
-        </h1>
-        <p className="text-gray-600">
-          Share your UTM MSA event photos and videos with the community. Choose
-          whether to be credited or remain anonymous.
-        </p>
+        <div className="relative text-center py-10">
+          <div className="mb-4">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+              <UploadIcon className="h-4 w-4" />
+              <span>Share Your Memories</span>
+            </div>
+          </div>
+          
+          {/* Bismillah */}
+          <div className="mb-6">
+            <div className="flex justify-center mb-3">
+              <img
+                src="/Bismillah_Calligraphy1.svg"
+                alt="Bismillah - In the name of Allah, the Most Gracious, the Most Merciful"
+                className="h-14 md:h-16 lg:h-18 w-auto mx-auto opacity-80"
+              />
+            </div>
+            <p className="text-sm text-gray-600 font-medium italic">
+              In the name of Allah, the Most Gracious, the Most Merciful
+            </p>
+          </div>
+
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-transparent bg-gradient-to-r from-blue-600 via-green-600 to-blue-600 bg-clip-text mb-4">
+            Upload Your Media
+          </h1>
+          
+          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Share your UTM MSA event photos and videos with the community. 
+            <span className="block mt-1 text-sm text-gray-500">
+              Choose whether to be credited or remain anonymous.
+            </span>
+          </p>
+
+          {/* Visual Elements */}
+          <div className="flex justify-center items-center space-x-6 mt-6 opacity-60">
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+              <Image className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-2 rounded-xl">
+              <Video className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-6 fade-in-up scale-in" ref={addRevealRef}>
+        {/* Error Display */}
+        {(errors.fetch || errors.upload || fileErrors.length > 0) && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-red-800 mb-2">
+                  {errors.fetch ? "Loading Error" : "Upload Error"}
+                </h3>
+                {errors.fetch && (
+                  <div className="mb-3">
+                    <p className="text-sm text-red-700">{errors.fetch}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErrors(prev => ({ ...prev, fetch: null }));
+                        fetchEventsFromAPI();
+                      }}
+                      className="mt-2 inline-flex items-center space-x-1 text-sm text-red-600 hover:text-red-800 font-medium"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                      <span>Retry</span>
+                    </button>
+                  </div>
+                )}
+                {errors.upload && (
+                  <p className="text-sm text-red-700 mb-2">{errors.upload}</p>
+                )}
+                {fileErrors.length > 0 && (
+                  <div>
+                    <p className="text-sm text-red-700 mb-1">File errors:</p>
+                    <ul className="text-sm text-red-600 list-disc list-inside space-y-1">
+                      {fileErrors.map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+            {validationErrors.event && (
+              <p className="text-xs text-red-600 mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {validationErrors.event}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* File Upload Area */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Select Files
-          </h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+              <UploadIcon className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Select Files
+            </h2>
+          </div>
 
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
               isDragging
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"
+                ? "border-blue-500 bg-gradient-to-br from-blue-50 to-green-50 scale-105"
+                : "border-gray-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -525,6 +495,7 @@ function Upload() {
               accept="image/*,video/*,.heic,.heif"
               onChange={handleFileSelect}
               className="hidden"
+              aria-label="Select files to upload"
             />
           </div>
 
@@ -532,7 +503,7 @@ function Upload() {
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
-                  <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 border border-gray-200 hover:border-gray-300 transition-colors">
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl">
                     {file.type === "image" ? (
                       file.preview ? (
                         <img
@@ -549,13 +520,15 @@ function Upload() {
                         />
                       ) : null
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <Video className="h-12 w-12 text-gray-400" />
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+                        <div className="bg-gradient-to-r from-blue-600 to-green-600 p-3 rounded-xl">
+                          <Video className="h-8 w-8 text-white" />
+                        </div>
                       </div>
                     )}
                     {/* Fallback for images that can't be previewed (like HEIC) */}
                     <div
-                      className="w-full h-full flex flex-col items-center justify-center text-center p-2 bg-gray-50"
+                      className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-gray-50 to-blue-50"
                       style={{
                         display:
                           file.type === "image" && !file.preview
@@ -563,11 +536,13 @@ function Upload() {
                             : "none",
                       }}
                     >
-                      <Image className="h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-xs text-gray-600 font-medium truncate w-full">
+                      <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl mb-3">
+                        <Image className="h-6 w-6 text-white" />
+                      </div>
+                      <p className="text-xs text-gray-700 font-semibold truncate w-full">
                         {file.file.name}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-gray-500 mt-1">
                         {(file.file.size / 1024 / 1024).toFixed(1)} MB
                       </p>
                     </div>
@@ -575,11 +550,11 @@ function Upload() {
                   <button
                     type="button"
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
                   >
                     <X className="h-4 w-4" />
                   </button>
-                  <p className="text-xs text-gray-600 mt-2 truncate font-medium">
+                  <p className="text-xs text-gray-700 mt-2 truncate font-medium text-center">
                     {file.file.name}
                   </p>
                 </div>
@@ -588,42 +563,18 @@ function Upload() {
           )}
         </div>
 
-        {/* Form Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Event Details
-          </h2>
-
-          <div className="space-y-6">
-            {/* Instagram Handle */}
-            <div>
-              <label
-                htmlFor="instagram"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Instagram Handle
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                  @
-                </span>
-                <input
-                  type="text"
-                  id="instagram"
-                  name="instagram"
-                  value={formData.instagram}
-                  onChange={handleInputChange}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="your_instagram_handle"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Optional - Only provide if you'd like to be tagged when your
-                content is featured on our social media. Only letters, numbers,
-                dots, and underscores allowed (max 30 characters).
-              </p>
+        {/* User Details Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+              <Users className="h-5 w-5 text-white" />
             </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              User Details
+            </h2>
+          </div>
 
+          <div className="space-y-4">
             {/* Anonymous Mode */}
             <div>
               <label className="flex items-start space-x-3">
@@ -645,10 +596,71 @@ function Upload() {
                 </div>
               </label>
             </div>
+
+            {/* Instagram Handle */}
+            <div>
+              <label
+                htmlFor="instagram"
+                className={`block text-sm font-medium mb-2 transition-colors ${
+                  formData.isAnon ? 'text-gray-400' : 'text-gray-700'
+                }`}
+              >
+                Instagram Handle
+              </label>
+              <div className="relative">
+                <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors ${
+                  formData.isAnon ? 'text-gray-300' : 'text-gray-500'
+                }`}>
+                  @
+                </span>
+                <input
+                  type="text"
+                  id="instagram"
+                  name="instagram"
+                  value={formData.isAnon ? '' : formData.instagram}
+                  onChange={handleInputChange}
+                  disabled={formData.isAnon}
+                  className={`w-full pl-8 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                    formData.isAnon
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      : validationErrors.instagram
+                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                      : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
+                  }`}
+                  placeholder={formData.isAnon ? 'Hidden for anonymous submissions' : 'your_instagram_handle'}
+                />
+              </div>
+              {validationErrors.instagram && !formData.isAnon && (
+                <p className="text-xs text-red-600 mt-1 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  {validationErrors.instagram}
+                </p>
+              )}
+              <p className={`text-xs mt-1 transition-colors ${
+                formData.isAnon ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                {formData.isAnon 
+                  ? 'Instagram handle is disabled for anonymous submissions'
+                  : 'Optional - Only provide if you\'d like to be tagged when your content is featured on our social media. Only letters, numbers, dots, and underscores allowed (max 30 characters).'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Event Details Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+              <Calendar className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Event Details
+            </h2>
           </div>
 
           {/* Event Dropdown */}
-          <div className="mt-6">
+          <div>
             <label
               htmlFor="event"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -659,7 +671,11 @@ function Upload() {
               <button
                 type="button"
                 onClick={() => setEventDropdownOpen(!eventDropdownOpen)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-left flex items-center justify-between transition-colors"
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white text-left flex items-center justify-between transition-all duration-200 ${
+                  validationErrors.event
+                    ? 'border-red-300 focus:ring-red-500 bg-red-50'
+                    : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
+                }`}
                 disabled={loadingEvents}
               >
                 <span
@@ -677,14 +693,14 @@ function Upload() {
               </button>
 
               {eventDropdownOpen && !loadingEvents && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                   {events.length > 0 ? (
                     events.map((event) => (
                       <button
                         key={event.id}
                         type="button"
                         onClick={() => handleEventSelect(event.name, event.id)}
-                        className="w-full px-3 py-2 text-left hover:bg-gray-50 focus:bg-gray-50 focus:outline-none border-b border-gray-100 last:border-b-0"
+                        className="w-full px-4 py-3 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 focus:bg-gradient-to-r focus:from-blue-50 focus:to-green-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-all duration-200"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-gray-900">{event.name}</span>
@@ -695,10 +711,10 @@ function Upload() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 event.status === "ONGOING"
-                                ? "bg-green-100 text-green-800"
-                                : event.status === "PAST"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-blue-100 text-blue-800"
+                                  ? "bg-green-100 text-green-800"
+                                  : event.status === "PAST"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {event.status}
@@ -715,9 +731,16 @@ function Upload() {
                 </div>
               )}
             </div>
+            {validationErrors.event && (
+              <p className="text-xs text-red-600 mt-1 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {validationErrors.event}
+              </p>
+            )}
           </div>
 
-          <div className="mt-6">
+          {/* Description */}
+          <div>
             <label
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -729,37 +752,78 @@ function Upload() {
               name="description"
               value={formData.description}
               onChange={handleInputChange}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              rows={4}
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 transition-all duration-200"
               placeholder="Tell us about these photos/videos..."
             />
           </div>
 
-          <div className="mt-6">
-            <label className="flex items-start space-x-3">
+        </div>
+
+        {/* Terms and Consent Section */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+              <Check className="h-5 w-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Terms & Consent
+            </h2>
+          </div>
+
+          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 p-4 mb-4">
+            <h3 className="text-base font-semibold text-gray-800 mb-2">Media Usage Agreement</h3>
+            <div className="text-sm text-gray-700 space-y-2">
+              <p>By uploading your media, you agree that:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>UTM MSA may use your submitted media for promotional purposes on social media platforms</li>
+                <li>Your content may be featured on UTM MSA's official social media accounts</li>
+                <li>You have permission to share these files from everyone appearing in the media</li>
+                <li>You own the rights to the media or have permission to share it</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="flex items-start space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-200 cursor-pointer">
               <input
                 type="checkbox"
                 name="consent"
                 checked={formData.consent}
                 onChange={handleInputChange}
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                className={`mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200 ${
+                  validationErrors.consent ? 'ring-2 ring-red-500 border-red-300' : ''
+                }`}
               />
-              <span className="text-sm text-gray-700">
-                I consent to UTM MSA using my submitted media for promotional
-                purposes on social media platforms. I understand that my content
-                may be featured on UTM MSA's social media accounts, and I agree
-                to the terms of use. I have permission to share these files from
-                everyone in the attached media. *
-              </span>
+              <div className="flex-1">
+                <span className="text-base font-medium text-gray-800">
+                  I consent to the Media Usage Agreement *
+                </span>
+                <p className="text-sm text-gray-600 mt-1">
+                  Required - This confirms you understand and agree to how your media may be used
+                </p>
+              </div>
             </label>
+            
+            {validationErrors.consent && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-700 flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                  {validationErrors.consent}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Intention Renewal Reminder */}
-        <div className="mt-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl border border-green-200 p-6 text-center">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              🤲 Intention Reminder
+        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 p-6 text-center shadow-xl">
+          <div className="mb-6">
+            <div className="bg-gradient-to-r from-green-600 to-blue-600 p-3 rounded-full w-fit mx-auto mb-4">
+              <span className="text-2xl">🤲</span>
+            </div>
+            <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text mb-3">
+              Intention Reminder
             </h3>
             <p className="text-gray-700 mb-4">
               Before uploading, take a moment to renew your niyyah:
@@ -790,9 +854,9 @@ function Upload() {
           <button
             type="submit"
             disabled={!isFormValid || isUploading}
-            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-lg font-semibold transition-all duration-200 ${
+            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${
               isFormValid && !isUploading
-                ? "bg-blue-600 text-white hover:bg-blue-700 shadow-sm hover:shadow-md"
+                ? "bg-gradient-to-r from-blue-600 to-green-600 text-white hover:scale-105"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >

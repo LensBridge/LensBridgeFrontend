@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, ArrowRight, Camera, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Login() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { login, isAuthenticated, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -13,6 +15,14 @@ function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [confirmationMessage, setConfirmationMessage] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectTo = location.state?.from?.pathname || '/';
+      navigate(redirectTo, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location.state]);
 
   // Check for confirmation message from email confirmation
   useEffect(() => {
@@ -25,6 +35,11 @@ function Login() {
     }
   }, [location.state]);
 
+  // Clear errors when component mounts or changes
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -36,67 +51,39 @@ function Login() {
     if (name === 'email' && emailError) {
       setEmailError('');
     }
+
+    // Clear auth errors
+    if (error) {
+      clearError();
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     setIsLoading(true);
+    setEmailError('');
     
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store authentication token with Bearer type
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-          localStorage.setItem('tokenType', data.type || 'Bearer');
-        }
-        
-        // Store user info
-        const userInfo = {
-          id: data.id,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          roles: data.roles || []
-        };
-        localStorage.setItem('user', JSON.stringify(userInfo));
-
-        // Trigger a custom event to update the header immediately
-        window.dispatchEvent(new Event('auth-change'));
-
+      const result = await login(formData.email, formData.password);
+      
+      if (result.success) {
         // Redirect to home page or intended destination
         const redirectTo = location.state?.from?.pathname || '/';
         navigate(redirectTo, { replace: true });
       } else {
         // Handle specific error cases
-        const errorMessage = data.message || data.error || 'Login failed. Please try again.';
-        
-        if (response.status === 401) {
-          alert('Invalid email or password. Please check your credentials and try again.');
-        } else if (response.status === 403 && errorMessage.toLowerCase().includes('not verified')) {
-          alert('Please verify your email address before signing in. Check your inbox for the confirmation email.');
+        if (result.status === 401) {
+          setEmailError('Invalid email or password. Please check your credentials and try again.');
+        } else if (result.status === 403 && result.error?.toLowerCase().includes('not verified')) {
+          setEmailError('Please verify your email address before signing in. Check your inbox for the confirmation email.');
         } else {
-          alert(errorMessage);
+          setEmailError(result.error || 'Login failed. Please try again.');
         }
       }
     } catch (error) {
       console.error('Login error:', error);
-      alert('Network error. Please check your connection and try again.');
+      setEmailError('Network error. Please check your connection and try again.');
     } finally {
       setIsLoading(false);
     }
@@ -129,6 +116,16 @@ function Login() {
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5 text-green-600" />
                 <p className="text-green-800 text-sm font-medium">{confirmationMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {(emailError || error) && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="h-5 w-5 text-red-600">⚠️</div>
+                <p className="text-red-800 text-sm font-medium">{emailError || error}</p>
               </div>
             </div>
           )}

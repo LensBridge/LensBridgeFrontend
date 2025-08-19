@@ -18,6 +18,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import Profile from './pages/Profile';
 import './App.css';
 
 function App() {
@@ -39,6 +40,14 @@ function App() {
                 } 
               />
               <Route path="/gallery" element={<Gallery />} />
+              <Route 
+                path="/profile" 
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/admin" 
                 element={

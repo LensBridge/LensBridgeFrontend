@@ -1,64 +1,25 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const { user, logout, isAdmin, isLoading } = useAuth();
 
-  // Check for user authentication on component mount and when localStorage changes
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      const userInfo = localStorage.getItem('user');
-      
-      if (token && userInfo) {
-        try {
-          setUser(JSON.parse(userInfo));
-        } catch (error) {
-          console.error('Error parsing user info:', error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
-    checkAuth();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    window.addEventListener('storage', checkAuth);
-    
-    // Listen for custom auth changes (when user logs in/out in same tab)
-    window.addEventListener('auth-change', checkAuth);
-    
-    return () => {
-      window.removeEventListener('storage', checkAuth);
-      window.removeEventListener('auth-change', checkAuth);
-    };
-  }, []);
-
-  const isAdmin = (user) => {
-    return user && (
-      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (user.roles && user.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
-      user.role === 'ROLE_ADMIN'
-    );
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('tokenType');
-    localStorage.removeItem('user');
-    setUser(null);
-    
-    // Trigger a custom event to update auth state immediately
-    window.dispatchEvent(new Event('auth-change'));
-    
-    navigate('/');
-    setIsMobileMenuOpen(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, navigate to home
+      navigate('/');
+    } finally {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   const isActive = (path) => {
@@ -88,7 +49,7 @@ function Header() {
                 <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
                   LensBridge
                 </span>
-                <span className="text-xs text-gray-500 -mt-1">v2025.7 Beta</span>
+                <span className="text-xs text-gray-500 -mt-1">v2025.8 Beta</span>
               </div>
             </Link>
           </div>
@@ -125,7 +86,7 @@ function Header() {
             {user ? (
               <>
                 {/* Admin Dashboard Link (only for admins) */}
-                {isAdmin(user) && (
+                {isAdmin() && (
                   <Link
                     to="/admin"
                     className={`group relative flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
@@ -145,27 +106,30 @@ function Header() {
                 
                 {/* User Info */}
                 <div className="flex items-center space-x-3">
-                  <div className="text-right">
+                  <Link
+                    to="/profile"
+                    className="text-right hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                  >
                     <p className="text-sm font-medium text-gray-900">
                       {user.firstName} {user.lastName}
-                      {isAdmin(user) && (
+                      {isAdmin() && (
                         <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
                           Admin
                         </span>
                       )}
                     </p>
                     <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                  <div className="relative">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                    <div className={`relative bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
-                      {isAdmin(user) ? (
+                  </Link>
+                  <Link to="/profile" className="relative">
+                    <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
+                    <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full hover:scale-105 transition-transform`}>
+                      {isAdmin() ? (
                         <Shield className="h-5 w-5 text-white" />
                       ) : (
                         <User className="h-5 w-5 text-white" />
                       )}
                     </div>
-                  </div>
+                  </Link>
                 </div>
                 {/* Logout Button */}
                 <button
@@ -178,16 +142,29 @@ function Header() {
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="group inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50"
-                >
-                  <User className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Link>
+                {isLoading ? (
+                  <div
+                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                    aria-live="polite"
+                    aria-busy="true"
+                    title="Validating session..."
+                  >
+                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="tracking-wide">Signing in...</span>
+                  </div>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="group inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </Link>
+                )}
                 <Link
                   to="/upload"
-                  className="group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  className={`group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${isLoading && !user ? 'opacity-70' : ''}`}
+                  aria-disabled={isLoading && !user}
                 >
                   <Sparkles className="h-4 w-4 group-hover:animate-spin" />
                   <span>Share Now</span>
@@ -235,7 +212,7 @@ function Header() {
               })}
               
               {/* Admin Dashboard Link in Mobile (only for admins) */}
-              {user && isAdmin(user) && (
+              {user && isAdmin() && (
                 <Link
                   to="/admin"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -253,11 +230,15 @@ function Header() {
               {user ? (
                 <>
                   {/* User Info in Mobile */}
-                  <div className={`flex items-center space-x-3 px-4 py-3 ${isAdmin(user) ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl`}>
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center space-x-3 px-4 py-3 ${isAdmin() ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl hover:bg-opacity-80 transition-colors`}
+                  >
                     <div className="relative">
-                      <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                      <div className={`relative bg-gradient-to-r ${isAdmin(user) ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
-                        {isAdmin(user) ? (
+                      <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
+                      <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
+                        {isAdmin() ? (
                           <Shield className="h-4 w-4 text-white" />
                         ) : (
                           <User className="h-4 w-4 text-white" />
@@ -267,15 +248,16 @@ function Header() {
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {user.firstName} {user.lastName}
-                        {isAdmin(user) && (
+                        {isAdmin() && (
                           <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
                             Admin
                           </span>
                         )}
                       </p>
                       <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-xs text-blue-600 font-medium">View Profile</p>
                     </div>
-                  </div>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
@@ -286,18 +268,31 @@ function Header() {
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
-                  >
-                    <User className="h-5 w-5 text-gray-500" />
-                    <span>Sign In</span>
-                  </Link>
+                  {isLoading ? (
+                    <div
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                      aria-live="polite"
+                      aria-busy="true"
+                      title="Validating session..."
+                    >
+                      <div className="h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span>Singing in...</span>
+                    </div>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                    >
+                      <User className="h-5 w-5 text-gray-500" />
+                      <span>Sign In</span>
+                    </Link>
+                  )}
                   <Link
                     to="/upload"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg mt-4"
+                    className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg mt-4 ${isLoading && !user ? 'opacity-70' : ''}`}
+                    aria-disabled={isLoading && !user}
                   >
                     <Sparkles className="h-4 w-4" />
                     <span>Share Now</span>

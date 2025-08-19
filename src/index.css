@@ -16,4 +16,29 @@
   .font-arabic {
     font-family: 'Amiri', 'Scheherazade New', 'Times New Roman', serif;
   }
+
+  /* New animated gradient utility */
+  @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+  .animate-gradient { background-size: 200% 200%; animation: gradient-shift 12s ease-in-out infinite; }
+
+  /* Orb float variants */
+  @keyframes orb-float-1 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-40px) translateX(25px); } }
+  @keyframes orb-float-2 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-30px) translateX(-30px); } }
+  @keyframes orb-float-3 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-50px) translateX(10px); } }
+  .animate-orb-1 { animation: orb-float-1 10s ease-in-out infinite; }
+  .animate-orb-2 { animation: orb-float-2 14s ease-in-out infinite; }
+  .animate-orb-3 { animation: orb-float-3 18s ease-in-out infinite; }
+
+  /* Fade / slide in reveal */
+  .fade-in-up { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(.4,0,.2,1), transform 0.8s cubic-bezier(.4,0,.2,1); }
+  .fade-in-up-active { opacity: 1; transform: translateY(0); }
+  .scale-in { opacity: 0; transform: scale(.95); transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1); }
+  .scale-in-active { opacity: 1; transform: scale(1); }
+
+  /* Stagger helpers */
+  .delay-100 { transition-delay: 100ms; }
+  .delay-200 { transition-delay: 200ms; }
+  .delay-300 { transition-delay: 300ms; }
+  .delay-400 { transition-delay: 400ms; }
+  .delay-500 { transition-delay: 500ms; }
 }

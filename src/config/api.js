@@ -5,6 +5,19 @@ const API_CONFIG = {
     GALLERY: '/api/gallery',
     EVENTS: '/api/events',
     UPLOAD: '/api/upload',
+    // Auth endpoints
+    AUTH: {
+      SIGNIN: '/api/auth/signin',
+      REFRESH_TOKEN: '/api/auth/refresh-token',
+      VALIDATE_TOKEN: '/api/auth/validate-token',
+      LOGOUT: '/api/auth/logout',
+      LOGOUT_ALL_DEVICES: '/api/auth/logout-all-devices',
+      SIGNUP: '/api/auth/signup',
+      FORGOT_PASSWORD: '/api/auth/forgot-password',
+      RESET_PASSWORD: '/api/auth/reset-password',
+      CONFIRM_EMAIL: '/api/auth/confirm-email',
+      VALIDATE_RESET_TOKEN: '/api/auth/validate-reset-token'
+    },
     // Admin endpoints
     ADMIN: {
       UPLOADS: '/api/admin/uploads',
