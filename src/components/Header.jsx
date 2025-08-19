@@ -7,7 +7,7 @@ function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, isLoading } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -142,16 +142,29 @@ function Header() {
               </>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="group inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50"
-                >
-                  <User className="h-4 w-4" />
-                  <span>Sign In</span>
-                </Link>
+                {isLoading ? (
+                  <div
+                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                    aria-live="polite"
+                    aria-busy="true"
+                    title="Validating session..."
+                  >
+                    <div className="h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="tracking-wide">Signing in...</span>
+                  </div>
+                ) : (
+                  <Link
+                    to="/login"
+                    className="group inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50"
+                  >
+                    <User className="h-4 w-4" />
+                    <span>Sign In</span>
+                  </Link>
+                )}
                 <Link
                   to="/upload"
-                  className="group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  className={`group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${isLoading && !user ? 'opacity-70' : ''}`}
+                  aria-disabled={isLoading && !user}
                 >
                   <Sparkles className="h-4 w-4 group-hover:animate-spin" />
                   <span>Share Now</span>
@@ -255,18 +268,31 @@ function Header() {
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/login"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
-                  >
-                    <User className="h-5 w-5 text-gray-500" />
-                    <span>Sign In</span>
-                  </Link>
+                  {isLoading ? (
+                    <div
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                      aria-live="polite"
+                      aria-busy="true"
+                      title="Validating session..."
+                    >
+                      <div className="h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      <span>Singing in...</span>
+                    </div>
+                  ) : (
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                    >
+                      <User className="h-5 w-5 text-gray-500" />
+                      <span>Sign In</span>
+                    </Link>
+                  )}
                   <Link
                     to="/upload"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg mt-4"
+                    className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg mt-4 ${isLoading && !user ? 'opacity-70' : ''}`}
+                    aria-disabled={isLoading && !user}
                   >
                     <Sparkles className="h-4 w-4" />
                     <span>Share Now</span>

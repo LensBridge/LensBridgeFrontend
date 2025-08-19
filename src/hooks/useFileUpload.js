@@ -68,14 +68,19 @@ export const useFileUpload = () => {
     const isVideo = file.type.startsWith('video/');
     const fileName = file.name.toLowerCase();
     const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif');
-    const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit
+
+    // New size limits: Images (incl. HEIC) 35MB, Videos 200MB
+    const IMAGE_MAX_BYTES = 35 * 1024 * 1024; // 35MB
+    const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200MB
 
     if (!(isImage || isVideo || isHeic)) {
       return { valid: false, error: `${file.name}: Unsupported file type` };
     }
-    
-    if (!isValidSize) {
-      return { valid: false, error: `${file.name}: File size exceeds 100MB limit` };
+
+    const sizeLimit = (isImage || isHeic) ? IMAGE_MAX_BYTES : isVideo ? VIDEO_MAX_BYTES : 0;
+    if (sizeLimit && file.size > sizeLimit) {
+      const limitLabel = (isImage || isHeic) ? '35MB (images)' : '200MB (videos)';
+      return { valid: false, error: `${file.name}: File size exceeds ${limitLabel} limit` };
     }
 
     return { valid: true, error: null };

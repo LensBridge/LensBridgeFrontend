@@ -30,6 +30,23 @@ function Upload() {
   });
   const [uploadProgress, setUploadProgress] = useState(0);
   
+  // NEW: top ref for scrolling to errors
+  const topRef = useRef(null);
+  const scrollToTopError = useCallback(() => {
+    // Use rAF to ensure DOM updates first
+    requestAnimationFrame(() => {
+      if (topRef.current) {
+        try {
+          topRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+  }, []);
+  
   const fileInputRef = useRef(null);
   const { makeAuthenticatedRequest, user, isAuthenticated } = useAuth();
   
@@ -56,15 +73,12 @@ function Upload() {
     try {
       setLoadingEvents(true);
       setErrors(prev => ({ ...prev, fetch: null }));
-
       const response = await makeAuthenticatedRequest(
         `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`
       );
-
       if (!response.ok) {
         throw new Error("Failed to fetch events");
       }
-
       const eventsData = await response.json();
       setEvents(eventsData);
     } catch (error) {
@@ -74,6 +88,7 @@ function Upload() {
         fetch: "Unable to load events. Please refresh the page to try again." 
       }));
       setEvents([]);
+      scrollToTopError(); // ensure user sees the error banner
     } finally {
       setLoadingEvents(false);
     }
@@ -142,17 +157,20 @@ function Upload() {
     
     // Validate form
     if (!validateForm()) {
+      scrollToTopError();
       return;
     }
     
     if (files.length === 0) {
       setErrors(prev => ({ ...prev, upload: "Please select at least one file to upload." }));
+      scrollToTopError();
       return;
     }
 
     // Validate authentication before starting upload
     if (!isAuthenticated || !user) {
       setErrors(prev => ({ ...prev, upload: "Authentication expired. Please sign in again." }));
+      scrollToTopError();
       return;
     }
 
@@ -228,6 +246,7 @@ function Upload() {
     } catch (error) {
       console.error("Upload error:", error);
       setErrors(prev => ({ ...prev, upload: error.message }));
+      scrollToTopError();
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -235,6 +254,40 @@ function Upload() {
   };
 
   const isFormValid = isFormValidBase && files.length > 0;
+
+  const revealRefs = useRef([]);
+  const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in-up-active');
+          entry.target.classList.add('scale-in-active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('.fade-in-up').forEach(el => {
+        el.classList.add('fade-in-up-active');
+        el.classList.add('scale-in-active');
+      });
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // NEW: Scroll when fileErrors appear
+  useEffect(() => {
+    if (fileErrors.length > 0) {
+      scrollToTopError();
+    }
+  }, [fileErrors, scrollToTopError]);
 
   if (uploadComplete) {
     return (
@@ -279,10 +332,16 @@ function Upload() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto" ref={topRef}>
       {/* Header Section */}
-      <div className="relative overflow-hidden mb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-60"></div>
+      <div className="relative overflow-hidden mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        {/* Decorative orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
+          <div className="absolute top-1/3 -right-32 w-72 h-72 bg-gradient-to-br from-indigo-500/20 to-purple-400/30 rounded-full blur-3xl animate-orb-2" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/30 rounded-full blur-3xl animate-orb-3" />
+        </div>
         <div className="relative text-center py-10">
           <div className="mb-4">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
@@ -331,7 +390,7 @@ function Upload() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 fade-in-up scale-in" ref={addRevealRef}>
         {/* Error Display */}
         {(errors.fetch || errors.upload || fileErrors.length > 0) && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -652,10 +711,10 @@ function Upload() {
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 event.status === "ONGOING"
-                                ? "bg-green-100 text-green-800"
-                                : event.status === "PAST"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-blue-100 text-blue-800"
+                                  ? "bg-green-100 text-green-800"
+                                  : event.status === "PAST"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-blue-100 text-blue-800"
                               }`}
                             >
                               {event.status}

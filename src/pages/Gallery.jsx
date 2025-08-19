@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Filter, Image, Video, Calendar, User, Star, Share2, Award, Sparkles, X, ChevronLeft, ChevronRight, Play, Pause, RefreshCw } from 'lucide-react';
 import { useGallery } from '../hooks/useGallery';
 import { useMediaViewer } from '../hooks/useMediaViewer';
@@ -62,11 +62,46 @@ function Gallery() {
     fetchGalleryData(currentPage, pageSize, searchTerm, selectedFilter);
   }, [setError, fetchGalleryData, currentPage, pageSize, searchTerm, selectedFilter]);
 
+  const revealRefs = useRef([]);
+  const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in-up-active');
+          entry.target.classList.add('scale-in-active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  // Fallback: if for any reason observer doesn't activate, force visibility after delay
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      document.querySelectorAll('.fade-in-up').forEach(el => {
+        el.classList.add('fade-in-up-active');
+        el.classList.add('scale-in-active');
+      });
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="relative overflow-hidden mb-12">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-60"></div>
+      <div className="relative overflow-hidden mb-12 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        {/* Decorative orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
+          <div className="absolute top-1/3 -right-32 w-72 h-72 bg-gradient-to-br from-indigo-500/20 to-purple-400/30 rounded-full blur-3xl animate-orb-2" />
+          <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/30 rounded-full blur-3xl animate-orb-3" />
+        </div>
         <div className="relative text-center py-16">
           <div className="mb-6">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
@@ -84,7 +119,7 @@ function Gallery() {
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
@@ -116,7 +151,7 @@ function Gallery() {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -184,7 +219,7 @@ function Gallery() {
 
       {/* Gallery Grid */}
       {error ? (
-        <div className="text-center py-20">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-red-100 to-red-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-red-400" />
           </div>
@@ -202,7 +237,7 @@ function Gallery() {
           </button>
         </div>
       ) : isLoading ? (
-        <div className="text-center py-20">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-blue-100 to-green-100 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
             <Image className="h-16 w-16 text-blue-400" />
           </div>
@@ -217,7 +252,7 @@ function Gallery() {
           </div>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="text-center py-20">
+        <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-gray-400" />
           </div>
@@ -227,7 +262,7 @@ function Gallery() {
           </p>
         </div>
       ) : (
-        <div className="relative">
+        <div className="relative" /* removed fade-in classes to prevent hiding items */>
           {isPaginating && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
               <div className="text-center bg-white rounded-xl shadow-lg p-6">
@@ -339,7 +374,7 @@ function Gallery() {
 
       {/* Pagination Controls */}
       {!error && !isLoading && totalPages > 1 && (
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8">
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             {/* Page Size Selector */}
             <div className="flex items-center space-x-3">
@@ -437,7 +472,7 @@ function Gallery() {
 
       {/* Featured Section - Only show on first page with no filters */}
       {featuredItems.length > 0 && currentPage === 0 && selectedFilter === 'all' && !searchTerm && (
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 mb-8">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
               <Star className="h-4 w-4" />

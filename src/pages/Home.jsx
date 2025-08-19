@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, ExternalLink, Zap, Shield } from 'lucide-react';
+import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, ExternalLink } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 // Animated Counter Component
@@ -57,53 +57,65 @@ function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }) {
 }
 
 function Home() {
+  const revealRefs = useRef([]);
+  const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('fade-in-up-active');
+          entry.target.classList.add('scale-in-active');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    revealRefs.current.forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-60"></div>
-        <div className="relative text-center py-20 px-4">
+        {/* Animated gradient backdrop */}
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-70 animate-gradient" />
+        {/* Decorative orbs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
+            <div className="absolute top-1/3 -right-32 w-72 h-72 bg-gradient-to-br from-indigo-500/20 to-purple-400/30 rounded-full blur-3xl animate-orb-2" />
+            <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-gradient-to-br from-teal-400/20 to-emerald-500/30 rounded-full blur-3xl animate-orb-3" />
+        </div>
+        <div className="relative text-center py-20 px-4 fade-in-up scale-in" ref={addRevealRef}>
           <div className="mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
               <Sparkles className="h-4 w-4" />
               <span>Share Your MSA Moments</span>
             </div>
           </div>
-          
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-8 fade-in-up scale-in" ref={addRevealRef}>
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-full blur-xl opacity-30 animate-pulse"></div>
-              <div className="relative bg-gradient-to-r from-blue-600 to-green-600 p-6 rounded-full shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-full blur-xl opacity-30 animate-pulse" />
+              <div className="relative bg-gradient-to-r from-blue-600 to-green-600 p-6 rounded-full shadow-2xl animate-float">
                 <img src="/lensbridge-logo.svg" alt="LensBridge" className="h-16 w-16 text-white" />
               </div>
             </div>
           </div>
-          
-          <h1 className="text-6xl font-bold text-gray-900 mb-6 leading-tight">
+          <h1 className="text-6xl font-bold text-gray-900 mb-6 leading-tight fade-in-up scale-in" ref={addRevealRef}>
             Welcome to{' '}
-            <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
-              LensBridge
-            </span>
+            <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">LensBridge</span>
           </h1>
-          
-          <p className="text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed fade-in-up scale-in" ref={addRevealRef}>
             Connect, share, and celebrate UTM MSA events! Upload your amazing event photos and videos for a chance to be featured on our <a href="https://instagram.com/utmmsa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Instagram</a> and <a href="https://facebook.com/utmmsa" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook</a> stories.
           </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/upload"
-              className="group inline-flex items-center space-x-3 bg-gradient-to-r from-blue-600 to-green-600 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-            >
+          <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in-up scale-in" ref={addRevealRef}>
+            <Link to="/upload" className="group inline-flex items-center space-x-3 bg-gradient-to-r from-blue-600 to-green-600 text-white px-10 py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1">
               <Upload className="h-6 w-6 group-hover:animate-bounce" />
               <span>Upload Your Media</span>
               <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            
-            <Link
-              to="/gallery"
-              className="group inline-flex items-center space-x-3 bg-white text-gray-900 px-10 py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1 border-2 border-gray-200 hover:border-blue-600"
-            >
+            <Link to="/gallery" className="group inline-flex items-center space-x-3 bg-white text-gray-900 px-10 py-5 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1 border-2 border-gray-200 hover:border-blue-600">
               <Star className="h-6 w-6 group-hover:animate-spin" />
               <span>Explore Gallery</span>
             </Link>
@@ -111,8 +123,8 @@ function Home() {
         </div>
       </div>
 
-      {/* Stats Section */}
-      <div className="py-16 bg-white">
+      {/* Stats Section with reveal */}
+      <div className="py-16 bg-white fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div className="group">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-8 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -165,7 +177,7 @@ function Home() {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+      <div className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 fade-in-up scale-in" ref={addRevealRef}>
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
             Why Upload to <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">LensBridge</span>?
@@ -277,7 +289,7 @@ function Home() {
       </div>
 
       {/* Sadaqa Jariyah Section */}
-      <div className="py-16 bg-gradient-to-r from-green-50 to-blue-50 border-t border-b border-green-200">
+      <div className="py-16 bg-gradient-to-r from-green-50 to-blue-50 border-t border-b border-green-200 fade-in-up scale-in" ref={addRevealRef}>
         <div className="max-w-3xl mx-auto text-center px-4">
           <div className="flex justify-center mb-4">
             <Heart className="h-10 w-10 text-green-600" />
@@ -300,7 +312,7 @@ function Home() {
         </div>
       </div>
       {/* How It Works Section */}
-      <div className="py-20 bg-white">
+      <div className="py-20 bg-white fade-in-up scale-in" ref={addRevealRef}>
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 mb-4">
             How It <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">Works</span>
@@ -358,7 +370,7 @@ function Home() {
       </div>
 
       {/* CTA Section */}
-      <div className="py-20 bg-gradient-to-br from-blue-600 to-green-600">
+      <div className="py-20 bg-gradient-to-br from-blue-600 to-green-600 fade-in-up scale-in" ref={addRevealRef}>
         <div className="text-center text-white">
           <div className="mb-8">
             <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-fit mx-auto">
