@@ -63,19 +63,42 @@ export const useFileUpload = () => {
     }
   };
 
-  const validateFile = (file) => {
+  const validateFile = (file, uploadLimits = null) => {
     const isImage = file.type.startsWith('image/');
     const isVideo = file.type.startsWith('video/');
     const fileName = file.name.toLowerCase();
     const isHeic = fileName.endsWith('.heic') || fileName.endsWith('.heif');
 
-    // New size limits: Images (incl. HEIC) 35MB, Videos 200MB
-    const IMAGE_MAX_BYTES = 35 * 1024 * 1024; // 35MB
-    const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200MB
+    // If we have upload limits from the backend, use those
+    if (uploadLimits) {
+      // Check content type
+      const allowedTypes = uploadLimits.allowedContentTypes || [];
+      const isAllowedType = allowedTypes.includes(file.type) || 
+                           (isHeic && allowedTypes.includes('image/heic'));
+      
+      if (!isAllowedType) {
+        return { valid: false, error: `${file.name}: File type not supported` };
+      }
 
+      // Check file size against role-based limits
+      if (file.size > uploadLimits.maxSizeBytes) {
+        return { 
+          valid: false, 
+          error: `${file.name}: File size exceeds ${uploadLimits.maxSizeMB}MB limit for ${uploadLimits.role} users` 
+        };
+      }
+
+      return { valid: true, error: null };
+    }
+
+    // Fallback to old validation if no upload limits available
     if (!(isImage || isVideo || isHeic)) {
       return { valid: false, error: `${file.name}: Unsupported file type` };
     }
+
+    // Old size limits as fallback: Images (incl. HEIC) 35MB, Videos 200MB
+    const IMAGE_MAX_BYTES = 35 * 1024 * 1024; // 35MB
+    const VIDEO_MAX_BYTES = 200 * 1024 * 1024; // 200MB
 
     const sizeLimit = (isImage || isHeic) ? IMAGE_MAX_BYTES : isVideo ? VIDEO_MAX_BYTES : 0;
     if (sizeLimit && file.size > sizeLimit) {
@@ -86,11 +109,11 @@ export const useFileUpload = () => {
     return { valid: true, error: null };
   };
 
-  const addFiles = useCallback(async (newFiles) => {
+  const addFiles = useCallback(async (newFiles, uploadLimits = null) => {
     setIsProcessing(true);
     setFileErrors([]);
 
-    const validationResults = newFiles.map(validateFile);
+    const validationResults = newFiles.map(file => validateFile(file, uploadLimits));
     const validFiles = [];
     const errors = [];
 

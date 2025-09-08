@@ -15,11 +15,10 @@ import API_CONFIG from "../config/api";
 import { useAuth } from "../context/AuthContext";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { useUploadForm } from "../hooks/useUploadForm";
+import { useDirectUpload } from "../hooks/useDirectUpload";
 
 function Upload() {
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadComplete, setUploadComplete] = useState(false);
   const [events, setEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
@@ -28,7 +27,7 @@ function Upload() {
     upload: null,
     files: []
   });
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadComplete, setUploadComplete] = useState(false);
   
   // NEW: top ref for scrolling to errors
   const topRef = useRef(null);
@@ -69,6 +68,18 @@ function Upload() {
     isFormValid: isFormValidBase 
   } = useUploadForm();
 
+  // Direct upload hook
+  const {
+    isUploading,
+    uploadProgress,
+    currentStage,
+    fileProgresses,
+    uploadLimits,
+    uploadFiles: directUploadFiles,
+    fetchUploadLimits,
+    resetUploadState
+  } = useDirectUpload();
+
   const fetchEventsFromAPI = async () => {
     try {
       setLoadingEvents(true);
@@ -97,7 +108,8 @@ function Upload() {
   // Fetch events when component mounts
   useEffect(() => {
     fetchEventsFromAPI();
-  }, []);
+    fetchUploadLimits().catch(console.error);
+  }, [fetchUploadLimits]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -113,12 +125,12 @@ function Upload() {
     e.preventDefault();
     setIsDragging(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
-    await addFiles(droppedFiles);
+    await addFiles(droppedFiles, uploadLimits);
   };
 
   const handleFileSelect = async (e) => {
     const selectedFiles = Array.from(e.target.files);
-    await addFiles(selectedFiles);
+    await addFiles(selectedFiles, uploadLimits);
   };
 
   const handleInputChange = (e) => {
@@ -174,72 +186,31 @@ function Upload() {
       return;
     }
 
-    setIsUploading(true);
-    setUploadProgress(0);
-
     try {
-      // Create FormData for multipart request
-      const uploadData = new FormData();
+      // Reset upload state
+      resetUploadState();
 
-      // Add files with corrected MIME types
-      files.forEach((file) => {
-        const fileName = file.file.name.toLowerCase();
-        const isHeic = fileName.endsWith(".heic") || fileName.endsWith(".heif");
+      // Extract actual File objects from the processed files
+      const filesToUpload = files.map(processedFile => processedFile.file);
 
-        // Fix MIME type for HEIC files if browser didn't set it correctly
-        if (
-          isHeic &&
-          (file.file.type === "application/octet-stream" ||
-            file.file.type === "" ||
-            !file.file.type.startsWith("image/"))
-        ) {
-          const correctedFile = new File([file.file], file.file.name, {
-            type: "image/heic",
-            lastModified: file.file.lastModified,
-          });
-          uploadData.append("files", correctedFile);
-        } else {
-          uploadData.append("files", file.file);
-        }
-      });
+      // Prepare upload options
+      const uploadOptions = {
+        description: formData.description,
+        instagramHandle: formData.isAnon ? undefined : formData.instagram,
+        anon: formData.isAnon
+      };
 
-      // Add form fields
-      if (formData.instagram && !formData.isAnon) {
-        uploadData.append("instagramHandle", formData.instagram);
-      }
-      if (formData.description) {
-        uploadData.append("description", formData.description);
-      }
-      uploadData.append("anon", formData.isAnon);
+      // Upload files using direct-to-R2
+      await directUploadFiles(filesToUpload, formData.eventId, uploadOptions);
 
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}/${formData.eventId}/batch`,
-        {
-          method: "POST",
-          body: uploadData,
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        let errorMessage = "Upload failed";
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch {
-          errorMessage = errorText || errorMessage;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
+      // Upload successful
       setUploadComplete(true);
 
       // Clear form after successful upload
       setTimeout(() => {
         clearFiles();
         resetForm();
+        resetUploadState();
         setUploadComplete(false);
       }, 3000);
       
@@ -247,9 +218,6 @@ function Upload() {
       console.error("Upload error:", error);
       setErrors(prev => ({ ...prev, upload: error.message }));
       scrollToTopError();
-    } finally {
-      setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
@@ -450,6 +418,29 @@ function Upload() {
               Select Files
             </h2>
           </div>
+
+          {/* Upload Limits Display */}
+          {uploadLimits && (
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-3 mb-4 border border-blue-200">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-gray-700">Your upload limits:</span>
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    {uploadLimits.role}
+                  </span>
+                </div>
+                <span className="font-semibold text-gray-900">
+                  Max {uploadLimits.maxSizeMB}MB per file
+                </span>
+              </div>
+              <div className="text-xs text-gray-600 mt-1">
+                Supported: {uploadLimits.allowedContentTypes.join(', ').replace(/\w+\//g, '')}
+                {uploadLimits.videoMaxDurationSeconds && (
+                  <span> • Videos up to {Math.floor(uploadLimits.videoMaxDurationSeconds / 60)}min</span>
+                )}
+              </div>
+            </div>
+          )}
 
           <div
             className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
@@ -873,7 +864,7 @@ function Upload() {
             )}
           </button>
 
-          {!isFormValid && (
+          {!isFormValid && !isUploading && (
             <p className="mt-2 text-sm text-gray-500 flex items-center justify-center space-x-1">
               <AlertCircle className="h-4 w-4" />
               <span>
@@ -882,6 +873,69 @@ function Upload() {
             </p>
           )}
         </div>
+
+        {/* Upload Progress */}
+        {isUploading && (
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
+                <UploadIcon className="h-5 w-5 text-white" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Upload Progress
+              </h2>
+            </div>
+
+            {/* Overall Progress */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                <span className="text-sm font-medium text-gray-700">{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-600 to-green-600 h-3 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              {currentStage && (
+                <p className="text-sm text-gray-600 mt-2">{currentStage}</p>
+              )}
+            </div>
+
+            {/* Individual File Progress */}
+            {Object.keys(fileProgresses).length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">File Details</h3>
+                {Object.entries(fileProgresses).map(([fileName, progressData]) => (
+                  <div key={fileName} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium text-gray-700 truncate">
+                        {progressData.fileIndex}. {fileName}
+                      </span>
+                      {progressData.progress && (
+                        <span className="text-sm font-medium text-gray-700">
+                          {progressData.progress}%
+                        </span>
+                      )}
+                    </div>
+                    {progressData.progress && (
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${progressData.progress}%` }}
+                        ></div>
+                      </div>
+                    )}
+                    {progressData.stage && (
+                      <p className="text-xs text-gray-500 mt-1">{progressData.stage}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </form>
     </div>
   );
