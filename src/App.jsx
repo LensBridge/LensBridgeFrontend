@@ -2,10 +2,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
-import OfflineNotification from './components/OfflineNotification';
 import Home from './pages/Home';
 import Upload from './pages/Upload';
 import Gallery from './pages/Gallery';
@@ -25,8 +24,8 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex flex-col">
-          <OfflineNotification />
           <Header />
           <main className="container mx-auto px-4 py-8 flex-grow">
             <Routes>
@@ -67,7 +66,6 @@ function App() {
             </Routes>
           </main>
           <Footer />
-          <PWAInstallPrompt />
         </div>
       </Router>
     </AuthProvider>

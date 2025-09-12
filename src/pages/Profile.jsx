@@ -18,8 +18,10 @@ import {
   Sparkles,
   Trophy,
   Camera,
-  Trash2
+  Trash2,
+  Lock
 } from 'lucide-react';
+import ChangePassword from '../components/ChangePassword';
 import { useAuth } from '../context/AuthContext';
 import API_CONFIG from '../config/api';
 
@@ -336,8 +338,9 @@ function Profile() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Information */}
-        <div className="lg:col-span-1">
+        {/* Profile Information and Security */}
+        <div className="lg:col-span-1 space-y-8">
+          {/* Profile Information */}
           <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-900">Profile Information</h2>
@@ -478,8 +481,13 @@ function Profile() {
             )}
           </div>
 
+          {/* Change Password */}
+          <div className="mt-8">
+            <ChangePassword />
+          </div>
+
           {/* Stats Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mt-6">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mt-8">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Your Statistics</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
