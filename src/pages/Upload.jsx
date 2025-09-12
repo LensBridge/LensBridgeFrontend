@@ -29,26 +29,6 @@ function Upload() {
   });
   const [uploadComplete, setUploadComplete] = useState(false);
   
-  // Reset state when component mounts
-  useEffect(() => {
-    setIsDragging(false);
-    setEventDropdownOpen(false);
-    setUploadComplete(false);
-    setErrors({
-      fetch: null,
-      upload: null,
-      files: []
-    });
-    // Reset form and files
-    resetForm?.();
-    clearFiles?.();
-    resetUploadState?.();
-    
-    // Fetch fresh events and upload limits
-    fetchEventsFromAPI();
-    fetchUploadLimits();
-  }, []);
-  
   // NEW: top ref for scrolling to errors
   const topRef = useRef(null);
   const scrollToTopError = useCallback(() => {

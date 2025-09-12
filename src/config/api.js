@@ -16,8 +16,7 @@ const API_CONFIG = {
       FORGOT_PASSWORD: '/api/auth/forgot-password',
       RESET_PASSWORD: '/api/auth/reset-password',
       CONFIRM_EMAIL: '/api/auth/confirm-email',
-      VALIDATE_RESET_TOKEN: '/api/auth/validate-reset-token',
-      CHANGE_PASSWORD: '/api/auth/change-password'
+      VALIDATE_RESET_TOKEN: '/api/auth/validate-reset-token'
     },
     // Admin endpoints
     ADMIN: {
