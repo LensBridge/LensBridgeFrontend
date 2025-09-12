@@ -66,7 +66,6 @@ function App() {
             </Routes>
           </main>
           <Footer />
-          <PWAInstallPrompt />
         </div>
       </Router>
     </AuthProvider>
