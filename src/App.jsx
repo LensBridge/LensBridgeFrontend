@@ -5,8 +5,6 @@ import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
-import OfflineNotification from './components/OfflineNotification';
 import Home from './pages/Home';
 import Upload from './pages/Upload';
 import Gallery from './pages/Gallery';
@@ -28,7 +26,6 @@ function App() {
       <Router>
         <ScrollToTop />
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex flex-col">
-          <OfflineNotification />
           <Header />
           <main className="container mx-auto px-4 py-8 flex-grow">
             <Routes>
