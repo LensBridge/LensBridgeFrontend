@@ -49,7 +49,7 @@ function Header() {
                 <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
                   LensBridge
                 </span>
-                <span className="text-xs text-gray-500 -mt-1">v2025.8 Beta</span>
+                <span className="text-xs text-gray-500 -mt-1">v2025.9 RC Beta</span>
               </div>
             </Link>
           </div>
