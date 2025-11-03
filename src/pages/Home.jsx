@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
-import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, ExternalLink } from 'lucide-react';
+import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, ExternalLink, X } from 'lucide-react';
+// Local meme gif for the final screen
+import cookieMonsterLocalGif from '../assets/Cookie Monster GIF - Cookie Monster - Discover & Share GIFs.gif';
 import { useState, useEffect, useRef } from 'react';
 
 // Animated Counter Component
@@ -60,6 +62,13 @@ function Home() {
   const revealRefs = useRef([]);
   const addRevealRef = (el) => { if (el && !revealRefs.current.includes(el)) revealRefs.current.push(el); };
 
+  // Cookie Meme Popup States
+  const [showCookiePopup, setShowCookiePopup] = useState(false);
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [showCookieMonsterPopup, setShowCookieMonsterPopup] = useState(false);
+  const [showEventAdPopup, setShowEventAdPopup] = useState(false);
+  const [siteLoaded, setSiteLoaded] = useState(false);
+
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -75,8 +84,211 @@ function Home() {
     return () => observer.disconnect();
   }, []);
 
+  // Cookie Meme Logic
+  useEffect(() => {
+    // Simulate site loading
+    const loadTimer = setTimeout(() => {
+      setSiteLoaded(true);
+    }, 1000);
+
+    return () => clearTimeout(loadTimer);
+  }, []);
+
+  useEffect(() => {
+    if (siteLoaded) {
+      // Wait 2 seconds after site loads, then show cookie popup
+      const cookieTimer = setTimeout(() => {
+        setShowCookiePopup(true);
+      }, 2000);
+
+      return () => clearTimeout(cookieTimer);
+    }
+  }, [siteLoaded]);
+
+  const handleCookieNo = () => {
+    setShowCookiePopup(false);
+    setShowConfirmPopup(true);
+  };
+
+  const handleConfirmYes = () => {
+    setShowConfirmPopup(false);
+    setShowCookieMonsterPopup(true);
+  };
+
+  const handleCookieMonsterSure = () => {
+    setShowCookieMonsterPopup(false);
+    // Show the final event ad popup with local GIF
+    setShowEventAdPopup(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
+      {/* Cookie Policy Meme Popups */}
+      {/* Initial Cookie Popup */}
+      {showCookiePopup && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-auto shadow-2xl animate-bounce-in">
+            <div className="text-center">
+              <div className="text-6xl mb-4">🍪</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">UTM MSA's Cookie Policy</h3>
+              <p className="text-gray-700 mb-6 leading-relaxed">
+                Assalamu Alaikum! The MSA team at LensBridge <strong>LOVES</strong> cookies, and would love to share some with you because sharing is caring! 
+              </p>
+              <p className="text-gray-700 mb-8">
+                Do you agree to receive UTM MSA's amazing cookies? 🍪✨
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowCookiePopup(false)}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105"
+                >
+                  Yes, I love cookies! 🍪
+                </button>
+                <button
+                  onClick={handleCookieNo}
+                  className="flex-1 bg-gray-200 text-gray-800 px-6 py-3 rounded-xl font-semibold hover:bg-gray-300 transition-all duration-300"
+                >
+                  No thanks
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Popup */}
+      {showConfirmPopup && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-auto shadow-2xl animate-shake">
+            <div className="text-center">
+              <div className="text-6xl mb-4">😢</div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">Are you sure?</h3>
+              <p className="text-gray-700 mb-6">
+                You really don't want any of our amazing cookies? This is a once in a lifetime offer! 
+              </p>
+              <p className="text-gray-700 mb-8">
+                Are you absolutely certain about this decision?
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setShowConfirmPopup(false);
+                    setShowCookiePopup(true);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-blue-700 transition-all duration-300"
+                >
+                  Wait, I changed my mind!
+                </button>
+                <button
+                  onClick={handleConfirmYes}
+                  className="flex-1 bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all duration-300"
+                >
+                  Yes, I'm sure
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cookie Monster Popup */}
+      {showCookieMonsterPopup && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full mx-auto shadow-2xl animate-wiggle">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-red-600 mb-4">You will make Cookie Monster upset! 😭</h3>
+              <div className="mb-6">
+                <img 
+                  src="https://media.giphy.com/media/EKUvB9uFnm2Xe/giphy.gif" 
+                  alt="Sad Cookie Monster"
+                  className="w-64 h-64 mx-auto rounded-2xl object-cover"
+                  onError={(e) => {
+                    e.target.src = "https://media.tenor.com/rqv7xj8f5hcAAAAM/cookie-monster-cookies.gif";
+                  }}
+                />
+              </div>
+              <p className="text-gray-700 mb-8">
+                Cookie Monster is very sad that you don't want cookies. Look at those big sad eyes! 
+                Are you really going to make Cookie Monster cry? 💔
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => {
+                    setShowCookieMonsterPopup(false);
+                    setShowCookiePopup(true);
+                  }}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300"
+                >
+                  I'm sorry Cookie Monster! 🍪
+                </button>
+                <button
+                  onClick={handleCookieMonsterSure}
+                  className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-all duration-300"
+                >
+                  I'm sure 😤
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Final Meme + Event Ad Popup */}
+      {showEventAdPopup && (
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-xl w-full mx-auto shadow-2xl animate-bounce-in">
+            <div className="flex justify-end mb-2">
+              <button aria-label="Close"
+                className="text-gray-400 hover:text-gray-600"
+                onClick={() => setShowEventAdPopup(false)}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="text-center">
+              <div className="mb-6">
+                <img
+                  src={cookieMonsterLocalGif}
+                  alt="Cookie Monster enjoying cookies"
+                  className="mx-auto max-h-72 rounded-2xl object-contain"
+                />
+              </div>
+              <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
+                be better. <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">be like cookie monster</span>
+              </h3>
+              <div className="mt-6 text-left bg-gradient-to-br from-blue-50 to-green-50 border border-blue-100 rounded-2xl p-6">
+                <p className="text-gray-900 font-semibold mb-2">Cookie Monster has declared you “a danger to baked goods everywhere.”</p>
+                <p className="text-gray-800 mb-3">There is ONE chance to restore your honour:</p>
+                <ul className="text-gray-900 space-y-1 mb-4">
+                  <li>🎂 Sugar, Frosting, and Good Company</li>
+                  <li>📅 Fri, Nov 14 | ⏰ 3:30-5:30 PM</li>
+                  <li >📍 Student Centre</li>
+                  <li>✨ All materials included because we do not trust you with frosting unsupervised.</li>
+                </ul>
+                <p className="text-gray-800 mb-2">Show up. Decorate something. Prove you're not a frosting-fraud.</p>
+                <center>
+                <p className="text-gray-900 font-semibold mt-2">Your redemption arc starts now.</p>
+                </center>
+              </div>
+              <div className="mt-6 flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowEventAdPopup(false)}
+                  className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-300"
+                >
+                  Yum, see you there!
+                </button>
+                <Link
+                  to="/upload"
+                  className="bg-white border border-gray-200 text-gray-800 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300"
+                  onClick={() => setShowEventAdPopup(false)}
+                >
+                  I'll bring cookies 🍪
+                </Link>
+              </div>
+              <p className="mt-3 text-center text-xs text-gray-500">btw, lensbridge doesn't actually use any tracking cookies.</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Animated gradient backdrop */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { 
   Shield, Users, Image, BarChart3, Settings, Crown, 
   ChevronLeft, ChevronRight, CheckCircle, X, Star, 
@@ -9,6 +9,75 @@ import {
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
 import { useAuth } from '../context/AuthContext';
+
+const ENABLE_R2_OPTIMIZATION = (import.meta.env.VITE_ENABLE_R2_IMAGE_OPTIMIZATION ?? 'true') !== 'false';
+const R2_HOST_ALLOWLIST = (import.meta.env.VITE_R2_IMAGE_HOST_ALLOWLIST || '')
+  .split(',')
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+const DEFAULT_R2_HOST_REGEX = /(media\.lensbridge\.tech)/i;
+
+const canOptimizeR2Host = (host) => {
+  if (!ENABLE_R2_OPTIMIZATION) return false;
+  if (!host) return false;
+  const normalizedHost = host.toLowerCase();
+  if (R2_HOST_ALLOWLIST.length) {
+    return R2_HOST_ALLOWLIST.includes(normalizedHost);
+  }
+  return DEFAULT_R2_HOST_REGEX.test(normalizedHost);
+};
+
+const sanitizePositiveInt = (value) => {
+  const parsed = Math.round(Number(value));
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed;
+};
+
+const buildOptimizedR2Url = (rawUrl, { width, height, quality = 75, fit = 'cover', format = 'auto', dpr } = {}) => {
+  if (!rawUrl) return '';
+  try {
+    const parsed = new URL(rawUrl);
+    if (!canOptimizeR2Host(parsed.hostname)) {
+      return rawUrl;
+    }
+
+    const transforms = [];
+    const normalizedWidth = sanitizePositiveInt(width);
+    const normalizedHeight = sanitizePositiveInt(height);
+    if (normalizedWidth) transforms.push(`width=${normalizedWidth}`);
+    if (normalizedHeight) transforms.push(`height=${normalizedHeight}`);
+
+    const normalizedQuality = sanitizePositiveInt(quality);
+    if (normalizedQuality) {
+      const clampedQuality = Math.min(100, Math.max(1, normalizedQuality));
+      transforms.push(`quality=${clampedQuality}`);
+    }
+
+    if (fit) transforms.push(`fit=${fit}`);
+    if (format) transforms.push(`format=${format}`);
+
+    const normalizedDpr = sanitizePositiveInt(dpr);
+    if (normalizedDpr && normalizedDpr >= 1 && normalizedDpr <= 3) {
+      transforms.push(`dpr=${normalizedDpr}`);
+    }
+
+    if (!transforms.length) {
+      return rawUrl;
+    }
+
+    const normalizedPath = parsed.pathname.startsWith('/')
+      ? parsed.pathname.slice(1)
+      : parsed.pathname;
+    const search = parsed.search || '';
+
+    return `${parsed.origin}/cdn-cgi/image/${transforms.join(',')}/${normalizedPath}${search}`;
+  } catch (error) {
+    console.warn('Failed to build optimized R2 URL', error);
+    return rawUrl;
+  }
+};
 
 function AdminDashboard() {
   const { user, makeAuthenticatedRequest, isAdmin } = useAuth();
@@ -66,6 +135,37 @@ function AdminDashboard() {
   // Media Viewer State
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
+  const devicePixelRatio = useMemo(() => {
+    if (typeof window === 'undefined') return 1;
+    const ratio = window.devicePixelRatio || 1;
+    return Math.min(Math.max(ratio, 1), 2);
+  }, []);
+
+  // Performance refs
+  const messageTimeoutRef = useRef();
+  const uploadsCacheRef = useRef(new Map());
+  const uploadPageRef = useRef(uploadPage);
+  const uploadFilterRef = useRef(uploadFilter);
+  const uploadsAbortControllerRef = useRef(null);
+
+  useEffect(() => {
+    uploadPageRef.current = uploadPage;
+  }, [uploadPage]);
+
+  useEffect(() => {
+    uploadFilterRef.current = uploadFilter;
+  }, [uploadFilter]);
+
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+      }
+      if (uploadsAbortControllerRef.current) {
+        uploadsAbortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Load initial data
@@ -87,7 +187,7 @@ function AdminDashboard() {
         switch (e.key) {
           case 'r':
             e.preventDefault();
-            fetchUploads();
+            refreshUploads();
             showMessage('🔄 Refreshed uploads');
             break;
           case '1':
@@ -137,7 +237,11 @@ function AdminDashboard() {
     );
   };
 
-  const showMessage = (message, isError = false) => {
+  const showMessage = useCallback((message, isError = false) => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+    }
+
     if (isError) {
       setError(message);
       setSuccess('');
@@ -145,24 +249,49 @@ function AdminDashboard() {
       setSuccess(message);
       setError('');
     }
-    setTimeout(() => {
+
+    messageTimeoutRef.current = setTimeout(() => {
       setError('');
       setSuccess('');
+      messageTimeoutRef.current = null;
     }, 5000);
-  };
+  }, []);
 
   // Upload Management Functions
-  const fetchUploads = useCallback(async (page = uploadPage, filter = uploadFilter) => {
+  const fetchUploads = useCallback(async ({ page, filter, force = false } = {}) => {
+    const targetPage = typeof page === 'number' ? page : uploadPageRef.current;
+    const targetFilter = typeof filter === 'string' ? filter : uploadFilterRef.current;
+    const cacheKey = `${targetFilter}:${targetPage}:${uploadSize}`;
+
+    if (!force && uploadsCacheRef.current.has(cacheKey)) {
+      const cachedEntry = uploadsCacheRef.current.get(cacheKey);
+      setUploads(cachedEntry.uploads);
+      if (cachedEntry.stats) {
+        setStats(prev => ({
+          ...prev,
+          ...cachedEntry.stats
+        }));
+      }
+      return;
+    }
+
+    if (uploadsAbortControllerRef.current) {
+      uploadsAbortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    uploadsAbortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const queryParams = new URLSearchParams({
-        page: page.toString(),
+        page: targetPage.toString(),
         size: uploadSize.toString(),
         sort: 'createdDate,desc'
       });
 
       let endpoint = '/api/admin/uploads';
-      switch (filter) {
+      switch (targetFilter) {
         case 'pending':
           endpoint = '/api/admin/uploads/pending';
           break;
@@ -176,132 +305,181 @@ function AdminDashboard() {
           endpoint = '/api/admin/uploads';
       }
 
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`);
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`, {
+        signal: controller.signal
+      });
 
-      if (!response.ok) throw new Error('Failed to fetch uploads');
+      if (!response.ok) {
+        throw new Error('Failed to fetch uploads');
+      }
 
       const data = await response.json();
       setUploads(data);
-      
-      // Calculate stats from all uploads (only when fetching 'all')
-      if (filter === 'all') {
-        setStats(prev => ({
-          ...prev,
+
+      let statsUpdate = null;
+      if (targetFilter === 'all') {
+        statsUpdate = {
           totalUploads: data.totalElements,
           approvedUploads: data.content.filter(u => u.approved).length,
           featuredUploads: data.content.filter(u => u.featured).length
+        };
+
+        setStats(prev => ({
+          ...prev,
+          ...statsUpdate
         }));
       }
+
+      uploadsCacheRef.current.set(cacheKey, {
+        uploads: data,
+        stats: statsUpdate
+      });
     } catch (error) {
+      if (error.name === 'AbortError') {
+        return;
+      }
       showMessage('Failed to fetch uploads', true);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) {
+        setLoading(false);
+      }
+      if (uploadsAbortControllerRef.current === controller) {
+        uploadsAbortControllerRef.current = null;
+      }
     }
-  }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
+  }, [uploadSize, makeAuthenticatedRequest, showMessage]);
 
-  const approveUpload = async (uploadId) => {
+  const invalidateUploadsCache = useCallback(() => {
+    uploadsCacheRef.current.clear();
+  }, []);
+
+  const refreshUploads = useCallback((options = {}) => {
+    return fetchUploads({ ...options, force: true });
+  }, [fetchUploads]);
+
+  const approveUpload = useCallback(async (upload) => {
+    if (!upload) return;
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${upload.uuid}`, {
         method: 'POST'
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to approve upload');
       }
 
       const result = await response.json();
       showMessage(result.message);
-      fetchUploads();
+      invalidateUploadsCache();
+      await refreshUploads();
     } catch (error) {
-      showMessage(error.message, true);
+      showMessage(error?.message || 'Failed to approve upload', true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, invalidateUploadsCache, refreshUploads]);
 
-  const deleteUpload = async (uploadId) => {
-    const upload = uploads.content.find(u => u.uuid === uploadId);
-    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
-    
-    if (!confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) return;
-    
+  const deleteUpload = useCallback(async (upload) => {
+    if (!upload) return;
+
+    const uploadTitle = upload.uploadDescription || upload.fileName || 'this upload';
+    if (!window.confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${upload.uuid}`, {
         method: 'DELETE'
       });
 
-      if (!response.ok) throw new Error('Failed to delete upload');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to delete upload');
+      }
 
       const result = await response.json();
       showMessage(`🗑️ ${result.message}`);
-      fetchUploads();
+      invalidateUploadsCache();
+      await refreshUploads();
     } catch (error) {
-      showMessage('❌ Failed to delete upload', true);
+      showMessage(error?.message || '❌ Failed to delete upload', true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, invalidateUploadsCache, refreshUploads]);
 
-  const featureUpload = async (uploadId) => {
+  const featureUpload = useCallback(async (upload) => {
+    if (!upload) return;
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${upload.uuid}`, {
         method: 'POST'
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to feature upload');
       }
 
       const result = await response.json();
       showMessage(result.message);
-      fetchUploads();
+      invalidateUploadsCache();
+      await refreshUploads();
     } catch (error) {
-      showMessage(error.message, true);
+      showMessage(error?.message || 'Failed to feature upload', true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, invalidateUploadsCache, refreshUploads]);
 
-  const unapproveUpload = async (uploadId) => {
-    const upload = uploads.content.find(u => u.uuid === uploadId);
-    const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
-    
-    if (!confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) return;
-    
+  const unapproveUpload = useCallback(async (upload) => {
+    if (!upload) return;
+
+    const uploadTitle = upload.uploadDescription || upload.fileName || 'this upload';
+    if (!window.confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) {
+      return;
+    }
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${upload.uuid}/approval`, {
         method: 'DELETE'
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to unapprove upload');
       }
 
       const result = await response.json();
       showMessage(`⏪ ${result.message}`);
-      fetchUploads();
+      invalidateUploadsCache();
+      await refreshUploads();
     } catch (error) {
-      showMessage(`❌ ${error.message}`, true);
+      showMessage(`❌ ${error?.message || 'Failed to unapprove upload'}`, true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, invalidateUploadsCache, refreshUploads]);
 
-  const unfeatureUpload = async (uploadId) => {
-    if (!confirm('Are you sure you want to unfeature this upload?')) return;
-    
+  const unfeatureUpload = useCallback(async (upload) => {
+    if (!upload) return;
+
+    if (!window.confirm('Are you sure you want to unfeature this upload?')) {
+      return;
+    }
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
+      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${upload.uuid}/featured`, {
         method: 'DELETE'
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || 'Failed to unfeature upload');
       }
 
       const result = await response.json();
       showMessage(result.message);
-      fetchUploads();
+      invalidateUploadsCache();
+      await refreshUploads();
     } catch (error) {
-      showMessage(error.message, true);
+      showMessage(error?.message || 'Failed to unfeature upload', true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, invalidateUploadsCache, refreshUploads]);
 
   // Event Management Functions
   const fetchEvents = async () => {
@@ -550,7 +728,7 @@ function AdminDashboard() {
     }
   }, [activeTab, fetchAudits, fetchUsers, user]);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -558,9 +736,9 @@ function AdminDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const getDisplayName = (upload) => {
+  const getDisplayName = useCallback((upload) => {
     if (upload.anon) {
       return "Anonymous";
     }
@@ -573,9 +751,9 @@ function AdminDashboard() {
     }
     
     return fullName;
-  };
+  }, []);
 
-  const getTooltipText = (upload) => {
+  const getTooltipText = useCallback((upload) => {
     if (upload.anon) {
       const fullName = `${upload.uploaderFirstName || ''} ${upload.uploaderLastName || ''}`.trim();
       if (fullName) {
@@ -584,50 +762,311 @@ function AdminDashboard() {
       return 'Anonymous upload - no author information';
     }
     return null;
-  };
+  }, []);
 
-  const downloadFile = async (secureUrl, fileName) => {
+  const openMediaViewer = useCallback((upload) => {
+    setSelectedMedia(upload);
+    setShowMediaViewer(true);
+  }, []);
+
+  const closeMediaViewer = useCallback(() => {
+    setSelectedMedia(null);
+    setShowMediaViewer(false);
+  }, []);
+
+  const handleDownload = useCallback((upload) => {
+    if (!upload?.secureUrl) return;
     try {
-      const response = await fetch(secureUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
+      link.href = upload.secureUrl;
+      link.download = upload.fileName || 'download';
+      link.rel = 'noopener noreferrer';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      showMessage('File downloaded successfully');
+      showMessage('Download started');
     } catch (error) {
-      showMessage('Failed to download file', true);
+      showMessage('Failed to start download', true);
     }
-  };
+  }, [showMessage]);
 
-  const openMediaViewer = (upload) => {
-    setSelectedMedia(upload);
-    setShowMediaViewer(true);
-  };
+  const processedUploads = useMemo(() => {
+    const items = uploads?.content ?? [];
+    return items.map((upload) => {
+      const baseImageUrl = upload?.thumbnailUrl
+        || upload?.thumbnail
+        || upload?.imageUrl
+        || upload?.previewUrl
+        || upload?.src
+        || upload?.secureUrl
+        || '';
 
-  const closeMediaViewer = () => {
-    setSelectedMedia(null);
-    setShowMediaViewer(false);
-  };
+      const previewUrl = upload?.contentType === 'IMAGE'
+        ? buildOptimizedR2Url(baseImageUrl, {
+            width: 360,
+            height: 360,
+            quality: 70,
+            fit: 'cover',
+            format: 'auto',
+            dpr: devicePixelRatio
+          }) || baseImageUrl
+        : '';
 
-  const StatusBadge = ({ approved, featured }) => (
-    <div className="flex gap-2">
-      <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-        approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-      }`}>
-        {approved ? 'Approved' : 'Pending'}
-      </span>
-      {featured && (
-        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
-          Featured
-        </span>
-      )}
-    </div>
-  );
+      const modalUrl = upload?.contentType === 'IMAGE'
+        ? buildOptimizedR2Url(baseImageUrl, {
+            width: 1600,
+            height: 1600,
+            quality: 85,
+            fit: 'scale-down',
+            format: 'auto',
+            dpr: devicePixelRatio
+          }) || baseImageUrl
+        : upload?.secureUrl;
+
+      return {
+        ...upload,
+        baseImageUrl,
+        previewUrl,
+        modalUrl
+      };
+    });
+  }, [uploads, devicePixelRatio]);
+
+  const pendingCount = useMemo(() => {
+    return Math.max((stats.totalUploads || 0) - (stats.approvedUploads || 0), 0);
+  }, [stats.totalUploads, stats.approvedUploads]);
+
+  const approvalRate = useMemo(() => {
+    if (!stats.totalUploads) return 0;
+    return Math.round((stats.approvedUploads / stats.totalUploads) * 100);
+  }, [stats.totalUploads, stats.approvedUploads]);
+
+  const desktopUploads = useMemo(() => (
+    processedUploads.map((upload) => (
+      <tr key={upload.uuid} className="hover:bg-gray-50">
+        <td className="px-4 py-4 whitespace-nowrap">
+          <div className="flex items-center">
+            <MediaThumbnail upload={upload} size="md" onOpen={openMediaViewer} className="flex-shrink-0" />
+          </div>
+        </td>
+        <td className="px-4 py-4">
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+              {upload.uploadDescription || 'No description'}
+            </div>
+            <div className="text-xs text-gray-500 truncate">
+              {upload.fileName}
+            </div>
+            <div className="text-xs text-gray-400">
+              {upload.contentType}
+              {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
+            </div>
+            {upload.anon ? (
+              <div className="text-xs">
+                <span className="text-gray-500 italic">Anonymous</span>
+                <div
+                  className="inline-block cursor-help group ml-1"
+                  title="Hover to reveal uploader identity"
+                >
+                  <span className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-1 rounded text-xs">
+                    {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-gray-600">
+                {getDisplayName(upload)}
+                {upload.instagramHandle && (
+                  <a
+                    href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                    title="View Instagram profile"
+                  >
+                    @{upload.instagramHandle.replace('@', '')}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </td>
+        <td className="px-4 py-4">
+          <div className="text-xs font-mono text-gray-600 break-all">
+            {upload.uuid}
+          </div>
+        </td>
+        <td className="px-4 py-4">
+          <div className="space-y-1">
+            <div className="text-sm font-medium text-gray-900">
+              {upload.eventName || 'No Event'}
+            </div>
+            <div className="text-xs text-gray-500">
+              {formatDate(upload.createdDate)}
+            </div>
+          </div>
+        </td>
+        <td className="px-4 py-4 whitespace-nowrap">
+          <StatusBadge approved={upload.approved} featured={upload.featured} />
+        </td>
+        <td className="px-4 py-4 whitespace-nowrap">
+          <div className="flex space-x-1">
+            <button
+              onClick={() => handleDownload(upload)}
+              className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
+              title="Download"
+            >
+              <DownloadIcon className="h-3 w-3" />
+            </button>
+            {!upload.approved ? (
+              <button
+                onClick={() => approveUpload(upload)}
+                className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors"
+                title="Approve"
+              >
+                <CheckCircle className="h-3 w-3" />
+              </button>
+            ) : (
+              <button
+                onClick={() => unapproveUpload(upload)}
+                className="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 transition-colors"
+                title="Unapprove"
+              >
+                <XCircle className="h-3 w-3" />
+              </button>
+            )}
+            {upload.approved && !upload.featured ? (
+              <button
+                onClick={() => featureUpload(upload)}
+                className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors"
+                title="Feature"
+              >
+                <Star className="h-3 w-3" />
+              </button>
+            ) : upload.featured ? (
+              <button
+                onClick={() => unfeatureUpload(upload)}
+                className="bg-orange-600 text-white p-2 rounded hover:bg-orange-700 transition-colors"
+                title="Unfeature"
+              >
+                <StarOff className="h-3 w-3" />
+              </button>
+            ) : null}
+            <button
+              onClick={() => deleteUpload(upload)}
+              className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition-colors"
+              title="Delete"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </div>
+        </td>
+      </tr>
+    ))
+  ), [processedUploads, openMediaViewer, getDisplayName, formatDate, handleDownload, approveUpload, unapproveUpload, featureUpload, unfeatureUpload, deleteUpload]);
+
+  const mobileUploads = useMemo(() => (
+    processedUploads.map((upload) => (
+      <div key={upload.uuid} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+        <div className="flex space-x-3">
+          <MediaThumbnail upload={upload} size="lg" onOpen={openMediaViewer} className="flex-shrink-0" />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1 min-w-0 mr-2">
+                <h3 className="text-sm font-medium text-gray-900 truncate">
+                  {upload.uploadDescription || 'No description'}
+                </h3>
+                <p className="text-xs text-gray-500 truncate">{upload.fileName}</p>
+              </div>
+              <StatusBadge approved={upload.approved} featured={upload.featured} />
+            </div>
+
+            <div className="space-y-1 text-xs text-gray-600">
+              <div>Event: {upload.eventName || 'No Event'}</div>
+              <div>Date: {formatDate(upload.createdDate)}</div>
+              <div>Type: {upload.contentType}</div>
+              {upload.anon ? (
+                <div>
+                  Author: <span className="text-gray-500 italic">Anonymous</span>
+                  <span
+                    className="ml-1 bg-black text-black select-none hover:bg-transparent hover:text-gray-600 transition-all duration-200 px-1 rounded cursor-help"
+                    title="Hover to reveal uploader identity"
+                  >
+                    {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
+                  </span>
+                </div>
+              ) : (
+                <div>
+                  Author: {getDisplayName(upload)}
+                  {upload.instagramHandle && (
+                    <a
+                      href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                      title="View Instagram profile"
+                    >
+                      @{upload.instagramHandle.replace('@', '')}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  )}
+                </div>
+              )}
+              <div>UUID: <span className="font-mono text-xs">{upload.uuid}</span></div>
+            </div>
+
+            <div className="flex space-x-2 mt-3 flex-wrap">
+              <button
+                onClick={() => handleDownload(upload)}
+                className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700 transition-colors flex items-center space-x-1"
+              >
+                <DownloadIcon className="h-3 w-3" />
+                <span>Download</span>
+              </button>
+              {!upload.approved ? (
+                <button
+                  onClick={() => approveUpload(upload)}
+                  className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                >
+                  Approve
+                </button>
+              ) : (
+                <button
+                  onClick={() => unapproveUpload(upload)}
+                  className="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700 transition-colors"
+                >
+                  Unapprove
+                </button>
+              )}
+              {upload.approved && !upload.featured ? (
+                <button
+                  onClick={() => featureUpload(upload)}
+                  className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                >
+                  Feature
+                </button>
+              ) : upload.featured ? (
+                <button
+                  onClick={() => unfeatureUpload(upload)}
+                  className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
+                >
+                  Unfeature
+                </button>
+              ) : null}
+              <button
+                onClick={() => deleteUpload(upload)}
+                className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ))
+  ), [processedUploads, openMediaViewer, getDisplayName, formatDate, handleDownload, approveUpload, unapproveUpload, featureUpload, unfeatureUpload, deleteUpload]);
 
   return (
     <div className="max-w-7xl mx-auto p-4">
@@ -781,17 +1220,19 @@ function AdminDashboard() {
             <div className="relative max-w-full max-h-full">
               {selectedMedia.contentType === 'IMAGE' ? (
                 <img
-                  src={selectedMedia.secureUrl}
+                  src={selectedMedia.modalUrl || selectedMedia.secureUrl}
                   alt={selectedMedia.fileName}
                   className="max-w-full max-h-full object-contain rounded-lg"
                 />
               ) : selectedMedia.contentType === 'VIDEO' ? (
                 <video
                   src={selectedMedia.secureUrl}
+                  poster={selectedMedia.previewUrl || selectedMedia.baseImageUrl || ''}
                   controls
                   autoPlay
                   className="max-w-full max-h-full object-contain rounded-lg"
                   style={{ maxHeight: '80vh' }}
+                  preload="metadata"
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -806,7 +1247,7 @@ function AdminDashboard() {
                       Preview not available for this file type
                     </p>
                     <button
-                      onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
+                      onClick={() => handleDownload(selectedMedia)}
                       className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2 mx-auto"
                     >
                       <DownloadIcon className="h-4 w-4" />
@@ -836,7 +1277,7 @@ function AdminDashboard() {
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => downloadFile(selectedMedia.secureUrl, selectedMedia.fileName)}
+                    onClick={() => handleDownload(selectedMedia)}
                     className="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-1"
                   >
                     <DownloadIcon className="h-4 w-4" />
@@ -845,7 +1286,7 @@ function AdminDashboard() {
                   {!selectedMedia.approved ? (
                     <button
                       onClick={() => {
-                        approveUpload(selectedMedia.uuid);
+                        approveUpload(selectedMedia);
                         closeMediaViewer();
                       }}
                       className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors"
@@ -855,7 +1296,7 @@ function AdminDashboard() {
                   ) : (
                     <button
                       onClick={() => {
-                        unapproveUpload(selectedMedia.uuid);
+                        unapproveUpload(selectedMedia);
                         closeMediaViewer();
                       }}
                       className="bg-yellow-600 text-white px-3 py-2 rounded-lg hover:bg-yellow-700 transition-colors"
@@ -866,7 +1307,7 @@ function AdminDashboard() {
                   {selectedMedia.approved && !selectedMedia.featured ? (
                     <button
                       onClick={() => {
-                        featureUpload(selectedMedia.uuid);
+                        featureUpload(selectedMedia);
                         closeMediaViewer();
                       }}
                       className="bg-purple-600 text-white px-3 py-2 rounded-lg hover:bg-purple-700 transition-colors"
@@ -876,7 +1317,7 @@ function AdminDashboard() {
                   ) : selectedMedia.featured ? (
                     <button
                       onClick={() => {
-                        unfeatureUpload(selectedMedia.uuid);
+                        unfeatureUpload(selectedMedia);
                         closeMediaViewer();
                       }}
                       className="bg-orange-600 text-white px-3 py-2 rounded-lg hover:bg-orange-700 transition-colors"
@@ -913,9 +1354,6 @@ function AdminDashboard() {
   }
 
   function renderUploadsTab() {
-    const pendingCount = stats.totalUploads - stats.approvedUploads;
-    const approvalRate = stats.totalUploads > 0 ? Math.round((stats.approvedUploads / stats.totalUploads) * 100) : 0;
-    
     return (
       <div className="space-y-6">
         {/* Enhanced Header with Mini Stats */}
@@ -933,7 +1371,7 @@ function AdminDashboard() {
             </div>
           </div>
           <button
-            onClick={() => fetchUploads()}
+            onClick={() => refreshUploads()}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             disabled={loading}
           >
@@ -946,7 +1384,7 @@ function AdminDashboard() {
           <nav className="flex space-x-8">
             {[
               { id: 'all', label: 'All Uploads', count: stats.totalUploads },
-              { id: 'pending', label: 'Pending Approval', count: stats.totalUploads - stats.approvedUploads },
+              { id: 'pending', label: 'Pending Approval', count: pendingCount },
               { id: 'approved', label: 'Approved', count: stats.approvedUploads },
               { id: 'featured', label: 'Featured', count: stats.featuredUploads }
             ].map(({ id, label, count }) => (
@@ -955,7 +1393,7 @@ function AdminDashboard() {
                 onClick={() => {
                   setUploadFilter(id);
                   setUploadPage(0);
-                  fetchUploads(0, id);
+                  fetchUploads({ page: 0, filter: id });
                 }}
                 className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                   uploadFilter === id
@@ -1004,154 +1442,15 @@ function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {uploads.content.map((upload) => (
-                  <tr key={upload.uuid} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div 
-                          className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
-                          onClick={() => openMediaViewer(upload)}
-                        >
-                          {upload.contentType === 'IMAGE' ? (
-                            <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
-                          ) : upload.contentType === 'VIDEO' ? (
-                            <div className="h-full w-full relative">
-                              <video 
-                                src={upload.secureUrl} 
-                                className="h-full w-full object-cover"
-                                muted
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                                <Play className="h-4 w-4 text-white" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <Image className="h-6 w-6 text-gray-400" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Eye className="h-4 w-4 text-white" />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                          {upload.uploadDescription || 'No description'}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {upload.fileName}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {upload.contentType}
-                          {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
-                        </div>
-                        {/* Author Info */}
-                        {upload.anon ? (
-                          <div className="text-xs">
-                            <span className="text-gray-500 italic">Anonymous</span>
-                            <div 
-                              className="inline-block cursor-help group ml-1"
-                              title="Hover to reveal uploader identity"
-                            >
-                              <span className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-1 rounded text-xs">
-                                {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-600">
-                            {getDisplayName(upload)}
-                            {upload.instagramHandle && (
-                              <a 
-                                href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
-                                title="View Instagram profile"
-                              >
-                                @{upload.instagramHandle.replace('@', '')}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-xs font-mono text-gray-600 break-all">
-                        {upload.uuid}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {upload.eventName || 'No Event'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(upload.createdDate)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <StatusBadge approved={upload.approved} featured={upload.featured} />
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
-                          className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
-                          title="Download"
-                        >
-                          <DownloadIcon className="h-3 w-3" />
-                        </button>
-                        {!upload.approved ? (
-                          <button
-                            onClick={() => approveUpload(upload.uuid)}
-                            className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors"
-                            title="Approve"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => unapproveUpload(upload.uuid)}
-                            className="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 transition-colors"
-                            title="Unapprove"
-                          >
-                            <XCircle className="h-3 w-3" />
-                          </button>
-                        )}
-                        {upload.approved && !upload.featured ? (
-                          <button
-                            onClick={() => featureUpload(upload.uuid)}
-                            className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors"
-                            title="Feature"
-                          >
-                            <Star className="h-3 w-3" />
-                          </button>
-                        ) : upload.featured ? (
-                          <button
-                            onClick={() => unfeatureUpload(upload.uuid)}
-                            className="bg-orange-600 text-white p-2 rounded hover:bg-orange-700 transition-colors"
-                            title="Unfeature"
-                          >
-                            <StarOff className="h-3 w-3" />
-                          </button>
-                        ) : null}
-                        <button
-                          onClick={() => deleteUpload(upload.uuid)}
-                          className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
+                {processedUploads.length ? (
+                  desktopUploads
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
+                      No uploads found for this filter.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -1159,135 +1458,13 @@ function AdminDashboard() {
 
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-4">
-          {uploads.content.map((upload) => (
-            <div key={upload.uuid} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-              <div className="flex space-x-3">
-                {/* Media Thumbnail */}
-                <div 
-                  className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group flex-shrink-0"
-                  onClick={() => openMediaViewer(upload)}
-                >
-                  {upload.contentType === 'IMAGE' ? (
-                    <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
-                  ) : upload.contentType === 'VIDEO' ? (
-                    <div className="h-full w-full relative">
-                      <video 
-                        src={upload.secureUrl} 
-                        className="h-full w-full object-cover"
-                        muted
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                        <Play className="h-5 w-5 text-white" />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <Image className="h-8 w-8 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Eye className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1 min-w-0 mr-2">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
-                        {upload.uploadDescription || 'No description'}
-                      </h3>
-                      <p className="text-xs text-gray-500 truncate">{upload.fileName}</p>
-                    </div>
-                    <StatusBadge approved={upload.approved} featured={upload.featured} />
-                  </div>
-
-                  <div className="space-y-1 text-xs text-gray-600">
-                    <div>Event: {upload.eventName || 'No Event'}</div>
-                    <div>Date: {formatDate(upload.createdDate)}</div>
-                    <div>Type: {upload.contentType}</div>
-                    
-                    {/* Author Info */}
-                    {upload.anon ? (
-                      <div>
-                        Author: <span className="text-gray-500 italic">Anonymous</span>
-                        <span 
-                          className="ml-1 bg-black text-black select-none hover:bg-transparent hover:text-gray-600 transition-all duration-200 px-1 rounded cursor-help"
-                          title="Hover to reveal uploader identity"
-                        >
-                          {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div>
-                        Author: {getDisplayName(upload)}
-                        {upload.instagramHandle && (
-                          <a 
-                            href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
-                            title="View Instagram profile"
-                          >
-                            @{upload.instagramHandle.replace('@', '')}
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                      </div>
-                    )}
-                    <div>UUID: <span className="font-mono text-xs">{upload.uuid}</span></div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex space-x-2 mt-3 flex-wrap">
-                    <button
-                      onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
-                      className="bg-indigo-600 text-white px-3 py-1 rounded text-xs hover:bg-indigo-700 transition-colors flex items-center space-x-1"
-                    >
-                      <DownloadIcon className="h-3 w-3" />
-                      <span>Download</span>
-                    </button>
-                    {!upload.approved ? (
-                      <button
-                        onClick={() => approveUpload(upload.uuid)}
-                        className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors"
-                      >
-                        Approve
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => unapproveUpload(upload.uuid)}
-                        className="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700 transition-colors"
-                      >
-                        Unapprove
-                      </button>
-                    )}
-                    {upload.approved && !upload.featured ? (
-                      <button
-                        onClick={() => featureUpload(upload.uuid)}
-                        className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
-                      >
-                        Feature
-                      </button>
-                    ) : upload.featured ? (
-                      <button
-                        onClick={() => unfeatureUpload(upload.uuid)}
-                        className="bg-orange-600 text-white px-3 py-1 rounded text-xs hover:bg-orange-700 transition-colors"
-                      >
-                        Unfeature
-                      </button>
-                    ) : null}
-                    <button
-                      onClick={() => deleteUpload(upload.uuid)}
-                      className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {processedUploads.length ? (
+            mobileUploads
+          ) : (
+            <div className="bg-white border border-dashed border-gray-300 rounded-lg p-6 text-center text-sm text-gray-500">
+              Nothing to review yet. Try switching filters or refreshing the page.
             </div>
-          ))}
+          )}
         </div>
 
         {/* Pagination */}
@@ -1301,7 +1478,7 @@ function AdminDashboard() {
                 onClick={() => {
                   const newPage = Math.max(0, uploadPage - 1);
                   setUploadPage(newPage);
-                  fetchUploads(newPage, uploadFilter);
+                  fetchUploads({ page: newPage });
                 }}
                 disabled={uploadPage === 0}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
@@ -1315,7 +1492,7 @@ function AdminDashboard() {
                 onClick={() => {
                   const newPage = Math.min(uploads.totalPages - 1, uploadPage + 1);
                   setUploadPage(newPage);
-                  fetchUploads(newPage, uploadFilter);
+                  fetchUploads({ page: newPage });
                 }}
                 disabled={uploadPage >= uploads.totalPages - 1}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
@@ -2102,3 +2279,132 @@ function renderAuditTab() {
 }
 
 export default AdminDashboard;
+
+const MEDIA_THUMBNAIL_SIZES = {
+  sm: 'h-10 w-10',
+  md: 'h-12 w-12',
+  lg: 'h-16 w-16',
+  xl: 'h-24 w-24'
+};
+
+const MediaThumbnail = memo(function MediaThumbnail({ upload, size = 'md', onOpen, className = '' }) {
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(() => (
+    upload?.previewUrl || upload?.baseImageUrl || upload?.secureUrl || ''
+  ));
+
+  useEffect(() => {
+    setCurrentSrc(upload?.previewUrl || upload?.baseImageUrl || upload?.secureUrl || '');
+  }, [upload?.previewUrl, upload?.baseImageUrl, upload?.secureUrl]);
+
+  useEffect(() => {
+    const element = containerRef.current;
+    if (!element) return;
+
+    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+      setIsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  const handleImageError = useCallback(() => {
+    if (!upload?.baseImageUrl) return;
+    setCurrentSrc((existing) => (existing === upload.baseImageUrl ? existing : upload.baseImageUrl));
+  }, [upload?.baseImageUrl]);
+
+  const handleOpen = useCallback(() => {
+    onOpen?.(upload);
+  }, [onOpen, upload]);
+
+  const handleKeyDown = useCallback((event) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      onOpen?.(upload);
+    }
+  }, [onOpen, upload]);
+
+  const dimensionClasses = MEDIA_THUMBNAIL_SIZES[size] || MEDIA_THUMBNAIL_SIZES.md;
+
+  let previewContent = (
+    <div className="h-full w-full bg-gray-200 animate-pulse" />
+  );
+
+  if (isVisible) {
+    if (upload?.contentType === 'IMAGE' && currentSrc) {
+      previewContent = (
+        <img
+          src={currentSrc}
+          alt={upload?.fileName || 'Upload preview'}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={handleImageError}
+        />
+      );
+    } else if (upload?.contentType === 'VIDEO') {
+      previewContent = (
+        <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-200 via-gray-100 to-gray-300">
+          <Play className="h-5 w-5 text-gray-700" />
+        </div>
+      );
+    } else {
+      previewContent = (
+        <div className="h-full w-full flex items-center justify-center bg-gray-200">
+          <Image className="h-5 w-5 text-gray-500" />
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative rounded-lg overflow-hidden bg-gray-200 cursor-pointer transition-opacity hover:opacity-80 group focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${dimensionClasses} ${className}`.trim()}
+      role="button"
+      tabIndex={0}
+      aria-label={upload?.fileName ? `Open ${upload.fileName}` : 'Open media preview'}
+      onClick={handleOpen}
+      onKeyDown={handleKeyDown}
+    >
+      {previewContent}
+      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Eye className="h-4 w-4 text-white" />
+      </div>
+    </div>
+  );
+});
+
+const StatusBadge = memo(function StatusBadge({ approved, featured }) {
+  return (
+    <div className="flex gap-2">
+      <span
+        className={`px-2 py-1 rounded-full text-xs font-semibold ${
+          approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        }`}
+      >
+        {approved ? 'Approved' : 'Pending'}
+      </span>
+      {featured && (
+        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+          Featured
+        </span>
+      )}
+    </div>
+  );
+});
