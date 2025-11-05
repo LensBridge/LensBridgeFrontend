@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { 
   Shield, Users, Image, BarChart3, Settings, Crown, 
   ChevronLeft, ChevronRight, CheckCircle, X, Star, 
@@ -137,7 +137,7 @@ function AdminDashboard() {
     );
   };
 
-  const showMessage = (message, isError = false) => {
+  const showMessage = useCallback((message, isError = false) => {
     if (isError) {
       setError(message);
       setSuccess('');
@@ -149,7 +149,7 @@ function AdminDashboard() {
       setError('');
       setSuccess('');
     }, 5000);
-  };
+  }, []);
 
   // Upload Management Functions
   const fetchUploads = useCallback(async (page = uploadPage, filter = uploadFilter) => {
@@ -199,7 +199,7 @@ function AdminDashboard() {
     }
   }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
 
-  const approveUpload = async (uploadId) => {
+  const approveUpload = useCallback(async (uploadId) => {
     try {
       const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
         method: 'POST'
@@ -216,9 +216,9 @@ function AdminDashboard() {
     } catch (error) {
       showMessage(error.message, true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
 
-  const deleteUpload = async (uploadId) => {
+  const deleteUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
     const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
     
@@ -237,9 +237,9 @@ function AdminDashboard() {
     } catch (error) {
       showMessage('❌ Failed to delete upload', true);
     }
-  };
+  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
 
-  const featureUpload = async (uploadId) => {
+  const featureUpload = useCallback(async (uploadId) => {
     try {
       const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
         method: 'POST'
@@ -256,9 +256,9 @@ function AdminDashboard() {
     } catch (error) {
       showMessage(error.message, true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
 
-  const unapproveUpload = async (uploadId) => {
+  const unapproveUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
     const uploadTitle = upload?.uploadDescription || upload?.fileName || 'this upload';
     
@@ -280,9 +280,9 @@ function AdminDashboard() {
     } catch (error) {
       showMessage(`❌ ${error.message}`, true);
     }
-  };
+  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
 
-  const unfeatureUpload = async (uploadId) => {
+  const unfeatureUpload = useCallback(async (uploadId) => {
     if (!confirm('Are you sure you want to unfeature this upload?')) return;
     
     try {
@@ -301,7 +301,7 @@ function AdminDashboard() {
     } catch (error) {
       showMessage(error.message, true);
     }
-  };
+  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
 
   // Event Management Functions
   const fetchEvents = async () => {
@@ -431,11 +431,22 @@ function AdminDashboard() {
     }
   }, [userPage, userSize, userSearchTerm, user, makeAuthenticatedRequest]);
 
-  const handleUserSearch = (searchTerm) => {
+  // Debounced search to prevent excessive API calls
+  const searchTimeoutRef = useRef(null);
+  const handleUserSearch = useCallback((searchTerm) => {
     setUserSearchTerm(searchTerm);
-    setUserPage(0);
-    fetchUsers(0, searchTerm);
-  };
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      setUserPage(0);
+      fetchUsers(0, searchTerm);
+    }, 300); // 300ms debounce
+  }, [fetchUsers]);
 
   const fetchAvailableRoles = async () => {
     if (!hasRootPermissions(user)) return;
@@ -550,7 +561,7 @@ function AdminDashboard() {
     }
   }, [activeTab, fetchAudits, fetchUsers, user]);
 
-  const formatDate = (dateString) => {
+  const formatDate = useCallback((dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -558,9 +569,9 @@ function AdminDashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
-  };
+  }, []);
 
-  const getDisplayName = (upload) => {
+  const getDisplayName = useCallback((upload) => {
     if (upload.anon) {
       return "Anonymous";
     }
@@ -573,9 +584,9 @@ function AdminDashboard() {
     }
     
     return fullName;
-  };
+  }, []);
 
-  const getTooltipText = (upload) => {
+  const getTooltipText = useCallback((upload) => {
     if (upload.anon) {
       const fullName = `${upload.uploaderFirstName || ''} ${upload.uploaderLastName || ''}`.trim();
       if (fullName) {
@@ -584,9 +595,9 @@ function AdminDashboard() {
       return 'Anonymous upload - no author information';
     }
     return null;
-  };
+  }, []);
 
-  const downloadFile = async (secureUrl, fileName) => {
+  const downloadFile = useCallback(async (secureUrl, fileName) => {
     try {
       const response = await fetch(secureUrl);
       const blob = await response.blob();
@@ -602,19 +613,20 @@ function AdminDashboard() {
     } catch (error) {
       showMessage('Failed to download file', true);
     }
-  };
+  }, [showMessage]);
 
-  const openMediaViewer = (upload) => {
+  const openMediaViewer = useCallback((upload) => {
     setSelectedMedia(upload);
     setShowMediaViewer(true);
-  };
+  }, []);
 
-  const closeMediaViewer = () => {
+  const closeMediaViewer = useCallback(() => {
     setSelectedMedia(null);
     setShowMediaViewer(false);
-  };
+  }, []);
 
-  const StatusBadge = ({ approved, featured }) => (
+  // Memoized StatusBadge component to prevent unnecessary re-renders
+  const StatusBadge = memo(({ approved, featured }) => (
     <div className="flex gap-2">
       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
         approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -627,7 +639,157 @@ function AdminDashboard() {
         </span>
       )}
     </div>
-  );
+  ));
+
+  // Memoized UploadRow component - CRITICAL for performance
+  const UploadRow = memo(({ upload }) => (
+    <tr key={upload.uuid} className="hover:bg-gray-50">
+      <td className="px-4 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div 
+            className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
+            onClick={() => openMediaViewer(upload)}
+          >
+            {upload.contentType === 'IMAGE' ? (
+              <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" loading="lazy" />
+            ) : upload.contentType === 'VIDEO' ? (
+              <div className="h-full w-full relative">
+                <video 
+                  src={upload.secureUrl} 
+                  className="h-full w-full object-cover"
+                  muted
+                  preload="none"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                  <Play className="h-4 w-4 text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Image className="h-6 w-6 text-gray-400" />
+              </div>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Eye className="h-4 w-4 text-white" />
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+            {upload.uploadDescription || 'No description'}
+          </div>
+          <div className="text-xs text-gray-500 truncate">
+            {upload.fileName}
+          </div>
+          <div className="text-xs text-gray-400">
+            {upload.contentType}
+            {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
+          </div>
+          {upload.anon ? (
+            <div className="text-xs">
+              <span className="text-gray-500 italic">Anonymous</span>
+              <div 
+                className="inline-block cursor-help group ml-1"
+                title="Hover to reveal uploader identity"
+              >
+                <span className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-1 rounded text-xs">
+                  {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-gray-600">
+              {getDisplayName(upload)}
+              {upload.instagramHandle && (
+                <a 
+                  href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                  title="View Instagram profile"
+                >
+                  @{upload.instagramHandle.replace('@', '')}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className="text-xs font-mono text-gray-600 break-all">
+          {upload.uuid}
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className="space-y-1">
+          <div className="text-sm font-medium text-gray-900">
+            {upload.eventName || 'No Event'}
+          </div>
+          <div className="text-xs text-gray-500">
+            {formatDate(upload.createdDate)}
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap">
+        <StatusBadge approved={upload.approved} featured={upload.featured} />
+      </td>
+      <td className="px-4 py-4 whitespace-nowrap">
+        <div className="flex space-x-1">
+          <button
+            onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
+            className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
+            title="Download"
+          >
+            <DownloadIcon className="h-3 w-3" />
+          </button>
+          {!upload.approved ? (
+            <button
+              onClick={() => approveUpload(upload.uuid)}
+              className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors"
+              title="Approve"
+            >
+              <CheckCircle className="h-3 w-3" />
+            </button>
+          ) : (
+            <button
+              onClick={() => unapproveUpload(upload.uuid)}
+              className="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 transition-colors"
+              title="Unapprove"
+            >
+              <XCircle className="h-3 w-3" />
+            </button>
+          )}
+          {upload.approved && !upload.featured ? (
+            <button
+              onClick={() => featureUpload(upload.uuid)}
+              className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors"
+              title="Feature"
+            >
+              <Star className="h-3 w-3" />
+            </button>
+          ) : upload.featured ? (
+            <button
+              onClick={() => unfeatureUpload(upload.uuid)}
+              className="bg-orange-600 text-white p-2 rounded hover:bg-orange-700 transition-colors"
+              title="Unfeature"
+            >
+              <StarOff className="h-3 w-3" />
+            </button>
+          ) : null}
+          <button
+            onClick={() => deleteUpload(upload.uuid)}
+            className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition-colors"
+            title="Delete"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  ));
 
   return (
     <div className="max-w-7xl mx-auto p-4">
@@ -1005,152 +1167,7 @@ function AdminDashboard() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {uploads.content.map((upload) => (
-                  <tr key={upload.uuid} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div 
-                          className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
-                          onClick={() => openMediaViewer(upload)}
-                        >
-                          {upload.contentType === 'IMAGE' ? (
-                            <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
-                          ) : upload.contentType === 'VIDEO' ? (
-                            <div className="h-full w-full relative">
-                              <video 
-                                src={upload.secureUrl} 
-                                className="h-full w-full object-cover"
-                                muted
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
-                                <Play className="h-4 w-4 text-white" />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <Image className="h-6 w-6 text-gray-400" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Eye className="h-4 w-4 text-white" />
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                          {upload.uploadDescription || 'No description'}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {upload.fileName}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {upload.contentType}
-                          {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
-                        </div>
-                        {/* Author Info */}
-                        {upload.anon ? (
-                          <div className="text-xs">
-                            <span className="text-gray-500 italic">Anonymous</span>
-                            <div 
-                              className="inline-block cursor-help group ml-1"
-                              title="Hover to reveal uploader identity"
-                            >
-                              <span className="bg-black text-black select-none group-hover:bg-transparent group-hover:text-gray-600 transition-all duration-200 px-1 rounded text-xs">
-                                {getDisplayName({ ...upload, anon: false }) || 'Unknown User'}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-gray-600">
-                            {getDisplayName(upload)}
-                            {upload.instagramHandle && (
-                              <a 
-                                href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
-                                title="View Instagram profile"
-                              >
-                                @{upload.instagramHandle.replace('@', '')}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="text-xs font-mono text-gray-600 break-all">
-                        {upload.uuid}
-                      </div>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {upload.eventName || 'No Event'}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDate(upload.createdDate)}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <StatusBadge approved={upload.approved} featured={upload.featured} />
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => downloadFile(upload.secureUrl, upload.fileName)}
-                          className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition-colors"
-                          title="Download"
-                        >
-                          <DownloadIcon className="h-3 w-3" />
-                        </button>
-                        {!upload.approved ? (
-                          <button
-                            onClick={() => approveUpload(upload.uuid)}
-                            className="bg-green-600 text-white p-2 rounded hover:bg-green-700 transition-colors"
-                            title="Approve"
-                          >
-                            <CheckCircle className="h-3 w-3" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => unapproveUpload(upload.uuid)}
-                            className="bg-yellow-600 text-white p-2 rounded hover:bg-yellow-700 transition-colors"
-                            title="Unapprove"
-                          >
-                            <XCircle className="h-3 w-3" />
-                          </button>
-                        )}
-                        {upload.approved && !upload.featured ? (
-                          <button
-                            onClick={() => featureUpload(upload.uuid)}
-                            className="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 transition-colors"
-                            title="Feature"
-                          >
-                            <Star className="h-3 w-3" />
-                          </button>
-                        ) : upload.featured ? (
-                          <button
-                            onClick={() => unfeatureUpload(upload.uuid)}
-                            className="bg-orange-600 text-white p-2 rounded hover:bg-orange-700 transition-colors"
-                            title="Unfeature"
-                          >
-                            <StarOff className="h-3 w-3" />
-                          </button>
-                        ) : null}
-                        <button
-                          onClick={() => deleteUpload(upload.uuid)}
-                          className="bg-red-600 text-white p-2 rounded hover:bg-red-700 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                  <UploadRow key={upload.uuid} upload={upload} />
                 ))}
               </tbody>
             </table>
