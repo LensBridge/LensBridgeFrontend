@@ -235,56 +235,103 @@ function Home() {
 
       {/* Final Meme + Event Ad Popup */}
       {showEventAdPopup && (
-        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-xl w-full mx-auto shadow-2xl animate-bounce-in">
-            <div className="flex justify-end mb-2">
+        <div className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-3">
+          <div className="bg-white rounded-3xl p-3 sm:p-6 md:p-8 max-w-2xl w-full mx-auto shadow-2xl animate-bounce-in max-h-[98vh] overflow-y-auto">
+            <div className="flex justify-end mb-1">
               <button aria-label="Close"
                 className="text-gray-400 hover:text-gray-600"
                 onClick={() => setShowEventAdPopup(false)}>
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
             <div className="text-center">
-              <div className="mb-6">
+              <div className="mb-3 sm:mb-6">
                 <img
                   src={cookieMonsterLocalGif}
                   alt="Cookie Monster enjoying cookies"
-                  className="mx-auto max-h-72 rounded-2xl object-contain"
+                  className="mx-auto max-h-32 sm:max-h-52 md:max-h-64 rounded-2xl object-contain w-auto"
                 />
               </div>
-              <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-2 tracking-tight">
+              
+              {/* Main Headline */}
+              <h2 className="text-xl sm:text-3xl md:text-4xl font-black text-gray-900 mb-2 sm:mb-3 leading-tight">
                 be better. <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">be like cookie monster</span>
-              </h3>
-              <div className="mt-6 text-left bg-gradient-to-br from-blue-50 to-green-50 border border-blue-100 rounded-2xl p-6">
-                <p className="text-gray-900 font-semibold mb-2">Cookie Monster has declared you “a danger to baked goods everywhere.”</p>
-                <p className="text-gray-800 mb-3">There is ONE chance to restore your honour:</p>
-                <ul className="text-gray-900 space-y-1 mb-4">
-                  <li>🎂 Sugar, Frosting, and Good Company</li>
-                  <li>📅 Fri, Nov 14 | ⏰ 3:30-5:30 PM</li>
-                  <li >📍 Student Centre</li>
-                  <li>✨ All materials included because we do not trust you with frosting unsupervised.</li>
-                </ul>
-                <p className="text-gray-800 mb-2">Show up. Decorate something. Prove you're not a frosting-fraud.</p>
-                <center>
-                <p className="text-gray-900 font-semibold mt-2">Your redemption arc starts now.</p>
-                </center>
+              </h2>
+              <p className="text-xs sm:text-base text-gray-700 font-medium mb-3 sm:mb-6 italic">
+                Cookie Monster has declared you "a danger to baked goods everywhere."
+              </p>
+              {/* Event Card */}
+              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-3 sm:p-8 mb-3 sm:mb-6 border-2 border-blue-100 shadow-lg">
+                {/* Event Title */}
+                <div className="mb-3 sm:mb-6">
+                  <h3 className="text-lg sm:text-3xl font-bold text-gray-900 mb-1">
+                    🍪 Cookie Decorating Session
+                  </h3>
+                  <p className="text-sm sm:text-lg text-gray-700 italic">
+                    Sugar, Frosting, and Good Company
+                  </p>
+                </div>
+                
+                {/* Event Details Grid */}
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                    <div className="text-2xl sm:text-3xl mb-1">📅</div>
+                    <div className="text-xs sm:text-sm text-gray-600 font-medium">Date & Time</div>
+                    <div className="text-sm sm:text-base font-bold text-gray-900">Fri, Nov 14</div>
+                    <div className="text-xs sm:text-sm text-gray-700">3:30-5:30 PM</div>
+                  </div>
+                  
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                    <div className="text-2xl sm:text-3xl mb-1">📍</div>
+                    <div className="text-xs sm:text-sm text-gray-600 font-medium">Location</div>
+                    <div className="text-sm sm:text-base font-bold text-gray-900">Board Room</div>
+                    <div className="text-xs sm:text-sm text-gray-700">Student Centre</div>
+                  </div>
+                  
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                    <div className="text-2xl sm:text-3xl mb-1">💰</div>
+                    <div className="text-xs sm:text-sm text-gray-600 font-medium">Cost</div>
+                    <div className="text-sm sm:text-base font-bold text-gray-900">$12/person</div>
+                    <div className="text-xs sm:text-sm text-gray-700">Materials incl.</div>
+                  </div>
+                  
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                    <div className="text-2xl sm:text-3xl mb-1">🍪</div>
+                    <div className="text-xs sm:text-sm text-gray-600 font-medium">What You Get</div>
+                    <div className="text-sm sm:text-base font-bold text-gray-900">2 Cookies</div>
+                    <div className="text-xs sm:text-sm text-gray-700">Decorate & eat!</div>
+                  </div>
+                </div>
+                
+                {/* Fun Copy */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-xl p-2 sm:p-4 border border-blue-200">
+                  <p className="text-xs sm:text-base text-gray-800 font-medium">
+                    ✨ Show up. Decorate something. Prove you're not a frosting-fraud.
+                  </p>
+                </div>
               </div>
-              <div className="mt-6 flex gap-3 justify-center">
+              
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center mb-2 sm:mb-4">
                 <button
                   onClick={() => setShowEventAdPopup(false)}
-                  className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-green-700 transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-5 sm:px-8 py-2.5 sm:py-4 rounded-xl font-bold text-sm sm:text-lg hover:from-blue-700 hover:to-green-700 transition-all duration-300 transform hover:scale-105 shadow-lg w-full sm:w-auto"
                 >
-                  Yum, see you there!
+                  Count Me In! 🎉
                 </button>
                 <Link
                   to="/upload"
-                  className="bg-white border border-gray-200 text-gray-800 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-300"
+                  className="bg-white border-2 border-gray-200 text-gray-800 px-5 sm:px-8 py-2.5 sm:py-4 rounded-xl font-bold text-sm sm:text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg text-center w-full sm:w-auto"
                   onClick={() => setShowEventAdPopup(false)}
                 >
-                  I'll bring cookies 🍪
+                  I'll Bring Photos 📸
                 </Link>
               </div>
-              <p className="mt-3 text-center text-xs text-gray-500">btw, lensbridge doesn't actually use any tracking cookies.</p>
+              
+              {/* Disclaimer */}
+              <p className="text-[10px] sm:text-sm text-gray-500 italic">
+                btw, lensbridge doesn't actually use any tracking cookies.
+              </p>
             </div>
           </div>
         </div>
