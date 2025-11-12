@@ -4,6 +4,9 @@ import { Upload, Users, Star, Camera, ArrowRight, Sparkles, Heart, TrendingUp, E
 import cookieMonsterLocalGif from '../assets/Cookie Monster GIF - Cookie Monster - Discover & Share GIFs.gif';
 import { useState, useEffect, useRef } from 'react';
 
+// 🔧 FEATURE FLAG: Set to false to disable cookie popup after promo period
+const ENABLE_COOKIE_PROMO = true;
+
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }) {
   const [count, setCount] = useState(0);
@@ -94,11 +97,28 @@ function Home() {
     return () => clearTimeout(loadTimer);
   }, []);
 
+  // Helper function to check if cookie popup should show today
+  const shouldShowCookiePopup = () => {
+    if (!ENABLE_COOKIE_PROMO) return false;
+    
+    const today = new Date().toDateString();
+    const lastShown = localStorage.getItem('cookiePopupLastShown');
+    
+    return lastShown !== today;
+  };
+
+  // Mark cookie popup as shown for today
+  const markCookiePopupShown = () => {
+    const today = new Date().toDateString();
+    localStorage.setItem('cookiePopupLastShown', today);
+  };
+
   useEffect(() => {
-    if (siteLoaded) {
+    if (siteLoaded && shouldShowCookiePopup()) {
       // Wait 2 seconds after site loads, then show cookie popup
       const cookieTimer = setTimeout(() => {
         setShowCookiePopup(true);
+        markCookiePopupShown();
       }, 2000);
 
       return () => clearTimeout(cookieTimer);
