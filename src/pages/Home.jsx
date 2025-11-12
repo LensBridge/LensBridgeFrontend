@@ -97,28 +97,11 @@ function Home() {
     return () => clearTimeout(loadTimer);
   }, []);
 
-  // Helper function to check if cookie popup should show today
-  const shouldShowCookiePopup = () => {
-    if (!ENABLE_COOKIE_PROMO) return false;
-    
-    const today = new Date().toDateString();
-    const lastShown = localStorage.getItem('cookiePopupLastShown');
-    
-    return lastShown !== today;
-  };
-
-  // Mark cookie popup as shown for today
-  const markCookiePopupShown = () => {
-    const today = new Date().toDateString();
-    localStorage.setItem('cookiePopupLastShown', today);
-  };
-
   useEffect(() => {
-    if (siteLoaded && shouldShowCookiePopup()) {
+    if (siteLoaded && ENABLE_COOKIE_PROMO) {
       // Wait 2 seconds after site loads, then show cookie popup
       const cookieTimer = setTimeout(() => {
         setShowCookiePopup(true);
-        markCookiePopupShown();
       }, 2000);
 
       return () => clearTimeout(cookieTimer);
