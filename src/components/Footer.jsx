@@ -16,7 +16,7 @@ function Footer() {
                 </div>
               </div>
               <span className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text">
-                LensBridge v2025.9 RC
+                LensBridge v2025.11
               </span>
             </div>
             <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
