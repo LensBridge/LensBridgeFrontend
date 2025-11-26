@@ -5,7 +5,7 @@ import cookieMonsterLocalGif from '../assets/Cookie Monster GIF - Cookie Monster
 import { useState, useEffect, useRef } from 'react';
 
 // 🔧 FEATURE FLAG: Set to false to disable cookie popup after promo period
-const ENABLE_COOKIE_PROMO = true;
+const ENABLE_COOKIE_PROMO = false;
 
 // Animated Counter Component
 function AnimatedCounter({ end, duration = 2000, suffix = "", prefix = "" }) {
