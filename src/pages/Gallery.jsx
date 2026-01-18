@@ -301,7 +301,7 @@ function Gallery() {
                 <div className="relative aspect-square overflow-hidden">
                   {item.type === 'video' ? (
                     <video
-                      src={item.src}
+                      src={item.thumbnail || item.src}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                       muted
@@ -311,9 +311,10 @@ function Gallery() {
                     />
                   ) : (
                     <img
-                      src={item.src}
+                      src={item.thumbnail || item.src}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      loading="lazy"
                     />
                   )}
                   
@@ -512,7 +513,7 @@ function Gallery() {
                 <div className="relative aspect-video overflow-hidden">
                   {item.type === 'video' ? (
                     <video
-                      src={item.src}
+                      src={item.thumbnail || item.src}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                       muted
@@ -522,9 +523,10 @@ function Gallery() {
                     />
                   ) : (
                     <img
-                      src={item.src}
+                      src={item.thumbnail || item.src}
                       alt={item.title}
                       className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      loading="lazy"
                     />
                   )}
                   <div className="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center space-x-1">

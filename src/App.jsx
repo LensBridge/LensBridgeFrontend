@@ -8,6 +8,7 @@ import Home from './pages/Home';
 import Upload from './pages/Upload';
 import Gallery from './pages/Gallery';
 import AdminDashboard from './pages/AdminDashboard';
+import BoardManagement from './pages/BoardManagement';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import SignupSuccess from './pages/SignupSuccess';
@@ -50,6 +51,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <AdminDashboard />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/board" 
+                element={
+                  <AdminRoute>
+                    <BoardManagement />
                   </AdminRoute>
                 } 
               />

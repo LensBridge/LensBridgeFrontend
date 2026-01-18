@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Shield, Users, Image, BarChart3, Settings, Crown, 
   ChevronLeft, ChevronRight, CheckCircle, X, Star, 
   Calendar, Activity, AlertTriangle, Plus, Filter,
   Search, Download, Eye, Trash2, Instagram, ExternalLink,
   Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon,
-  XCircle, StarOff
+  XCircle, StarOff, Monitor
 } from 'lucide-react';
 import API_CONFIG from '../config/api';
 import { useAuth } from '../context/AuthContext';
@@ -651,11 +652,11 @@ function AdminDashboard() {
             onClick={() => openMediaViewer(upload)}
           >
             {upload.contentType === 'IMAGE' ? (
-              <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" loading="lazy" />
+              <img src={upload.thumbnail || upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" loading="lazy" />
             ) : upload.contentType === 'VIDEO' ? (
               <div className="h-full w-full relative">
                 <video 
-                  src={upload.secureUrl} 
+                  src={upload.thumbnail || upload.secureUrl} 
                   className="h-full w-full object-cover"
                   muted
                   preload="none"
@@ -821,6 +822,19 @@ function AdminDashboard() {
               </span>
             )}
           </p>
+          {/* Board Management Quick Access for ROOT users */}
+          {hasRootPermissions(user) && (
+            <div className="mt-4">
+              <Link
+                to="/admin/board"
+                className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all hover:scale-[1.02]"
+              >
+                <Monitor className="h-5 w-5" />
+                <span>Manage Musallah Boards</span>
+                <Crown className="h-4 w-4 text-yellow-300" />
+              </Link>
+            </div>
+          )}
           {/* Quick Actions */}
           <div className="mt-4 flex flex-wrap gap-2 justify-center">
             <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+R</kbd>
@@ -890,13 +904,14 @@ function AdminDashboard() {
       {/* Navigation Tabs */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
         <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6">
+          <nav className="flex space-x-8 px-6 overflow-x-auto">
             {[
               { id: 'uploads', label: 'Upload Management', icon: Image, requiredRole: 'admin' },
               { id: 'events', label: 'Event Management', icon: Calendar, requiredRole: 'admin' },
               { id: 'audit', label: 'Audit Logs', icon: Activity, requiredRole: 'admin' },
               ...(hasRootPermissions(user) ? [
                 { id: 'users', label: 'User Management', icon: Users, requiredRole: 'root' },
+                { id: 'boards', label: 'Board Management', icon: Monitor, requiredRole: 'root', isLink: true, href: '/admin/board' },
                 { id: 'system', label: 'System Settings', icon: Settings, requiredRole: 'root' },
                 { id: 'permissions', label: 'Role Management', icon: Crown, requiredRole: 'root' }
               ] : [])
@@ -904,22 +919,35 @@ function AdminDashboard() {
               if (tab.requiredRole === 'root') return hasRootPermissions(user);
               if (tab.requiredRole === 'admin') return hasAdminPermissions(user);
               return true;
-            }).map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                  activeTab === id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-                {hasRootPermissions(user) && (id === 'users' || id === 'system' || id === 'permissions') && (
+            }).map(({ id, label, icon: Icon, isLink, href }) => (
+              isLink ? (
+                <Link
+                  key={id}
+                  to={href}
+                  className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
                   <Crown className="h-3 w-3 text-yellow-500" title="Root Access Required" />
-                )}
-              </button>
+                  <ExternalLink className="h-3 w-3 text-gray-400" />
+                </Link>
+              ) : (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
+                    activeTab === id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                  {hasRootPermissions(user) && (id === 'users' || id === 'system' || id === 'permissions') && (
+                    <Crown className="h-3 w-3 text-yellow-500" title="Root Access Required" />
+                  )}
+                </button>
+              )
             ))}
           </nav>
         </div>
@@ -1185,11 +1213,11 @@ function AdminDashboard() {
                   onClick={() => openMediaViewer(upload)}
                 >
                   {upload.contentType === 'IMAGE' ? (
-                    <img src={upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" />
+                    <img src={upload.thumbnail || upload.secureUrl} alt={upload.fileName} className="h-full w-full object-cover" loading="lazy" />
                   ) : upload.contentType === 'VIDEO' ? (
                     <div className="h-full w-full relative">
                       <video 
-                        src={upload.secureUrl} 
+                        src={upload.thumbnail || upload.secureUrl} 
                         className="h-full w-full object-cover"
                         muted
                       />

@@ -46,15 +46,31 @@ export const useGallery = () => {
     }
   }, []);
 
-  // Process gallery items to convert HEIC images
+  // Process gallery items to convert HEIC images and map backend fields
   const processGalleryItems = useCallback(async (items) => {
     const processedItems = await Promise.all(
       items.map(async (item) => {
-        if (item.type === 'image' && (item.src.toLowerCase().includes('.heic') || item.src.toLowerCase().includes('.heif'))) {
-          const convertedSrc = await convertHeicToJpeg(item.src);
-          return { ...item, src: convertedSrc, originalSrc: item.src };
+        // Map backend response fields to gallery format
+        const mappedItem = {
+          id: item.uuid || item.id,
+          src: item.secureUrl || item.src, // Full-size URL
+          thumbnail: item.thumbnail, // Thumbnail URL from backend
+          type: item.contentType === 'VIDEO' ? 'video' : 'image',
+          title: item.uploadDescription || item.fileName || 'Untitled',
+          event: item.eventName || 'Event',
+          author: item.anon ? 'Anonymous' : `${item.uploaderFirstName || ''} ${item.uploaderLastName || ''}`.trim() || 'Unknown',
+          date: item.createdDate,
+          featured: item.featured || false,
+          approved: item.approved || false
+        };
+        
+        // Convert HEIC images if needed (for the full-size src)
+        if (mappedItem.type === 'image' && mappedItem.src && (mappedItem.src.toLowerCase().includes('.heic') || mappedItem.src.toLowerCase().includes('.heif'))) {
+          const convertedSrc = await convertHeicToJpeg(mappedItem.src);
+          return { ...mappedItem, src: convertedSrc, originalSrc: mappedItem.src };
         }
-        return item;
+        
+        return mappedItem;
       })
     );
     
