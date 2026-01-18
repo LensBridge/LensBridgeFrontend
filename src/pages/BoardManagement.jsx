@@ -21,7 +21,7 @@ import JummahEditor from '../components/board/JummahEditor';
  * Provides comprehensive editing for board config, events, posters, frames, and daily content
  */
 function BoardManagement() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('config');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [success, setSuccess] = useState('');
@@ -50,13 +50,17 @@ function BoardManagement() {
 
   // Load data from API
   useEffect(() => {
-    const loadBoardData = async () => {
-      if (!hasRootPermissions()) {
-        setError('You do not have permission to access this page');
-        setLoading(false);
-        return;
-      }
+    if (authLoading) {
+      return;
+    }
 
+    if (!user || !hasRootPermissions()) {
+      setError('You do not have permission to access this page');
+      setLoading(false);
+      return;
+    }
+
+    const loadBoardData = async () => {
       try {
         setLoading(true);
         
@@ -101,7 +105,7 @@ function BoardManagement() {
     };
 
     loadBoardData();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [authLoading, user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showMessage = useCallback((message, isError = false) => {
     if (isError) {
@@ -285,7 +289,7 @@ function BoardManagement() {
     }
   };
 
-  if (!hasRootPermissions()) {
+  if (!authLoading && !hasRootPermissions()) {
     return (
       <div className="max-w-4xl mx-auto">
         <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">

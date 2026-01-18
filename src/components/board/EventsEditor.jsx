@@ -4,6 +4,7 @@ import {
   MapPin, FileText, ChevronDown, ChevronUp, Search,
   CalendarDays, AlertCircle, Users
 } from 'lucide-react';
+import BoardService from '../../services/BoardService';
 
 /**
  * EventsEditor - Manage musallah events
@@ -85,46 +86,72 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     });
 
   // Add new event
-  const handleAddEvent = () => {
+  const handleAddEvent = async () => {
     if (!newEvent.name.trim()) {
       showMessage('Event name is required', true);
       return;
     }
 
-    const event = {
-      id: Date.now(), // Generate unique ID
-      ...newEvent,
-      name: newEvent.name.trim(),
-      location: newEvent.location.trim(),
-      description: newEvent.description.trim()
-    };
+    try {
+      const eventData = {
+        ...newEvent,
+        name: newEvent.name.trim(),
+        location: newEvent.location.trim(),
+        description: newEvent.description.trim()
+      };
 
-    onUpdate([...events, event]);
-    showMessage('✅ Event added successfully');
-    setNewEvent({
-      name: '',
-      startTimestamp: Date.now() + 86400000,
-      endTimestamp: Date.now() + 90000000,
-      location: '',
-      description: '',
-      allDay: false,
-      audience: 'both'
-    });
-    setShowAddForm(false);
+      const createdEvent = await BoardService.createEvent(eventData);
+      onUpdate([...events, createdEvent]);
+      showMessage('Event added successfully');
+      setNewEvent({
+        name: '',
+        startTimestamp: Date.now() + 86400000,
+        endTimestamp: Date.now() + 90000000,
+        location: '',
+        description: '',
+        allDay: false,
+        audience: 'both'
+      });
+      setShowAddForm(false);
+    } catch (error) {
+      showMessage('Failed to create event: ' + error.message, true);
+    }
   };
 
   // Update existing event
-  const handleUpdateEvent = (updatedEvent) => {
-    onUpdate(events.map(e => e.id === updatedEvent.id ? updatedEvent : e));
-    showMessage('✅ Event updated');
-    setEditingEvent(null);
+  const handleUpdateEvent = async (updatedEvent) => {
+    try {
+      const updates = {
+        name: updatedEvent.name,
+        startTimestamp: updatedEvent.startTimestamp,
+        endTimestamp: updatedEvent.endTimestamp,
+        location: updatedEvent.location,
+        description: updatedEvent.description,
+        allDay: updatedEvent.allDay,
+        audience: updatedEvent.audience
+      };
+
+      const savedEvent = await BoardService.updateEvent(updatedEvent.id, updates);
+      onUpdate(events.map(e => e.id === savedEvent.id ? savedEvent : e));
+      showMessage('Event updated');
+      setEditingEvent(null);
+    } catch (error) {
+      showMessage('Failed to update event: ' + error.message, true);
+    }
   };
 
   // Delete event
-  const handleDeleteEvent = (eventId) => {
-    if (confirm('Are you sure you want to delete this event?')) {
+  const handleDeleteEvent = async (eventId) => {
+    if (!confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+
+    try {
+      await BoardService.deleteEvent(eventId);
       onUpdate(events.filter(e => e.id !== eventId));
-      showMessage('🗑️ Event deleted');
+      showMessage('Event deleted');
+    } catch (error) {
+      showMessage('Failed to delete event: ' + error.message, true);
     }
   };
 

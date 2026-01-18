@@ -1,6 +1,12 @@
 import API_CONFIG from '../config/api';
 
 const BOARD_BASE = `${API_CONFIG.BASE_URL}/api/admin/board`;
+const DEFAULT_JUMMAH_PRAYER = {
+  time: '13:30',
+  khatib: '',
+  location: 'Main Musallah',
+  date: ''
+};
 
 /**
  * BoardService - Handles all Musallah Board API interactions
@@ -46,6 +52,64 @@ class BoardService {
    */
   static fromAudienceEnum(enumValue) {
     return enumValue.toLowerCase();
+  }
+
+  /**
+   * Normalize Jummah prayer payload to ensure consistent structure
+   * @param {Object|null} jummahPrayer
+   * @returns {Object} jummahPrayer with defaults filled in
+   */
+  static normalizeJummahPrayer(jummahPrayer) {
+    const source = jummahPrayer || {};
+    return {
+      time: source.time ?? DEFAULT_JUMMAH_PRAYER.time,
+      khatib: source.khatib ?? DEFAULT_JUMMAH_PRAYER.khatib,
+      location: source.location ?? DEFAULT_JUMMAH_PRAYER.location,
+      date: source.date ?? DEFAULT_JUMMAH_PRAYER.date
+    };
+  }
+
+  /**
+   * Prepare Jummah prayers array for backend payload
+   * @param {Object|null} jummahPrayer
+   * @returns {Array} Array of backend-ready jummah prayers
+   */
+  static toBackendJummahPrayers(jummahPrayer) {
+    const normalized = this.normalizeJummahPrayer(jummahPrayer);
+    const time = (normalized.time || '').trim();
+    const khatib = (normalized.khatib || '').trim();
+    const location = (normalized.location || '').trim();
+    const hasData = time || khatib || location;
+
+    if (!hasData) {
+      return [];
+    }
+
+    return [{
+      prayerTime: time || DEFAULT_JUMMAH_PRAYER.time,
+      khatib,
+      location: location || DEFAULT_JUMMAH_PRAYER.location
+    }];
+  }
+
+  /**
+   * Convert backend jummah payload (list or single) to frontend shape
+   * @param {Object} source - weekly content item with jummahPrayers/jummahPrayer
+   * @returns {Object} Frontend jummahPrayer shape with defaults
+   */
+  static fromBackendJummah(source = {}) {
+    const fromList = Array.isArray(source.jummahPrayers) && source.jummahPrayers.length > 0
+      ? source.jummahPrayers[0]
+      : null;
+
+    const candidate = fromList || source.jummahPrayer || {};
+
+    return this.normalizeJummahPrayer({
+      time: candidate.prayerTime || candidate.time,
+      khatib: candidate.khatib,
+      location: candidate.location,
+      date: candidate.date
+    });
   }
 
   /**
@@ -206,7 +270,7 @@ class BoardService {
       year: item.weekId.year,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: item.jummahPrayer || { time: '13:30', khatib: '', location: 'Main Musallah', date: '' }
+      jummahPrayer: this.fromBackendJummah(item)
     }));
   }
 
@@ -233,7 +297,7 @@ class BoardService {
       year: item.weekId.year,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: item.jummahPrayer || { time: '13:30', khatib: '', location: 'Main Musallah', date: '' }
+      jummahPrayer: this.fromBackendJummah(item)
     }));
   }
 
@@ -260,7 +324,7 @@ class BoardService {
       year: item.weekId.year,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: item.jummahPrayer || { time: '13:30', khatib: '', location: 'Main Musallah', date: '' }
+      jummahPrayer: this.fromBackendJummah(item)
     };
   }
 
@@ -275,14 +339,7 @@ class BoardService {
       weekNumber: content.weekNumber,
       verse: content.verse,
       hadith: content.hadith,
-      // Only include jummahPrayer if it has data, otherwise send null
-      jummahPrayer: (content.jummahPrayer && 
-                     (content.jummahPrayer.khatib || 
-                      content.jummahPrayer.date || 
-                      content.jummahPrayer.time !== '13:30' || 
-                      content.jummahPrayer.location !== 'Main Musallah'))
-                    ? content.jummahPrayer 
-                    : null
+      jummahPrayers: this.toBackendJummahPrayers(content.jummahPrayer)
     };
 
     const response = await fetch(`${BOARD_BASE}/weekly-content`, {
@@ -303,7 +360,7 @@ class BoardService {
       year: savedContent.weekId.year,
       verse: savedContent.verse,
       hadith: savedContent.hadith,
-      jummahPrayer: savedContent.jummahPrayer
+      jummahPrayer: this.fromBackendJummah(savedContent)
     };
   }
 
