@@ -55,41 +55,68 @@ class BoardService {
   }
 
   /**
-   * Normalize Jummah prayer payload to ensure consistent structure
+   * Prepare Jummah prayers array for backend payload
+   * Simple rule: always send the jummahPrayer data if it exists
+   * @param {Object|null} jummahPrayer
+   * @returns {Array} Array of backend-ready jummah prayers
+   */
+  static toBackendJummahPrayers(jummahPrayer) {
+    // If no jummah data at all, return empty
+    if (!jummahPrayer) {
+      return [];
+    }
+
+    const sourceList = Array.isArray(jummahPrayer) ? jummahPrayer : [jummahPrayer];
+
+    const normalizePrayerTime = (value) => {
+      if (!value) {
+        return DEFAULT_JUMMAH_PRAYER.time;
+      }
+
+      if (/^\d{2}:\d{2}$/.test(value)) {
+        return value;
+      }
+
+      const match = value.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (!match) {
+        return value;
+      }
+
+      let hours = parseInt(match[1], 10);
+      const minutes = match[2];
+      const period = match[3].toUpperCase();
+
+      if (period === 'PM' && hours !== 12) {
+        hours += 12;
+      }
+      if (period === 'AM' && hours === 12) {
+        hours = 0;
+      }
+
+      return `${hours.toString().padStart(2, '0')}:${minutes}`;
+    };
+
+    // Normalize to backend shape; backend model expects prayerTime/khatib/location
+    return sourceList.map((prayer) => ({
+      prayerTime: normalizePrayerTime(prayer.prayerTime || prayer.time),
+      khatib: prayer.khatib || DEFAULT_JUMMAH_PRAYER.khatib,
+      location: prayer.location || DEFAULT_JUMMAH_PRAYER.location
+    }));
+  }
+
+  /**
+   * Normalize Jummah prayer from backend
    * @param {Object|null} jummahPrayer
    * @returns {Object} jummahPrayer with defaults filled in
    */
   static normalizeJummahPrayer(jummahPrayer) {
     const source = jummahPrayer || {};
     return {
-      time: source.time ?? DEFAULT_JUMMAH_PRAYER.time,
-      khatib: source.khatib ?? DEFAULT_JUMMAH_PRAYER.khatib,
-      location: source.location ?? DEFAULT_JUMMAH_PRAYER.location,
-      date: source.date ?? DEFAULT_JUMMAH_PRAYER.date
+      time: source.time || DEFAULT_JUMMAH_PRAYER.time,
+      khatib: source.khatib || DEFAULT_JUMMAH_PRAYER.khatib,
+      location: source.location || DEFAULT_JUMMAH_PRAYER.location,
+      date: source.date || DEFAULT_JUMMAH_PRAYER.date
     };
-  }
-
-  /**
-   * Prepare Jummah prayers array for backend payload
-   * @param {Object|null} jummahPrayer
-   * @returns {Array} Array of backend-ready jummah prayers
-   */
-  static toBackendJummahPrayers(jummahPrayer) {
-    const normalized = this.normalizeJummahPrayer(jummahPrayer);
-    const time = (normalized.time || '').trim();
-    const khatib = (normalized.khatib || '').trim();
-    const location = (normalized.location || '').trim();
-    const hasData = time || khatib || location;
-
-    if (!hasData) {
-      return [];
-    }
-
-    return [{
-      prayerTime: time || DEFAULT_JUMMAH_PRAYER.time,
-      khatib,
-      location: location || DEFAULT_JUMMAH_PRAYER.location
-    }];
   }
 
   /**
@@ -334,13 +361,24 @@ class BoardService {
    * @returns {Promise<Object>} Saved weekly content
    */
   static async saveWeeklyContent(content) {
+    console.log('🔍 saveWeeklyContent - input content:', JSON.stringify(content, null, 2));
+    console.log('🔍 content.jummahPrayer:', content.jummahPrayer);
+    
+    const jummahPrayers = this.toBackendJummahPrayers(
+      content.jummahPrayers || content.jummahPrayer
+    );
+    console.log('🔍 transformed jummahPrayers:', jummahPrayers);
+    
     const backendFormat = {
       year: content.year,
       weekNumber: content.weekNumber,
       verse: content.verse,
       hadith: content.hadith,
-      jummahPrayers: this.toBackendJummahPrayers(content.jummahPrayer)
+      jummahPrayers,
+      jummahPrayer: jummahPrayers
     };
+    
+    console.log('🔍 backendFormat being sent:', JSON.stringify(backendFormat, null, 2));
 
     const response = await fetch(`${BOARD_BASE}/weekly-content`, {
       method: 'PUT',

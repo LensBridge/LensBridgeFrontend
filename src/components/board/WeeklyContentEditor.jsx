@@ -682,10 +682,17 @@ function ContentDisplay({ content, type }) {
 
 // Content edit form component
 function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadiths, showMessage }) {
+  const defaultJummahPrayer = { time: '13:30', khatib: '', location: 'Main Musallah', date: '' };
   const [formData, setFormData] = useState({
     ...content,
-    jummahPrayer: content.jummahPrayer || { time: '13:30', khatib: '', location: 'Main Musallah', date: '' }
+    jummahPrayer: {
+      ...defaultJummahPrayer,
+      ...(content.jummahPrayer || {})
+    }
   });
+
+  console.log('🔍 ContentEditForm formData:', formData);
+  console.log('🔍 ContentEditForm formData.jummahPrayer:', formData.jummahPrayer);
 
   const loadSample = (section) => {
     const samples = section === 'verse' ? sampleVerses : sampleHadiths;
@@ -695,6 +702,12 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
       [section]: randomSample
     });
     showMessage(`✨ Sample ${section} loaded`);
+  };
+
+  const handleSave = () => {
+    console.log('🔍 handleSave called with formData:', formData);
+    console.log('🔍 formData.jummahPrayer at save:', formData.jummahPrayer);
+    onSave(formData);
   };
 
   return (
@@ -760,7 +773,7 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
             <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
             <input
               type="time"
-              value={formData.jummahPrayer?.time || '13:30'}
+              value={formData.jummahPrayer.time}
               onChange={(e) => setFormData({
                 ...formData,
                 jummahPrayer: { ...formData.jummahPrayer, time: e.target.value }
@@ -772,7 +785,7 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
             <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
             <input
               type="date"
-              value={formData.jummahPrayer?.date || ''}
+              value={formData.jummahPrayer.date}
               onChange={(e) => setFormData({
                 ...formData,
                 jummahPrayer: { ...formData.jummahPrayer, date: e.target.value }
@@ -784,11 +797,16 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
             <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
             <input
               type="text"
-              value={formData.jummahPrayer?.khatib || ''}
-              onChange={(e) => setFormData({
-                ...formData,
-                jummahPrayer: { ...formData.jummahPrayer, khatib: e.target.value }
-              })}
+              value={formData.jummahPrayer.khatib}
+              onChange={(e) => {
+                console.log('🔍 Khatib changed to:', e.target.value);
+                const newFormData = {
+                  ...formData,
+                  jummahPrayer: { ...formData.jummahPrayer, khatib: e.target.value }
+                };
+                console.log('🔍 New formData after khatib change:', newFormData);
+                setFormData(newFormData);
+              }}
               placeholder="Sheikh name"
               className="w-full border border-gray-300 rounded px-3 py-2"
             />
@@ -797,7 +815,7 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
             <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
             <input
               type="text"
-              value={formData.jummahPrayer?.location || 'Main Musallah'}
+              value={formData.jummahPrayer.location}
               onChange={(e) => setFormData({
                 ...formData,
                 jummahPrayer: { ...formData.jummahPrayer, location: e.target.value }
@@ -817,7 +835,7 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
           Cancel
         </button>
         <button
-          onClick={() => onSave(formData)}
+          onClick={handleSave}
           className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all hover:shadow-lg"
         >
           Save Changes

@@ -38,7 +38,11 @@ function JummahEditor({ jummahSchedules, onUpdate, showMessage }) {
 
   // Format date for display
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    // Parse date in local timezone to avoid UTC offset issues
+    const localDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(date + 'T00:00:00')
+      : new Date(date);
+    return localDate.toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'short',
       day: 'numeric',
@@ -47,7 +51,11 @@ function JummahEditor({ jummahSchedules, onUpdate, showMessage }) {
   };
 
   const formatShortDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
+    // Parse date in local timezone to avoid UTC offset issues
+    const localDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(date + 'T00:00:00')
+      : new Date(date);
+    return localDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric'
     });
@@ -65,7 +73,11 @@ function JummahEditor({ jummahSchedules, onUpdate, showMessage }) {
 
   // Check if a date already has a schedule
   const hasScheduleForDate = (date) => {
-    const dateStr = new Date(date).toISOString().split('T')[0];
+    // Parse date in local timezone to avoid UTC offset issues
+    const localDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+      ? new Date(date + 'T00:00:00')
+      : new Date(date);
+    const dateStr = localDate.toISOString().split('T')[0];
     return jummahSchedules.some(s => s.date === dateStr);
   };
 
@@ -73,7 +85,8 @@ function JummahEditor({ jummahSchedules, onUpdate, showMessage }) {
   const getScheduleStatus = (schedule) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const scheduleDate = new Date(schedule.date);
+    // Parse date in local timezone to avoid UTC offset issues
+    const scheduleDate = new Date(schedule.date + 'T00:00:00');
     scheduleDate.setHours(0, 0, 0, 0);
     
     if (scheduleDate.getTime() === today.getTime()) return 'today';
@@ -182,9 +195,11 @@ function JummahEditor({ jummahSchedules, onUpdate, showMessage }) {
   };
 
   // Sort schedules by date
-  const sortedSchedules = [...jummahSchedules].sort((a, b) => 
-    new Date(a.date) - new Date(b.date)
-  );
+  const sortedSchedules = [...jummahSchedules].sort((a, b) => {
+    const dateA = new Date(a.date + 'T00:00:00');
+    const dateB = new Date(b.date + 'T00:00:00');
+    return dateA - dateB;
+  });
 
   return (
     <div className="space-y-6 animate-fadeIn">

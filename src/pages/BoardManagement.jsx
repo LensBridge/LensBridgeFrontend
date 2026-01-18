@@ -170,6 +170,60 @@ function BoardManagement() {
     setHasUnsavedChanges(true);
   }, []);
 
+  const getWeekNumberFromDate = (dateStr) => {
+    const date = new Date(`${dateStr}T00:00:00`);
+    const year = date.getFullYear();
+    const firstDay = new Date(year, 0, 1);
+    const dayOfWeek = firstDay.getDay();
+    const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+    const firstMonday = new Date(firstDay);
+    firstMonday.setDate(firstDay.getDate() + (dayOfWeek === 1 ? 0 : daysToMonday));
+    const diffDays = Math.floor((date - firstMonday) / (24 * 60 * 60 * 1000));
+    const weekNumber = diffDays < 0 ? 1 : Math.floor(diffDays / 7) + 1;
+    return { year, weekNumber };
+  };
+
+  const mergeWeeklyContentWithJummah = (weeklyContent, jummahSchedules) => {
+    if (!jummahSchedules || jummahSchedules.length === 0) {
+      return weeklyContent;
+    }
+
+    const merged = weeklyContent.map(item => ({ ...item }));
+    const indexByWeek = new Map(
+      merged.map((item, index) => [`${item.year}-${item.weekNumber}`, index])
+    );
+
+    jummahSchedules.forEach(schedule => {
+      if (!schedule?.date) {
+        return;
+      }
+
+      const { year, weekNumber } = getWeekNumberFromDate(schedule.date);
+      const key = `${year}-${weekNumber}`;
+      const jummahPrayers = (schedule.prayers || []).map(prayer => ({
+        time: prayer.time || '',
+        khatib: prayer.khatib || '',
+        location: prayer.location || ''
+      }));
+
+      if (indexByWeek.has(key)) {
+        const index = indexByWeek.get(key);
+        merged[index] = {
+          ...merged[index],
+          jummahPrayers
+        };
+      } else {
+        merged.push({
+          year,
+          weekNumber,
+          jummahPrayers
+        });
+      }
+    });
+
+    return merged;
+  };
+
   // Save all changes to API
   const handleSave = useCallback(async () => {
     if (!hasRootPermissions()) {
@@ -188,10 +242,17 @@ function BoardManagement() {
         );
       }
 
-      // Save all weekly content
-      if (boardPayload.weeklyContent && boardPayload.weeklyContent.length > 0) {
+      const mergedWeeklyContent = mergeWeeklyContentWithJummah(
+        boardPayload.weeklyContent,
+        boardPayload.jummahSchedules
+      );
+      console.log('BoardManagement.handleSave jummahSchedules:', boardPayload.jummahSchedules);
+      console.log('BoardManagement.handleSave mergedWeeklyContent:', mergedWeeklyContent);
+
+      // Save all weekly content (including jummah schedules)
+      if (mergedWeeklyContent && mergedWeeklyContent.length > 0) {
         await Promise.all(
-          boardPayload.weeklyContent.map(content => 
+          mergedWeeklyContent.map(content => 
             BoardService.saveWeeklyContent(content)
           )
         );

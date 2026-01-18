@@ -206,6 +206,7 @@ PUT /weekly-content
     "reference": "..."
   },
   "jummahPrayer": {
+    
     "time": "13:30",
     "khatib": "Sheikh Ahmad",
     "location": "Main Musallah",
