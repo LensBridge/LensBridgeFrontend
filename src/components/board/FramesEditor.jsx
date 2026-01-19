@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, memo } from 'react';
 import { 
   Calendar, Image, Quote, Instagram, Clock, 
-  Lock, Monitor, Layers, AlertCircle, CheckCircle, Edit2
+  Lock, Monitor, Layers, AlertCircle, CheckCircle, Edit2, Users
 } from 'lucide-react';
 
 /**
@@ -9,18 +9,26 @@ import {
  * Shows fixed system frames and posters from backend in predetermined order
  * Allows editing poster durations
  */
-function FramesEditor({ posters, onUpdatePosterDuration, showMessage }) {
+function FramesEditor({ posters, onUpdatePosterDuration, showMessage, boardLocation }) {
+  // Board location filter state (default to the passed boardLocation or 'brothers')
+  const [selectedLocation, setSelectedLocation] = useState(boardLocation || 'brothers');
+  
   // Get today's date for filtering
   const today = new Date().toISOString().split('T')[0];
 
-  // Filter posters active today
+  // Filter posters active today AND matching selected location
   const todayPosters = useMemo(() => {
     return posters.filter(poster => {
       const startDate = poster.startDate;
       const endDate = poster.endDate;
-      return (!startDate || startDate <= today) && (!endDate || endDate >= today);
+      const isActiveToday = (!startDate || startDate <= today) && (!endDate || endDate >= today);
+      
+      // Filter by audience: 'both' shows for everyone, otherwise match specific location
+      const matchesLocation = poster.audience === 'both' || poster.audience === selectedLocation;
+      
+      return isActiveToday && matchesLocation;
     });
-  }, [posters, today]);
+  }, [posters, today, selectedLocation]);
 
   // System frames that appear before posters (fixed order, non-editable)
   const systemFramesBefore = [
@@ -271,13 +279,39 @@ function FramesEditor({ posters, onUpdatePosterDuration, showMessage }) {
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Header */}
+      {/* Header with Location Selector */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Slideshow Order</h3>
           <p className="text-sm text-gray-500">
             {slideshowSequence.length} frames • ~{Math.round(totalDuration / 1000)}s total cycle
           </p>
+        </div>
+        
+        {/* Board Location Selector */}
+        <div className="flex space-x-3">
+          <button
+            onClick={() => setSelectedLocation('brothers')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all ${
+              selectedLocation === 'brothers'
+                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <Users className={`h-4 w-4 ${selectedLocation === 'brothers' ? 'text-blue-600' : 'text-gray-400'}`} />
+            <span className="font-medium">Brothers</span>
+          </button>
+          <button
+            onClick={() => setSelectedLocation('sisters')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg border-2 transition-all ${
+              selectedLocation === 'sisters'
+                ? 'border-pink-500 bg-pink-50 text-pink-700'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+            }`}
+          >
+            <Users className={`h-4 w-4 ${selectedLocation === 'sisters' ? 'text-pink-600' : 'text-gray-400'}`} />
+            <span className="font-medium">Sisters</span>
+          </button>
         </div>
       </div>
 

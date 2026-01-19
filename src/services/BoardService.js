@@ -36,6 +36,21 @@ class BoardService {
     return enumValue === 'BROTHERS_MUSALLAH' ? 'brothers' : 'sisters';
   }
 
+  static normalizeScrollingMessages(config) {
+    const source = config || {};
+    let messages = [];
+    if (Array.isArray(source.scrollingMessages)) {
+      messages = source.scrollingMessages;
+    } else if (typeof source.scrollingMessage === 'string') {
+      messages = source.scrollingMessage.trim() ? [source.scrollingMessage] : [];
+    }
+
+    return {
+      ...source,
+      scrollingMessages: messages
+    };
+  }
+
   /**
    * Transform frontend audience to backend enum
    * @param {string} audience - 'brothers', 'sisters', or 'both'
@@ -227,7 +242,7 @@ class BoardService {
     
     // Transform backend enums to frontend format
     return configs.map(config => ({
-      ...config,
+      ...this.normalizeScrollingMessages(config),
       boardLocation: this.fromBoardLocationEnum(config.boardLocation)
     }));
   }
@@ -250,7 +265,7 @@ class BoardService {
 
     const config = await response.json();
     return {
-      ...config,
+      ...this.normalizeScrollingMessages(config),
       boardLocation: this.fromBoardLocationEnum(config.boardLocation)
     };
   }
@@ -263,9 +278,11 @@ class BoardService {
    */
   static async saveConfig(boardLocation, config) {
     const enumLocation = this.toBoardLocationEnum(boardLocation);
+    const normalized = this.normalizeScrollingMessages(config);
     const backendConfig = {
-      ...config,
-      boardLocation: enumLocation
+      ...normalized,
+      boardLocation: enumLocation,
+      scrollingMessage: undefined
     };
 
     const response = await fetch(`${BOARD_BASE}/configs/${enumLocation}`, {
@@ -294,11 +311,15 @@ class BoardService {
    */
   static async updateConfig(boardLocation, updates) {
     const enumLocation = this.toBoardLocationEnum(boardLocation);
+    const normalized = this.normalizeScrollingMessages(updates);
     
     const response = await fetch(`${BOARD_BASE}/configs/${enumLocation}`, {
       method: 'PATCH',
       headers: this.getAuthHeaders(),
-      body: JSON.stringify(updates)
+      body: JSON.stringify({
+        ...normalized,
+        scrollingMessage: undefined
+      })
     });
 
     if (!response.ok) {
@@ -819,6 +840,25 @@ class BoardService {
     }
 
     return await response.json();
+  }
+
+  // ============================================================================
+  // BOARD REFRESH
+  // ============================================================================
+
+  /**
+   * Trigger refresh on all connected boards
+   * @returns {Promise<Object>} Response message
+   */
+  static async refreshBoards() {
+    const response = await fetch(`${BOARD_BASE}/refresh`, {
+      method: 'POST',
+      headers: this.getAuthHeaders()
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh boards');
+    }
   }
 }
 

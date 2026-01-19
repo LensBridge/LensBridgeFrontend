@@ -1,8 +1,80 @@
-import { useState, memo } from 'react';
+import { useState, useEffect, memo, useRef } from 'react';
 import { 
   MapPin, Clock, Globe, Users, Sun, Moon, 
-  MessageSquare, ChevronDown, ChevronUp, Settings
+  MessageSquare, ChevronDown, ChevronUp, Settings, X
 } from 'lucide-react';
+
+/**
+ * ScrollingMessageInput - Individual message input with local state
+ * Prevents losing focus when parent re-renders
+ */
+const ScrollingMessageInput = memo(({ message, onMessageChange, onRemove }) => {
+  const [localValue, setLocalValue] = useState(message);
+  const timeoutRef = useRef(null);
+
+  // Sync local state when message prop changes (e.g., after save/reset)
+  useEffect(() => {
+    setLocalValue(message);
+  }, [message]);
+
+  // Debounced update to parent
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    // Clear existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    // Debounce the parent update to prevent excessive re-renders
+    timeoutRef.current = setTimeout(() => {
+      onMessageChange(newValue);
+    }, 800);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Flush pending changes on blur
+  const handleBlur = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (localValue !== message) {
+      onMessageChange(localValue);
+    }
+  };
+
+  return (
+    <div className="flex items-start space-x-2">
+      <textarea
+        value={localValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        rows={2}
+        className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        placeholder="Enter your scrolling message..."
+      />
+      <button
+        onClick={onRemove}
+        className="text-gray-400 hover:text-red-500 p-2 transition-colors"
+        title="Remove message"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+});
+
+ScrollingMessageInput.displayName = 'ScrollingMessageInput';
 
 /**
  * BoardConfigEditor - Edit board configuration settings
@@ -10,15 +82,25 @@ import {
  */
 function BoardConfigEditor({ config, onUpdate, showMessage }) {
   const [expandedSection, setExpandedSection] = useState('location');
+  const [localConfig, setLocalConfig] = useState(config);
+  const prevConfigRef = useRef(config);
 
-  // Toggle section expansion
-  const toggleSection = (section) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
+  // Only update local config when the config prop reference changes
+  // (meaning a save or reset happened in the parent)
+  // Don't update during user editing to prevent the fade-in animation from replaying
+  useEffect(() => {
+    if (config !== prevConfigRef.current) {
+      prevConfigRef.current = config;
+      setLocalConfig(config);
+    }
+  }, [config]);
 
-  // Update a specific field in config
+  // Update local config and notify parent immediately
   const updateField = (path, value) => {
-    const newConfig = { ...config };
+    if (!localConfig) {
+      return;
+    }
+    const newConfig = { ...localConfig };
     const keys = path.split('.');
     let current = newConfig;
     
@@ -27,7 +109,16 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
     }
     current[keys[keys.length - 1]] = value;
     
-    onUpdate(newConfig);
+    setLocalConfig(newConfig);
+    // Notify parent immediately so hasUnsavedChanges gets set
+    if (onUpdate) {
+      onUpdate(newConfig);
+    }
+  };
+
+  // Toggle section expansion
+  const toggleSection = (section) => {
+    setExpandedSection(expandedSection === section ? null : section);
   };
 
   // Calculation method options
@@ -92,6 +183,10 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
     </div>
   );
 
+  if (!localConfig) {
+    return null;
+  }
+
   return (
     <div className="space-y-4 animate-fadeIn">
       {/* Board Location Selection */}
@@ -103,14 +198,14 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
           <button
             onClick={() => updateField('boardLocation', 'brothers')}
             className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-              config.boardLocation === 'brothers'
+              localConfig.boardLocation === 'brothers'
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
-              <Users className={`h-5 w-5 ${config.boardLocation === 'brothers' ? 'text-blue-600' : 'text-gray-400'}`} />
-              <span className={`font-medium ${config.boardLocation === 'brothers' ? 'text-blue-700' : 'text-gray-600'}`}>
+              <Users className={`h-5 w-5 ${localConfig.boardLocation === 'brothers' ? 'text-blue-600' : 'text-gray-400'}`} />
+              <span className={`font-medium ${localConfig.boardLocation === 'brothers' ? 'text-blue-700' : 'text-gray-600'}`}>
                 Brothers Musallah
               </span>
             </div>
@@ -118,14 +213,14 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
           <button
             onClick={() => updateField('boardLocation', 'sisters')}
             className={`flex-1 p-4 rounded-lg border-2 transition-all ${
-              config.boardLocation === 'sisters'
+              localConfig.boardLocation === 'sisters'
                 ? 'border-pink-500 bg-pink-50'
                 : 'border-gray-200 bg-white hover:border-gray-300'
             }`}
           >
             <div className="flex items-center justify-center space-x-2">
-              <Users className={`h-5 w-5 ${config.boardLocation === 'sisters' ? 'text-pink-600' : 'text-gray-400'}`} />
-              <span className={`font-medium ${config.boardLocation === 'sisters' ? 'text-pink-700' : 'text-gray-600'}`}>
+              <Users className={`h-5 w-5 ${localConfig.boardLocation === 'sisters' ? 'text-pink-600' : 'text-gray-400'}`} />
+              <span className={`font-medium ${localConfig.boardLocation === 'sisters' ? 'text-pink-700' : 'text-gray-600'}`}>
                 Sisters Musallah
               </span>
             </div>
@@ -140,7 +235,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <input
               type="text"
-              value={config.location.city}
+              value={localConfig.location.city}
               onChange={(e) => updateField('location.city', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="e.g., Mississauga"
@@ -150,7 +245,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
             <input
               type="text"
-              value={config.location.country}
+              value={localConfig.location.country}
               onChange={(e) => updateField('location.country', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               placeholder="e.g., Canada"
@@ -161,7 +256,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <input
               type="number"
               step="0.0001"
-              value={config.location.latitude}
+              value={localConfig.location.latitude}
               onChange={(e) => updateField('location.latitude', parseFloat(e.target.value))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -171,7 +266,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <input
               type="number"
               step="0.0001"
-              value={config.location.longitude}
+              value={localConfig.location.longitude}
               onChange={(e) => updateField('location.longitude', parseFloat(e.target.value))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -179,7 +274,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
             <select
-              value={config.location.timezone}
+              value={localConfig.location.timezone}
               onChange={(e) => updateField('location.timezone', e.target.value)}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
@@ -191,7 +286,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Calculation Method</label>
             <select
-              value={config.location.method}
+              value={localConfig.location.method}
               onChange={(e) => updateField('location.method', parseInt(e.target.value))}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
@@ -214,7 +309,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
               type="number"
               min="5"
               max="60"
-              value={config.posterCycleInterval / 1000}
+              value={localConfig.posterCycleInterval / 1000}
               onChange={(e) => updateField('posterCycleInterval', parseInt(e.target.value) * 1000)}
               className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -229,7 +324,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
               type="number"
               min="0"
               max="120"
-              value={config.refreshAfterIshaMinutes}
+              value={localConfig.refreshAfterIshaMinutes}
               onChange={(e) => updateField('refreshAfterIshaMinutes', parseInt(e.target.value))}
               className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
@@ -249,13 +344,13 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <button
               onClick={() => updateField('darkModeAfterIsha', !config.darkModeAfterIsha)}
               className={`relative w-14 h-8 rounded-full transition-colors ${
-                config.darkModeAfterIsha ? 'bg-indigo-600' : 'bg-gray-300'
+                localConfig.darkModeAfterIsha ? 'bg-indigo-600' : 'bg-gray-300'
               }`}
             >
               <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                config.darkModeAfterIsha ? 'translate-x-7' : 'translate-x-1'
+                localConfig.darkModeAfterIsha ? 'translate-x-7' : 'translate-x-1'
               }`}>
-                {config.darkModeAfterIsha ? (
+                {localConfig.darkModeAfterIsha ? (
                   <Moon className="h-4 w-4 text-indigo-600 m-1" />
                 ) : (
                   <Sun className="h-4 w-4 text-yellow-500 m-1" />
@@ -264,7 +359,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             </button>
           </div>
           
-          {config.darkModeAfterIsha && (
+          {localConfig.darkModeAfterIsha && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Delay After Isha (minutes)
@@ -273,7 +368,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
                 type="number"
                 min="0"
                 max="120"
-                value={config.darkModeMinutesAfterIsha}
+                value={localConfig.darkModeMinutesAfterIsha}
                 onChange={(e) => updateField('darkModeMinutesAfterIsha', parseInt(e.target.value))}
                 className="w-full md:w-48 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               />
@@ -294,30 +389,51 @@ function BoardConfigEditor({ config, onUpdate, showMessage }) {
             <button
               onClick={() => updateField('enableScrollingMessage', !config.enableScrollingMessage)}
               className={`relative w-14 h-8 rounded-full transition-colors ${
-                config.enableScrollingMessage ? 'bg-indigo-600' : 'bg-gray-300'
+                localConfig.enableScrollingMessage ? 'bg-indigo-600' : 'bg-gray-300'
               }`}
             >
               <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                config.enableScrollingMessage ? 'translate-x-7' : 'translate-x-1'
+                localConfig.enableScrollingMessage ? 'translate-x-7' : 'translate-x-1'
               }`} />
             </button>
           </div>
           
-          {config.enableScrollingMessage && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Message Text
-              </label>
-              <textarea
-                value={config.scrollingMessage}
-                onChange={(e) => updateField('scrollingMessage', e.target.value)}
-                rows={2}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                placeholder="Enter your scrolling message..."
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {config.scrollingMessage.length} characters
-              </p>
+          {localConfig.enableScrollingMessage && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Messages
+                </label>
+                <p className="text-xs text-gray-500">
+                  Messages rotate in the scrolling bar.
+                </p>
+              </div>
+              {(localConfig.scrollingMessages || []).map((message, index) => (
+                <ScrollingMessageInput
+                  key={`msg-${index}`}
+                  message={message}
+                  onMessageChange={(newValue) => {
+                    const updated = [...(localConfig.scrollingMessages || [])];
+                    updated[index] = newValue;
+                    updateField('scrollingMessages', updated);
+                  }}
+                  onRemove={() => {
+                    const updated = (localConfig.scrollingMessages || []).filter((_, i) => i !== index);
+                    updateField('scrollingMessages', updated);
+                  }}
+                />
+              ))}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => updateField('scrollingMessages', [...(localConfig.scrollingMessages || []), ''])}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm font-medium"
+                >
+                  + Add message
+                </button>
+                <span className="text-xs text-gray-500">
+                  {(localConfig.scrollingMessages || []).length} message{(localConfig.scrollingMessages || []).length === 1 ? '' : 's'}
+                </span>
+              </div>
             </div>
           )}
         </div>

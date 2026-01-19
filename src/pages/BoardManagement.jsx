@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { 
   Settings, Calendar, Image, Play, BookOpen, 
   Crown, ChevronLeft, Save, RotateCcw, Monitor,
@@ -21,6 +21,7 @@ import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
  */
 function BoardManagement() {
   const { user, isLoading: authLoading } = useAuth();
+  const boardConfigDraftRef = useRef(null);
   const [activeTab, setActiveTab] = useState('config');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [success, setSuccess] = useState('');
@@ -70,24 +71,28 @@ function BoardManagement() {
           BoardService.getAllWeeklyContent().catch(() => [])
         ]);
 
-        setBoardPayload({
-          boardConfig: config || {
-            location: {
-              city: 'Mississauga',
-              country: 'Canada',
-              latitude: 43.5890,
-              longitude: -79.6441,
-              timezone: 'America/Toronto',
-              method: 2
-            },
-            boardLocation: 'brothers',
-            posterCycleInterval: 10000,
-            refreshAfterIshaMinutes: 30,
-            darkModeAfterIsha: true,
-            darkModeMinutesAfterIsha: 45,
-            enableScrollingMessage: true,
-            scrollingMessage: 'Welcome to UTM MSA - Follow us @utmmsa for updates!'
+        const initialConfig = config || {
+          location: {
+            city: 'Mississauga',
+            country: 'Canada',
+            latitude: 43.5890,
+            longitude: -79.6441,
+            timezone: 'America/Toronto',
+            method: 2
           },
+          boardLocation: 'brothers',
+          posterCycleInterval: 10000,
+          refreshAfterIshaMinutes: 30,
+          darkModeAfterIsha: true,
+          darkModeMinutesAfterIsha: 45,
+          enableScrollingMessage: true,
+          scrollingMessages: ['Welcome to UTM MSA - Follow us @utmmsa for updates!']
+        };
+
+        boardConfigDraftRef.current = initialConfig;
+
+        setBoardPayload({
+          boardConfig: initialConfig,
           events: events || [],
           posters: posters || [],
           weeklyContent: weeklyContent || []
@@ -120,11 +125,8 @@ function BoardManagement() {
 
   // Update handlers that mark changes as unsaved
   const updateBoardConfig = useCallback((newConfig) => {
-    setBoardPayload(prev => ({
-      ...prev,
-      boardConfig: newConfig
-    }));
-    setHasUnsavedChanges(true);
+    boardConfigDraftRef.current = newConfig;
+    setHasUnsavedChanges(prev => prev || true);
   }, []);
 
   const updateEvents = useCallback((newEvents) => {
@@ -170,11 +172,17 @@ function BoardManagement() {
       setSaving(true);
       
       // Save board config
-      if (boardPayload.boardConfig) {
-        await BoardService.saveConfig(
-          boardPayload.boardConfig.boardLocation,
-          boardPayload.boardConfig
+      if (boardConfigDraftRef.current || boardPayload.boardConfig) {
+        const configToSave = boardConfigDraftRef.current || boardPayload.boardConfig;
+        const savedConfig = await BoardService.saveConfig(
+          configToSave.boardLocation,
+          configToSave
         );
+        boardConfigDraftRef.current = savedConfig;
+        setBoardPayload(prev => ({
+          ...prev,
+          boardConfig: savedConfig
+        }));
       }
 
       // Save all weekly content
@@ -212,7 +220,8 @@ function BoardManagement() {
     { id: 'events', label: 'Events', icon: Calendar, description: 'Upcoming events and schedule' },
     { id: 'posters', label: 'Posters', icon: Image, description: 'Promotional posters and media' },
     { id: 'frames', label: 'Slideshow', icon: Play, description: 'Frame order and timing' },
-    { id: 'content', label: 'Weekly Content', icon: BookOpen, description: 'Verse and Hadith for each week of the year' }
+    { id: 'content', label: 'Weekly Content', icon: BookOpen, description: 'Verse and Hadith for each week of the year' },
+    { id: 'refresh', label: 'Refresh', icon: RotateCcw, description: 'Refresh all connected boards' }
   ];
 
   // Render the appropriate tab content
@@ -246,6 +255,7 @@ function BoardManagement() {
         return (
           <FramesEditor 
             posters={boardPayload.posters}
+            boardLocation={boardPayload.boardConfig?.boardLocation || 'brothers'}
             onUpdatePosterDuration={(posterId, newDuration) => {
               updatePosters(
                 boardPayload.posters.map(p => 
@@ -263,6 +273,42 @@ function BoardManagement() {
             onUpdate={updateWeeklyContent}
             showMessage={showMessage}
           />
+        );
+      case 'refresh':
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Refresh Boards</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Trigger a refresh on all connected Musallah boards to pull the latest content.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  setSaving(true);
+                  await BoardService.refreshBoards();
+                  showMessage('Boards refreshed successfully');
+                } catch (err) {
+                  showMessage('Failed to refresh boards: ' + err.message, true);
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              {saving ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  <span>Refreshing...</span>
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  <span>Refresh All Boards</span>
+                </>
+              )}
+            </button>
+          </div>
         );
       default:
         return null;

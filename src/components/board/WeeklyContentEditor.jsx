@@ -444,12 +444,10 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                     <div className="flex justify-end">
                       <button
                         onClick={() => {
-                          if (newContent.jummahPrayers.length <= 1) return;
                           const updated = newContent.jummahPrayers.filter((_, i) => i !== index);
                           setNewContent({ ...newContent, jummahPrayers: updated });
                         }}
-                        disabled={newContent.jummahPrayers.length <= 1}
-                        className="text-gray-400 hover:text-red-500 p-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        className="text-gray-400 hover:text-red-500 p-2 transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -744,9 +742,9 @@ function ContentDisplay({ content, type }) {
 // Content edit form component
 function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadiths, showMessage }) {
   const defaultJummahPrayer = { time: '13:30', khatib: '', location: 'Main Musallah' };
-  const initialJummahPrayers = (content.jummahPrayers && content.jummahPrayers.length > 0)
+  const initialJummahPrayers = Array.isArray(content.jummahPrayers)
     ? content.jummahPrayers
-    : (content.jummahPrayer ? [content.jummahPrayer] : [defaultJummahPrayer]);
+    : (content.jummahPrayer ? [content.jummahPrayer] : []);
   const [formData, setFormData] = useState({
     ...content,
     jummahPrayers: initialJummahPrayers.map(prayer => ({
@@ -879,12 +877,10 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
               <div className="flex justify-end">
                 <button
                   onClick={() => {
-                    if (formData.jummahPrayers.length <= 1) return;
                     const updated = formData.jummahPrayers.filter((_, i) => i !== index);
                     setFormData({ ...formData, jummahPrayers: updated });
                   }}
-                  disabled={formData.jummahPrayers.length <= 1}
-                  className="text-gray-400 hover:text-red-500 p-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  className="text-gray-400 hover:text-red-500 p-2 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
