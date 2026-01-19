@@ -16,27 +16,30 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Utility: Get date range for a given week number of a year
-  const getWeekDateRange = (weekNumber, year) => {
-    // Find the first day of the year
-    const firstDay = new Date(year, 0, 1);
-    // Find the first Monday (ISO week starts on Monday)
-    const firstMonday = new Date(firstDay);
-    const dayOfWeek = firstDay.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
-    firstMonday.setDate(firstDay.getDate() + (dayOfWeek === 1 ? 0 : daysToMonday));
-    
-    // Calculate the start date of the given week
-    const weekStart = new Date(firstMonday);
-    weekStart.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
-    
-    // Calculate the end date (6 days after start)
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    
+  const getWeekDateRange = (weekNumber, year, weekStartStr, weekEndStr) => {
     const formatDate = (date) => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     };
-    
+
+    if (weekStartStr && weekEndStr) {
+      const weekStart = new Date(`${weekStartStr}T00:00:00`);
+      const weekEnd = new Date(`${weekEndStr}T00:00:00`);
+      return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+    }
+
+    // Use Sunday-based week ranges (Sunday -> Saturday)
+    const firstDay = new Date(year, 0, 1);
+    const dayOfWeek = firstDay.getDay(); // 0 = Sunday
+    const daysToSunday = (7 - dayOfWeek) % 7;
+    const firstSunday = new Date(firstDay);
+    firstSunday.setDate(firstDay.getDate() + daysToSunday);
+
+    const weekStart = new Date(firstSunday);
+    weekStart.setDate(firstSunday.getDate() + (weekNumber - 1) * 7);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
     return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
   };
 
@@ -44,8 +47,13 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   const getCurrentWeekNumber = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), 0, 1);
-    const dayOfYear = Math.floor((now - firstDay) / (24 * 60 * 60 * 1000));
-    return Math.ceil((dayOfYear + firstDay.getDay() + 1) / 7);
+    const dayOfWeek = firstDay.getDay(); // 0 = Sunday
+    const daysToSunday = (7 - dayOfWeek) % 7;
+    const firstSunday = new Date(firstDay);
+    firstSunday.setDate(firstDay.getDate() + daysToSunday);
+
+    const diffDays = Math.floor((now - firstSunday) / (24 * 60 * 60 * 1000));
+    return diffDays < 0 ? 1 : Math.floor(diffDays / 7) + 1;
   };
 
   // Color palette for weeks (cycling through colors)
@@ -531,7 +539,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                         )}
                       </div>
                       <span className="text-sm text-gray-500">
-                        {getWeekDateRange(content.weekNumber, content.year)}, {content.year}
+                        {getWeekDateRange(content.weekNumber, content.year, content.weekStart, content.weekEnd)}, {content.year}
                       </span>
                     </div>
                   </div>
