@@ -131,12 +131,13 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
       translation: '',
       reference: ''
     },
-    jummahPrayer: {
-      time: '13:30',
-      khatib: '',
-      location: 'Main Musallah',
-      date: ''
-    }
+    jummahPrayers: [
+      {
+        time: '13:30',
+        khatib: '',
+        location: 'Main Musallah'
+      }
+    ]
   });
 
   // Check if a week already has content
@@ -222,12 +223,13 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
         translation: '',
         reference: ''
       },
-      jummahPrayer: {
-        time: '13:30',
-        khatib: '',
-        location: 'Main Musallah',
-        date: ''
-      }
+      jummahPrayers: [
+        {
+          time: '13:30',
+          khatib: '',
+          location: 'Main Musallah'
+        }
+      ]
     });
     setShowAddForm(false);
   };
@@ -387,57 +389,77 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                 <Calendar className="h-4 w-4 mr-2" />
                 Jummah Prayer Details (Friday)
               </h5>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    value={newContent.jummahPrayer.time}
-                    onChange={(e) => setNewContent({
+              <div className="space-y-3">
+                {newContent.jummahPrayers.map((prayer, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-white rounded-lg p-3 border border-gray-200">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                      <input
+                        type="time"
+                        value={prayer.time}
+                        onChange={(e) => {
+                          const updated = [...newContent.jummahPrayers];
+                          updated[index] = { ...updated[index], time: e.target.value };
+                          setNewContent({ ...newContent, jummahPrayers: updated });
+                        }}
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
+                      <input
+                        type="text"
+                        value={prayer.khatib}
+                        onChange={(e) => {
+                          const updated = [...newContent.jummahPrayers];
+                          updated[index] = { ...updated[index], khatib: e.target.value };
+                          setNewContent({ ...newContent, jummahPrayers: updated });
+                        }}
+                        placeholder="Sheikh name"
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                      <input
+                        type="text"
+                        value={prayer.location}
+                        onChange={(e) => {
+                          const updated = [...newContent.jummahPrayers];
+                          updated[index] = { ...updated[index], location: e.target.value };
+                          setNewContent({ ...newContent, jummahPrayers: updated });
+                        }}
+                        placeholder="Main Musallah"
+                        className="w-full border border-gray-300 rounded px-3 py-2"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => {
+                          if (newContent.jummahPrayers.length <= 1) return;
+                          const updated = newContent.jummahPrayers.filter((_, i) => i !== index);
+                          setNewContent({ ...newContent, jummahPrayers: updated });
+                        }}
+                        disabled={newContent.jummahPrayers.length <= 1}
+                        className="text-gray-400 hover:text-red-500 p-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {newContent.jummahPrayers.length < 5 && (
+                  <button
+                    onClick={() => setNewContent({
                       ...newContent,
-                      jummahPrayer: { ...newContent.jummahPrayer, time: e.target.value }
+                      jummahPrayers: [...newContent.jummahPrayers, { time: '', khatib: '', location: '' }]
                     })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    value={newContent.jummahPrayer.date}
-                    onChange={(e) => setNewContent({
-                      ...newContent,
-                      jummahPrayer: { ...newContent.jummahPrayer, date: e.target.value }
-                    })}
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
-                  <input
-                    type="text"
-                    value={newContent.jummahPrayer.khatib}
-                    onChange={(e) => setNewContent({
-                      ...newContent,
-                      jummahPrayer: { ...newContent.jummahPrayer, khatib: e.target.value }
-                    })}
-                    placeholder="Sheikh name"
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    value={newContent.jummahPrayer.location}
-                    onChange={(e) => setNewContent({
-                      ...newContent,
-                      jummahPrayer: { ...newContent.jummahPrayer, location: e.target.value }
-                    })}
-                    placeholder="Main Musallah"
-                    className="w-full border border-gray-300 rounded px-3 py-2"
-                  />
-                </div>
+                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Prayer Time</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -451,7 +473,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                   year: selectedYear,
                   verse: { arabic: '', transliteration: '', translation: '', reference: '' },
                   hadith: { arabic: '', transliteration: '', translation: '', reference: '' },
-                  jummahPrayer: { time: '13:30', khatib: '', location: 'Main Musallah', date: '' }
+                  jummahPrayers: [{ time: '13:30', khatib: '', location: 'Main Musallah' }]
                 });
               }}
               className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
@@ -551,6 +573,37 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                             Hadith of the Day
                           </h5>
                           <ContentDisplay content={content.hadith} type="hadith" />
+                        </div>
+
+                        {/* Jummah Prayers Display */}
+                        <div className="border border-green-300 rounded-lg p-4 bg-green-50">
+                          <h5 className="font-medium text-green-900 mb-3 flex items-center">
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Jummah Prayer Details (Friday)
+                          </h5>
+                          {((content.jummahPrayers && content.jummahPrayers.length > 0)
+                            || content.jummahPrayer) ? (
+                            <div className="space-y-2">
+                              {(content.jummahPrayers && content.jummahPrayers.length > 0
+                                ? content.jummahPrayers
+                                : [content.jummahPrayer]
+                              ).map((prayer, index) => (
+                                <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2">
+                                  <div className="font-medium text-gray-900">
+                                    {prayer.time || prayer.prayerTime || 'TBD'}
+                                  </div>
+                                  <div className="text-sm text-gray-600">
+                                    {prayer.khatib || 'Khatib TBA'}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {prayer.location || 'Location TBA'}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-gray-400 italic text-sm">No Jummah prayers set</p>
+                          )}
                         </div>
 
                         {/* Actions */}
@@ -682,17 +735,20 @@ function ContentDisplay({ content, type }) {
 
 // Content edit form component
 function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadiths, showMessage }) {
-  const defaultJummahPrayer = { time: '13:30', khatib: '', location: 'Main Musallah', date: '' };
+  const defaultJummahPrayer = { time: '13:30', khatib: '', location: 'Main Musallah' };
+  const initialJummahPrayers = (content.jummahPrayers && content.jummahPrayers.length > 0)
+    ? content.jummahPrayers
+    : (content.jummahPrayer ? [content.jummahPrayer] : [defaultJummahPrayer]);
   const [formData, setFormData] = useState({
     ...content,
-    jummahPrayer: {
+    jummahPrayers: initialJummahPrayers.map(prayer => ({
       ...defaultJummahPrayer,
-      ...(content.jummahPrayer || {})
-    }
+      ...prayer
+    }))
   });
 
   console.log('🔍 ContentEditForm formData:', formData);
-  console.log('🔍 ContentEditForm formData.jummahPrayer:', formData.jummahPrayer);
+  console.log('🔍 ContentEditForm formData.jummahPrayers:', formData.jummahPrayers);
 
   const loadSample = (section) => {
     const samples = section === 'verse' ? sampleVerses : sampleHadiths;
@@ -706,7 +762,7 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
 
   const handleSave = () => {
     console.log('🔍 handleSave called with formData:', formData);
-    console.log('🔍 formData.jummahPrayer at save:', formData.jummahPrayer);
+    console.log('🔍 formData.jummahPrayers at save:', formData.jummahPrayers);
     onSave(formData);
   };
 
@@ -768,62 +824,77 @@ function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadith
           <Calendar className="h-4 w-4 mr-2" />
           Jummah Prayer Details (Friday)
         </h5>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-            <input
-              type="time"
-              value={formData.jummahPrayer.time}
-              onChange={(e) => setFormData({
+        <div className="space-y-3">
+          {formData.jummahPrayers.map((prayer, index) => (
+            <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-white rounded-lg p-3 border border-gray-200">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input
+                  type="time"
+                  value={prayer.time}
+                  onChange={(e) => {
+                    const updated = [...formData.jummahPrayers];
+                    updated[index] = { ...updated[index], time: e.target.value };
+                    setFormData({ ...formData, jummahPrayers: updated });
+                  }}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
+                <input
+                  type="text"
+                  value={prayer.khatib}
+                  onChange={(e) => {
+                    const updated = [...formData.jummahPrayers];
+                    updated[index] = { ...updated[index], khatib: e.target.value };
+                    setFormData({ ...formData, jummahPrayers: updated });
+                  }}
+                  placeholder="Sheikh name"
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <input
+                  type="text"
+                  value={prayer.location}
+                  onChange={(e) => {
+                    const updated = [...formData.jummahPrayers];
+                    updated[index] = { ...updated[index], location: e.target.value };
+                    setFormData({ ...formData, jummahPrayers: updated });
+                  }}
+                  placeholder="Main Musallah"
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    if (formData.jummahPrayers.length <= 1) return;
+                    const updated = formData.jummahPrayers.filter((_, i) => i !== index);
+                    setFormData({ ...formData, jummahPrayers: updated });
+                  }}
+                  disabled={formData.jummahPrayers.length <= 1}
+                  className="text-gray-400 hover:text-red-500 p-2 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+          {formData.jummahPrayers.length < 5 && (
+            <button
+              onClick={() => setFormData({
                 ...formData,
-                jummahPrayer: { ...formData.jummahPrayer, time: e.target.value }
+                jummahPrayers: [...formData.jummahPrayers, { time: '', khatib: '', location: '' }]
               })}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-            <input
-              type="date"
-              value={formData.jummahPrayer.date}
-              onChange={(e) => setFormData({
-                ...formData,
-                jummahPrayer: { ...formData.jummahPrayer, date: e.target.value }
-              })}
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
-            <input
-              type="text"
-              value={formData.jummahPrayer.khatib}
-              onChange={(e) => {
-                console.log('🔍 Khatib changed to:', e.target.value);
-                const newFormData = {
-                  ...formData,
-                  jummahPrayer: { ...formData.jummahPrayer, khatib: e.target.value }
-                };
-                console.log('🔍 New formData after khatib change:', newFormData);
-                setFormData(newFormData);
-              }}
-              placeholder="Sheikh name"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-            <input
-              type="text"
-              value={formData.jummahPrayer.location}
-              onChange={(e) => setFormData({
-                ...formData,
-                jummahPrayer: { ...formData.jummahPrayer, location: e.target.value }
-              })}
-              placeholder="Main Musallah"
-              className="w-full border border-gray-300 rounded px-3 py-2"
-            />
-          </div>
+              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Prayer Time</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -140,6 +140,49 @@ class BoardService {
   }
 
   /**
+   * Convert backend jummah payload (list or single) to frontend list shape
+   * @param {Object} source - weekly content item with jummahPrayers/jummahPrayer
+   * @returns {Array} Array of frontend jummah prayers
+   */
+  static fromBackendJummahPrayers(source = {}) {
+    const normalizeTime = (value) => {
+      if (!value) {
+        return DEFAULT_JUMMAH_PRAYER.time;
+      }
+      if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+        return value.slice(0, 5);
+      }
+      return value;
+    };
+
+    const list = Array.isArray(source.jummahPrayers) ? source.jummahPrayers
+      : (Array.isArray(source.jummahPrayer) ? source.jummahPrayer : null);
+
+    if (list && list.length > 0) {
+      return list.map((prayer) => ({
+        time: normalizeTime(prayer.prayerTime || prayer.time),
+        khatib: prayer.khatib || DEFAULT_JUMMAH_PRAYER.khatib,
+        location: prayer.location || DEFAULT_JUMMAH_PRAYER.location
+      }));
+    }
+
+    if (source.jummahPrayer) {
+      const single = this.normalizeJummahPrayer({
+        time: source.jummahPrayer.prayerTime || source.jummahPrayer.time,
+        khatib: source.jummahPrayer.khatib,
+        location: source.jummahPrayer.location
+      });
+      return [{
+        time: normalizeTime(single.time),
+        khatib: single.khatib,
+        location: single.location
+      }];
+    }
+
+    return [];
+  }
+
+  /**
    * Get auth headers with JWT token
    */
   static getAuthHeaders() {
@@ -295,9 +338,12 @@ class BoardService {
       id: `${item.weekId.year}-${item.weekId.weekNumber}`,
       weekNumber: item.weekId.weekNumber,
       year: item.weekId.year,
+      weekStart: item.weekId.weekStart,
+      weekEnd: item.weekId.weekEnd,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: this.fromBackendJummah(item)
+      jummahPrayer: this.fromBackendJummah(item),
+      jummahPrayers: this.fromBackendJummahPrayers(item)
     }));
   }
 
@@ -322,9 +368,12 @@ class BoardService {
       id: `${item.weekId.year}-${item.weekId.weekNumber}`,
       weekNumber: item.weekId.weekNumber,
       year: item.weekId.year,
+      weekStart: item.weekId.weekStart,
+      weekEnd: item.weekId.weekEnd,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: this.fromBackendJummah(item)
+      jummahPrayer: this.fromBackendJummah(item),
+      jummahPrayers: this.fromBackendJummahPrayers(item)
     }));
   }
 
@@ -349,9 +398,12 @@ class BoardService {
       id: `${item.weekId.year}-${item.weekId.weekNumber}`,
       weekNumber: item.weekId.weekNumber,
       year: item.weekId.year,
+      weekStart: item.weekId.weekStart,
+      weekEnd: item.weekId.weekEnd,
       verse: item.verse,
       hadith: item.hadith,
-      jummahPrayer: this.fromBackendJummah(item)
+      jummahPrayer: this.fromBackendJummah(item),
+      jummahPrayers: this.fromBackendJummahPrayers(item)
     };
   }
 

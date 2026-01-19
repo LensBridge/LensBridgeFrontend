@@ -1,8 +1,8 @@
-import { useState, useCallback, memo, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { 
   Settings, Calendar, Image, Play, BookOpen, 
   Crown, ChevronLeft, Save, RotateCcw, Monitor,
-  MapPin, Clock, Users, Sun, Moon, MessageSquare, Sunrise, Loader
+  MapPin, Clock, Users, Sun, Moon, MessageSquare, Loader
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
@@ -14,7 +14,6 @@ import EventsEditor from '../components/board/EventsEditor';
 import PostersEditor from '../components/board/PostersEditor';
 import FramesEditor from '../components/board/FramesEditor';
 import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
-import JummahEditor from '../components/board/JummahEditor';
 
 /**
  * BoardManagement - ROOT-only page for managing MusallahBoard configuration
@@ -42,7 +41,6 @@ function BoardManagement() {
   // Initial data state (will be populated from API)
   const [boardPayload, setBoardPayload] = useState({
     boardConfig: null,
-    jummahSchedules: [],
     events: [],
     posters: [],
     weeklyContent: []
@@ -90,7 +88,6 @@ function BoardManagement() {
             enableScrollingMessage: true,
             scrollingMessage: 'Welcome to UTM MSA - Follow us @utmmsa for updates!'
           },
-          jummahSchedules: [], // Will be part of weeklyContent now
           events: events || [],
           posters: posters || [],
           weeklyContent: weeklyContent || []
@@ -130,14 +127,6 @@ function BoardManagement() {
     setHasUnsavedChanges(true);
   }, []);
 
-  const updateJummahSchedules = useCallback((newSchedules) => {
-    setBoardPayload(prev => ({
-      ...prev,
-      jummahSchedules: newSchedules
-    }));
-    setHasUnsavedChanges(true);
-  }, []);
-
   const updateEvents = useCallback((newEvents) => {
     setBoardPayload(prev => ({
       ...prev,
@@ -170,60 +159,6 @@ function BoardManagement() {
     setHasUnsavedChanges(true);
   }, []);
 
-  const getWeekNumberFromDate = (dateStr) => {
-    const date = new Date(`${dateStr}T00:00:00`);
-    const year = date.getFullYear();
-    const firstDay = new Date(year, 0, 1);
-    const dayOfWeek = firstDay.getDay();
-    const daysToMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
-    const firstMonday = new Date(firstDay);
-    firstMonday.setDate(firstDay.getDate() + (dayOfWeek === 1 ? 0 : daysToMonday));
-    const diffDays = Math.floor((date - firstMonday) / (24 * 60 * 60 * 1000));
-    const weekNumber = diffDays < 0 ? 1 : Math.floor(diffDays / 7) + 1;
-    return { year, weekNumber };
-  };
-
-  const mergeWeeklyContentWithJummah = (weeklyContent, jummahSchedules) => {
-    if (!jummahSchedules || jummahSchedules.length === 0) {
-      return weeklyContent;
-    }
-
-    const merged = weeklyContent.map(item => ({ ...item }));
-    const indexByWeek = new Map(
-      merged.map((item, index) => [`${item.year}-${item.weekNumber}`, index])
-    );
-
-    jummahSchedules.forEach(schedule => {
-      if (!schedule?.date) {
-        return;
-      }
-
-      const { year, weekNumber } = getWeekNumberFromDate(schedule.date);
-      const key = `${year}-${weekNumber}`;
-      const jummahPrayers = (schedule.prayers || []).map(prayer => ({
-        time: prayer.time || '',
-        khatib: prayer.khatib || '',
-        location: prayer.location || ''
-      }));
-
-      if (indexByWeek.has(key)) {
-        const index = indexByWeek.get(key);
-        merged[index] = {
-          ...merged[index],
-          jummahPrayers
-        };
-      } else {
-        merged.push({
-          year,
-          weekNumber,
-          jummahPrayers
-        });
-      }
-    });
-
-    return merged;
-  };
-
   // Save all changes to API
   const handleSave = useCallback(async () => {
     if (!hasRootPermissions()) {
@@ -242,17 +177,10 @@ function BoardManagement() {
         );
       }
 
-      const mergedWeeklyContent = mergeWeeklyContentWithJummah(
-        boardPayload.weeklyContent,
-        boardPayload.jummahSchedules
-      );
-      console.log('BoardManagement.handleSave jummahSchedules:', boardPayload.jummahSchedules);
-      console.log('BoardManagement.handleSave mergedWeeklyContent:', mergedWeeklyContent);
-
-      // Save all weekly content (including jummah schedules)
-      if (mergedWeeklyContent && mergedWeeklyContent.length > 0) {
+      // Save all weekly content
+      if (boardPayload.weeklyContent && boardPayload.weeklyContent.length > 0) {
         await Promise.all(
-          mergedWeeklyContent.map(content => 
+          boardPayload.weeklyContent.map(content => 
             BoardService.saveWeeklyContent(content)
           )
         );
@@ -281,7 +209,6 @@ function BoardManagement() {
   // Tab definitions
   const tabs = [
     { id: 'config', label: 'Board Config', icon: Settings, description: 'Location and display options' },
-    { id: 'jummah', label: 'Jummah', icon: Sunrise, description: 'Friday prayer schedules' },
     { id: 'events', label: 'Events', icon: Calendar, description: 'Upcoming events and schedule' },
     { id: 'posters', label: 'Posters', icon: Image, description: 'Promotional posters and media' },
     { id: 'frames', label: 'Slideshow', icon: Play, description: 'Frame order and timing' },
@@ -296,14 +223,6 @@ function BoardManagement() {
           <BoardConfigEditor 
             config={boardPayload.boardConfig} 
             onUpdate={updateBoardConfig}
-            showMessage={showMessage}
-          />
-        );
-      case 'jummah':
-        return (
-          <JummahEditor 
-            jummahSchedules={boardPayload.jummahSchedules} 
-            onUpdate={updateJummahSchedules}
             showMessage={showMessage}
           />
         );
@@ -509,7 +428,7 @@ function BoardManagement() {
       </div>
 
       {/* Quick Stats Footer */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl shadow border border-gray-200 p-4 text-center">
           <div className="text-2xl font-bold text-indigo-600">{boardPayload.events.length}</div>
           <div className="text-sm text-gray-500">Events</div>
@@ -521,10 +440,6 @@ function BoardManagement() {
         <div className="bg-white rounded-xl shadow border border-gray-200 p-4 text-center">
           <div className="text-2xl font-bold text-amber-600">{boardPayload.weeklyContent.length}</div>
           <div className="text-sm text-gray-500">Days Configured</div>
-        </div>
-        <div className="bg-white rounded-xl shadow border border-gray-200 p-4 text-center">
-          <div className="text-2xl font-bold text-green-600">{boardPayload.jummahSchedules.length}</div>
-          <div className="text-sm text-gray-500">Jummah Schedules</div>
         </div>
         <div className="bg-white rounded-xl shadow border border-gray-200 p-4 text-center">
           <div className={`text-2xl font-bold ${boardPayload.boardConfig.darkModeAfterIsha ? 'text-gray-800' : 'text-yellow-500'}`}>
