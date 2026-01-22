@@ -419,33 +419,6 @@ function BoardManagement() {
         </div>
       )}
 
-      {/* Current Board Location Indicator */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${boardPayload.boardConfig.boardLocation === 'brothers' ? 'bg-blue-100' : 'bg-pink-100'}`}>
-              <Users className={`h-5 w-5 ${boardPayload.boardConfig.boardLocation === 'brothers' ? 'text-blue-600' : 'text-pink-600'}`} />
-            </div>
-            <div>
-              <span className="text-sm text-gray-500">Editing Board:</span>
-              <span className="ml-2 font-semibold text-gray-900 capitalize">
-                {boardPayload.boardConfig.boardLocation} Musallah
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <div className="flex items-center space-x-1">
-              <MapPin className="h-4 w-4" />
-              <span>{boardPayload.boardConfig.location.city}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="h-4 w-4" />
-              <span>{boardPayload.boardConfig.location.timezone}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation Tabs */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200">
         <div className="border-b border-gray-200">

@@ -14,8 +14,19 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   const [expandedWeek, setExpandedWeek] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [activeContentTab, setActiveContentTab] = useState('current');
 
-  // Utility: Get date range for a given week number of a year
+  const getIsoWeekStart = (year, weekNumber) => {
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = jan4.getDay() || 7;
+    const week1Monday = new Date(jan4);
+    week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
+    const weekStart = new Date(week1Monday);
+    weekStart.setDate(week1Monday.getDate() + (weekNumber - 1) * 7);
+    return weekStart;
+  };
+
+  // Utility: Get date range for a given ISO week number of a year
   const getWeekDateRange = (weekNumber, year, weekStartStr, weekEndStr) => {
     const formatDate = (date) => {
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -27,16 +38,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
       return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
     }
 
-    // Use Sunday-based week ranges (Sunday -> Saturday)
-    const firstDay = new Date(year, 0, 1);
-    const dayOfWeek = firstDay.getDay(); // 0 = Sunday
-    const daysToSunday = (7 - dayOfWeek) % 7;
-    const firstSunday = new Date(firstDay);
-    firstSunday.setDate(firstDay.getDate() + daysToSunday);
-
-    const weekStart = new Date(firstSunday);
-    weekStart.setDate(firstSunday.getDate() + (weekNumber - 1) * 7);
-
+    const weekStart = getIsoWeekStart(year, weekNumber);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
@@ -46,14 +48,39 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   // Get current week number
   const getCurrentWeekNumber = () => {
     const now = new Date();
-    const firstDay = new Date(now.getFullYear(), 0, 1);
-    const dayOfWeek = firstDay.getDay(); // 0 = Sunday
-    const daysToSunday = (7 - dayOfWeek) % 7;
-    const firstSunday = new Date(firstDay);
-    firstSunday.setDate(firstDay.getDate() + daysToSunday);
+    const jan4 = new Date(now.getFullYear(), 0, 4);
+    const jan4Day = jan4.getDay() || 7;
+    const week1Monday = new Date(jan4);
+    week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
+    const diffDays = Math.floor((now - week1Monday) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.floor(diffDays / 7) + 1;
+    return weekNumber < 1 ? 1 : weekNumber;
+  };
 
-    const diffDays = Math.floor((now - firstSunday) / (24 * 60 * 60 * 1000));
-    return diffDays < 0 ? 1 : Math.floor(diffDays / 7) + 1;
+  const getDefaultWeekNumber = (year) => {
+    const currentYear = new Date().getFullYear();
+    const currentWeek = getCurrentWeekNumber();
+    const isCurrentYear = year === currentYear;
+    const isPastYear = year < currentYear;
+
+    if (isPastYear) {
+      return 1;
+    }
+
+    const startWeek = isCurrentYear ? currentWeek : 1;
+    const weeksWithContent = new Set(
+      weeklyContent
+        .filter(content => content.year === year)
+        .map(content => content.weekNumber)
+    );
+
+    for (let week = startWeek; week <= 52; week += 1) {
+      if (!weeksWithContent.has(week)) {
+        return week;
+      }
+    }
+
+    return startWeek;
   };
 
   // Color palette for weeks (cycling through colors)
@@ -125,7 +152,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
 
   // New content form state
   const [newContent, setNewContent] = useState({
-    weekNumber: getCurrentWeekNumber(),
+    weekNumber: getDefaultWeekNumber(selectedYear),
     year: selectedYear,
     verse: {
       arabic: '',
@@ -209,15 +236,8 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
     onUpdate([...weeklyContent, content]);
     showMessage('✅ Weekly content added');
     
-    // Find next available week
-    let nextWeek = newContent.weekNumber + 1;
-    while (nextWeek <= 52 && hasContentForWeek(nextWeek, selectedYear)) {
-      nextWeek++;
-    }
-    if (nextWeek > 52) nextWeek = getCurrentWeekNumber();
-    
     setNewContent({
-      weekNumber: nextWeek,
+      weekNumber: getDefaultWeekNumber(selectedYear),
       year: selectedYear,
       verse: {
         arabic: '',
@@ -240,6 +260,17 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
       ]
     });
     setShowAddForm(false);
+  };
+
+  const handleToggleAddForm = () => {
+    if (!showAddForm) {
+      setNewContent((prev) => ({
+        ...prev,
+        weekNumber: getDefaultWeekNumber(selectedYear),
+        year: selectedYear
+      }));
+    }
+    setShowAddForm(!showAddForm);
   };
 
   // Update content
@@ -292,6 +323,30 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
         </div>
         
         <div className="flex items-center space-x-3">
+          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setActiveContentTab('current')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeContentTab === 'current'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Current + Future
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveContentTab('past')}
+              className={`px-3 py-2 text-sm font-medium transition-colors ${
+                activeContentTab === 'past'
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
+              }`}
+            >
+              Past
+            </button>
+          </div>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -302,7 +357,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
             ))}
           </select>
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={handleToggleAddForm}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95 flex items-center space-x-2 shadow-md hover:shadow-lg"
           >
             <Plus className="h-4 w-4" />
@@ -475,7 +530,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
               onClick={() => {
                 setShowAddForm(false);
                 setNewContent({
-                  weekNumber: getCurrentWeekNumber(),
+                  weekNumber: getDefaultWeekNumber(selectedYear),
                   year: selectedYear,
                   verse: { arabic: '', transliteration: '', translation: '', reference: '' },
                   hadith: { arabic: '', transliteration: '', translation: '', reference: '' },
@@ -505,11 +560,25 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
           <p className="text-sm">Add content for each week of the year</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {weeklyContent
+        (() => {
+          const currentYear = new Date().getFullYear();
+          const currentWeekNumber = getCurrentWeekNumber();
+          const yearContent = weeklyContent
             .filter(content => content.year === selectedYear)
-            .sort((a, b) => a.weekNumber - b.weekNumber)
-            .map(content => {
+            .sort((a, b) => a.weekNumber - b.weekNumber);
+          const isPastYear = selectedYear < currentYear;
+          const isFutureYear = selectedYear > currentYear;
+          const currentContent = (!isPastYear && !isFutureYear)
+            ? yearContent.find(content => content.weekNumber === currentWeekNumber)
+            : null;
+          const pastContent = isPastYear
+            ? yearContent
+            : yearContent.filter(content => content.weekNumber < currentWeekNumber);
+          const futureContent = isFutureYear
+            ? yearContent
+            : yearContent.filter(content => content.weekNumber > currentWeekNumber);
+
+          const renderContentCard = (content) => {
             const isExpanded = expandedWeek === content.id;
             const weekColor = getWeekColor(content.weekNumber);
             const isCurrentWeek = content.weekNumber === getCurrentWeekNumber() && content.year === new Date().getFullYear();
@@ -640,8 +709,51 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                 )}
               </div>
             );
-          })}
-        </div>
+          };
+
+          if (activeContentTab === 'past') {
+            return (
+              <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+                {pastContent.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
+                    <p>No past weekly content for this year</p>
+                  </div>
+                ) : (
+                  pastContent.map(renderContentCard)
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-gray-700">Current Week</h4>
+                  {!currentContent && (
+                    <span className="text-xs text-gray-400">No content set</span>
+                  )}
+                </div>
+                {currentContent ? renderContentCard(currentContent) : (
+                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
+                    <p>No current week content for this year</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-700">Future Weeks</h4>
+                {futureContent.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
+                    <p>No future weekly content for this year</p>
+                  </div>
+                ) : (
+                  futureContent.map(renderContentCard)
+                )}
+              </div>
+            </div>
+          );
+        })()
       )}
 
       {/* Tips */}
