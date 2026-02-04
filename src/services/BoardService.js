@@ -518,6 +518,8 @@ class BoardService {
     // Transform backend format to frontend format
     return posters.map(poster => ({
       ...poster,
+      // Normalize image URL field - backend might use 'image' or 'imageUrl'
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000 // Convert seconds to milliseconds
     }));
@@ -543,6 +545,8 @@ class BoardService {
     
     return posters.map(poster => ({
       ...poster,
+      // Normalize image URL field
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000
     }));
@@ -566,6 +570,7 @@ class BoardService {
     const poster = await response.json();
     return {
       ...poster,
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000
     };
@@ -599,6 +604,7 @@ class BoardService {
     const poster = await response.json();
     return {
       ...poster,
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000
     };
@@ -637,6 +643,7 @@ class BoardService {
     const poster = await response.json();
     return {
       ...poster,
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000
     };
@@ -666,6 +673,7 @@ class BoardService {
     const poster = await response.json();
     return {
       ...poster,
+      imageUrl: poster.imageUrl || poster.image || null,
       audience: this.fromAudienceEnum(poster.audience),
       duration: poster.duration * 1000
     };

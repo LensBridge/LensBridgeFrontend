@@ -1,1033 +1,352 @@
-import { useState, memo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { 
-  Plus, Trash2, BookOpen, Book, Copy, Check,
-  ChevronDown, ChevronUp, Eye, Sparkles, Calendar
+  Plus, Trash2, BookOpen, Book, Edit2, X,
+  Calendar, Sparkles, ChevronRight
 } from 'lucide-react';
 
 /**
- * WeeklyContentEditor - Manage weekly verses and hadiths
- * Allows specifying content for each week of the year (1-52)
+ * WeeklyContentEditor - Clean weekly content management
  */
 function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
-  const [editingWeek, setEditingWeek] = useState(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [expandedWeek, setExpandedWeek] = useState(null);
-  const [copiedField, setCopiedField] = useState(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [activeContentTab, setActiveContentTab] = useState('current');
+  const [selectedWeek, setSelectedWeek] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(null);
 
-  const getIsoWeekStart = (year, weekNumber) => {
-    const jan4 = new Date(year, 0, 4);
-    const jan4Day = jan4.getDay() || 7;
-    const week1Monday = new Date(jan4);
-    week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
-    const weekStart = new Date(week1Monday);
-    weekStart.setDate(week1Monday.getDate() + (weekNumber - 1) * 7);
-    return weekStart;
-  };
-
-  // Utility: Get date range for a given ISO week number of a year
-  const getWeekDateRange = (weekNumber, year, weekStartStr, weekEndStr) => {
-    const formatDate = (date) => {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    };
-
-    if (weekStartStr && weekEndStr) {
-      const weekStart = new Date(`${weekStartStr}T00:00:00`);
-      const weekEnd = new Date(`${weekEndStr}T00:00:00`);
-      return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
-    }
-
-    const weekStart = getIsoWeekStart(year, weekNumber);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-
-    return `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
-  };
-
-  // Get current week number
-  const getCurrentWeekNumber = () => {
+  // Calculate current week
+  const getCurrentWeek = () => {
     const now = new Date();
     const jan4 = new Date(now.getFullYear(), 0, 4);
     const jan4Day = jan4.getDay() || 7;
     const week1Monday = new Date(jan4);
     week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
     const diffDays = Math.floor((now - week1Monday) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.floor(diffDays / 7) + 1;
-    return weekNumber < 1 ? 1 : weekNumber;
+    return Math.max(1, Math.floor(diffDays / 7) + 1);
   };
 
-  const getDefaultWeekNumber = (year) => {
-    const currentYear = new Date().getFullYear();
-    const currentWeek = getCurrentWeekNumber();
-    const isCurrentYear = year === currentYear;
-    const isPastYear = year < currentYear;
+  const currentWeek = getCurrentWeek();
+  const currentYear = new Date().getFullYear();
 
-    if (isPastYear) {
-      return 1;
-    }
-
-    const startWeek = isCurrentYear ? currentWeek : 1;
-    const weeksWithContent = new Set(
-      weeklyContent
-        .filter(content => content.year === year)
-        .map(content => content.weekNumber)
-    );
-
-    for (let week = startWeek; week <= 52; week += 1) {
-      if (!weeksWithContent.has(week)) {
-        return week;
-      }
-    }
-
-    return startWeek;
+  // Get week date range
+  const getWeekRange = (weekNum, year) => {
+    const jan4 = new Date(year, 0, 4);
+    const jan4Day = jan4.getDay() || 7;
+    const week1Monday = new Date(jan4);
+    week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
+    const weekStart = new Date(week1Monday);
+    weekStart.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
 
-  // Color palette for weeks (cycling through colors)
-  const weekColors = [
-    'bg-blue-50 border-blue-200',
-    'bg-green-50 border-green-200',
-    'bg-purple-50 border-purple-200',
-    'bg-orange-50 border-orange-200',
-    'bg-pink-50 border-pink-200',
-    'bg-indigo-50 border-indigo-200',
-    'bg-teal-50 border-teal-200',
-    'bg-amber-50 border-amber-200'
-  ];
+  // Filter content by year
+  const yearContent = useMemo(() => {
+    return weeklyContent.filter(c => c.year === selectedYear).sort((a, b) => a.weekNumber - b.weekNumber);
+  }, [weeklyContent, selectedYear]);
 
-  // Sample content for quick fill
-  const sampleVerses = [
-    {
-      arabic: 'إِنَّ مَعَ الْعُسْرِ يُسْرًا',
-      transliteration: "Inna ma'al usri yusra",
-      translation: 'Indeed, with hardship comes ease.',
-      reference: 'Surah Ash-Sharh (94:6)'
-    },
-    {
-      arabic: 'وَمَن يَتَوَكَّلْ عَلَى اللَّهِ فَهُوَ حَسْبُهُ',
-      transliteration: "Wa man yatawakkal 'alallahi fahuwa hasbuh",
-      translation: 'And whoever relies upon Allah - then He is sufficient for him.',
-      reference: 'Surah At-Talaq (65:3)'
-    },
-    {
-      arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ',
-      transliteration: 'Fadhkuruni adhkurkum',
-      translation: 'So remember Me; I will remember you.',
-      reference: 'Surah Al-Baqarah (2:152)'
-    },
-    {
-      arabic: 'رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً',
-      transliteration: 'Rabbana atina fid-dunya hasanatan wa fil-akhirati hasanatan',
-      translation: 'Our Lord, give us in this world good and in the Hereafter good.',
-      reference: 'Surah Al-Baqarah (2:201)'
-    }
-  ];
+  // Get weeks with content
+  const weeksWithContent = new Set(yearContent.map(c => c.weekNumber));
 
-  const sampleHadiths = [
-    {
-      arabic: 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ',
-      transliteration: "Innamal a'malu bin niyyat",
-      translation: 'Actions are judged by intentions.',
-      reference: 'Sahih Bukhari'
-    },
-    {
-      arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
-      transliteration: "Khairukum man ta'allamal Qur'ana wa 'allamah",
-      translation: 'The best of you are those who learn the Quran and teach it.',
-      reference: 'Sahih Bukhari'
-    },
-    {
-      arabic: 'تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ',
-      transliteration: 'Tabassumuka fi wajhi akhika sadaqah',
-      translation: 'Your smile to your brother is charity.',
-      reference: 'Jami at-Tirmidhi'
-    },
-    {
-      arabic: 'الْمُؤْمِنُ الْقَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ الْمُؤْمِنِ الضَّعِيفِ',
-      transliteration: "Al-mu'minul qawiyyu khayrun wa ahabbu ilallahi minal mu'minil da'if",
-      translation: 'The strong believer is better and more beloved to Allah than the weak believer.',
-      reference: 'Sahih Muslim'
-    }
-  ];
-
-  // New content form state
-  const [newContent, setNewContent] = useState({
-    weekNumber: getDefaultWeekNumber(selectedYear),
-    year: selectedYear,
-    verse: {
-      arabic: '',
-      transliteration: '',
-      translation: '',
-      reference: ''
-    },
-    hadith: {
-      arabic: '',
-      transliteration: '',
-      translation: '',
-      reference: ''
-    },
-    jummahPrayers: [
-      {
-        time: '13:30',
-        khatib: '',
-        location: 'Main Musallah'
-      }
+  // Sample content
+  const samples = {
+    verse: [
+      { arabic: 'إِنَّ مَعَ الْعُسْرِ يُسْرًا', transliteration: "Inna ma'al usri yusra", translation: 'Indeed, with hardship comes ease.', reference: 'Surah Ash-Sharh (94:6)' },
+      { arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ', transliteration: 'Fadhkuruni adhkurkum', translation: 'So remember Me; I will remember you.', reference: 'Surah Al-Baqarah (2:152)' }
+    ],
+    hadith: [
+      { arabic: 'إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ', transliteration: "Innamal a'malu bin niyyat", translation: 'Actions are judged by intentions.', reference: 'Sahih Bukhari' },
+      { arabic: 'تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ', transliteration: 'Tabassumuka fi wajhi akhika sadaqah', translation: 'Your smile to your brother is charity.', reference: 'Jami at-Tirmidhi' }
     ]
+  };
+
+  const getEmptyForm = (weekNum) => ({
+    weekNumber: weekNum,
+    year: selectedYear,
+    verse: { arabic: '', transliteration: '', translation: '', reference: '' },
+    hadith: { arabic: '', transliteration: '', translation: '', reference: '' },
+    jummahPrayers: [{ time: '13:30', khatib: '', location: 'Main Musallah' }]
   });
 
-  // Check if a week already has content
-  const hasContentForWeek = (weekNumber, year) => {
-    return weeklyContent.some(c => c.weekNumber === weekNumber && c.year === year);
-  };
-
-  // Get content for a specific week
-  const getContentForWeek = (weekNumber, year) => {
-    return weeklyContent.find(c => c.weekNumber === weekNumber && c.year === year);
-  };
-
-  // Get week color based on week number
-  const getWeekColor = (weekNumber) => {
-    return weekColors[weekNumber % weekColors.length];
-  };
-
-  // Copy text to clipboard
-  const copyToClipboard = async (text, fieldId) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(fieldId);
-      setTimeout(() => setCopiedField(null), 2000);
-      showMessage('📋 Copied to clipboard');
-    } catch (err) {
-      showMessage('Failed to copy', true);
+  const handleSelectWeek = (weekNum) => {
+    const existing = yearContent.find(c => c.weekNumber === weekNum);
+    setSelectedWeek(weekNum);
+    if (existing) {
+      setEditForm({ ...existing });
+      setIsEditing(false);
+    } else {
+      setEditForm(getEmptyForm(weekNum));
+      setIsEditing(true);
     }
-  };
-
-  // Load sample content
-  const loadSample = (section) => {
-    const samples = section === 'verse' ? sampleVerses : sampleHadiths;
-    const randomSample = samples[Math.floor(Math.random() * samples.length)];
-    setNewContent({
-      ...newContent,
-      [section]: randomSample
-    });
-    showMessage(`✨ Sample ${section} loaded`);
-  };
-
-  // Add new content for a week
-  const handleAddContent = () => {
-    if (!newContent.verse.arabic && !newContent.hadith.arabic) {
-      showMessage('At least one verse or hadith is required', true);
-      return;
-    }
-    if (hasContentForWeek(newContent.weekNumber, newContent.year)) {
-      showMessage('Content already exists for this week', true);
-      return;
-    }
-    if (newContent.weekNumber < 1 || newContent.weekNumber > 52) {
-      showMessage('Week number must be between 1 and 52', true);
-      return;
-    }
-
-    const content = {
-      id: Date.now(),
-      ...newContent
-    };
-
-    onUpdate([...weeklyContent, content]);
-    showMessage('✅ Weekly content added');
-    
-    setNewContent({
-      weekNumber: getDefaultWeekNumber(selectedYear),
-      year: selectedYear,
-      verse: {
-        arabic: '',
-        transliteration: '',
-        translation: '',
-        reference: ''
-      },
-      hadith: {
-        arabic: '',
-        transliteration: '',
-        translation: '',
-        reference: ''
-      },
-      jummahPrayers: [
-        {
-          time: '13:30',
-          khatib: '',
-          location: 'Main Musallah'
-        }
-      ]
-    });
-    setShowAddForm(false);
-  };
-
-  const handleToggleAddForm = () => {
-    if (!showAddForm) {
-      setNewContent((prev) => ({
-        ...prev,
-        weekNumber: getDefaultWeekNumber(selectedYear),
-        year: selectedYear
-      }));
-    }
-    setShowAddForm(!showAddForm);
-  };
-
-  // Update content
-  const handleUpdateContent = (updatedContent) => {
-    onUpdate(weeklyContent.map(c => c.id === updatedContent.id ? updatedContent : c));
-    showMessage('✅ Content updated');
-    setEditingWeek(null);
-  };
-
-  // Delete content
-  const handleDeleteContent = (contentId) => {
-    if (confirm('Are you sure you want to delete this content?')) {
-      onUpdate(weeklyContent.filter(c => c.id !== contentId));
-      showMessage('🗑️ Content deleted');
-    }
-  };
-
-  // Duplicate content for another week
-  const handleDuplicateContent = (content) => {
-    // Find next available week number
-    let nextWeek = content.weekNumber + 1;
-    while (nextWeek <= 52 && hasContentForWeek(nextWeek, content.year)) {
-      nextWeek++;
-    }
-    
-    if (nextWeek > 52) {
-      showMessage('No available weeks in this year', true);
-      return;
-    }
-
-    const newContent = {
-      ...content,
-      id: Date.now(),
-      weekNumber: nextWeek
-    };
-
-    onUpdate([...weeklyContent, newContent]);
-    showMessage(`✅ Content duplicated to ${availableWeeks[0].label}`);
-  };
-
-  return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Weekly Content</h3>
-          <p className="text-sm text-gray-500">
-            {weeklyContent.length} weeks configured • Verse and Hadith for each week of the year
-          </p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setActiveContentTab('current')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                activeContentTab === 'current'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              Current + Future
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveContentTab('past')}
-              className={`px-3 py-2 text-sm font-medium transition-colors ${
-                activeContentTab === 'past'
-                  ? 'bg-indigo-600 text-white'
-                  : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              Past
-            </button>
-          </div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-          >
-            {[2025, 2026, 2027, 2028].map(year => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-          <button
-            onClick={handleToggleAddForm}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95 flex items-center space-x-2 shadow-md hover:shadow-lg"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Add Week Content</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Add Content Form */}
-      {showAddForm && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6 animate-slideDown shadow-lg">
-          <h4 className="font-semibold text-indigo-900 mb-4 flex items-center">
-            <Calendar className="h-5 w-5 mr-2" />
-            Add Content for Week
-          </h4>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Week Number</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="52"
-                  value={newContent.weekNumber}
-                  onChange={(e) => setNewContent({ ...newContent, weekNumber: parseInt(e.target.value) || 1 })}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500"
-                  placeholder="1-52"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-                <div className="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-600 text-sm">
-                  {getWeekDateRange(newContent.weekNumber, selectedYear)}
-                </div>
-              </div>
-            </div>
-
-            {/* Verse Section */}
-            <div className="border border-emerald-300 rounded-lg p-4 bg-emerald-50">
-              <div className="flex items-center justify-between mb-3">
-                <h5 className="font-medium text-emerald-900 flex items-center">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Verse of the Day
-                </h5>
-                <button
-                  onClick={() => loadSample('verse')}
-                  className="flex items-center space-x-1 text-sm text-emerald-600 hover:text-emerald-800"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Load Sample</span>
-                </button>
-              </div>
-              <ContentInputFields
-                data={newContent.verse}
-                onChange={(field, value) => setNewContent({
-                  ...newContent,
-                  verse: { ...newContent.verse, [field]: value }
-                })}
-                prefix="new-verse"
-              />
-            </div>
-
-            {/* Hadith Section */}
-            <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
-              <div className="flex items-center justify-between mb-3">
-                <h5 className="font-medium text-amber-900 flex items-center">
-                  <Book className="h-4 w-4 mr-2" />
-                  Hadith of the Day
-                </h5>
-                <button
-                  onClick={() => loadSample('hadith')}
-                  className="flex items-center space-x-1 text-sm text-amber-600 hover:text-amber-800"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Load Sample</span>
-                </button>
-              </div>
-              <ContentInputFields
-                data={newContent.hadith}
-                onChange={(field, value) => setNewContent({
-                  ...newContent,
-                  hadith: { ...newContent.hadith, [field]: value }
-                })}
-                prefix="new-hadith"
-              />
-            </div>
-
-            {/* Jummah Prayer Section */}
-            <div className="border border-green-300 rounded-lg p-4 bg-green-50">
-              <h5 className="font-medium text-green-900 flex items-center mb-3">
-                <Calendar className="h-4 w-4 mr-2" />
-                Jummah Prayer Details (Friday)
-              </h5>
-              <div className="space-y-3">
-                {newContent.jummahPrayers.map((prayer, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-white rounded-lg p-3 border border-gray-200">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                      <input
-                        type="time"
-                        value={prayer.time}
-                        onChange={(e) => {
-                          const updated = [...newContent.jummahPrayers];
-                          updated[index] = { ...updated[index], time: e.target.value };
-                          setNewContent({ ...newContent, jummahPrayers: updated });
-                        }}
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
-                      <input
-                        type="text"
-                        value={prayer.khatib}
-                        onChange={(e) => {
-                          const updated = [...newContent.jummahPrayers];
-                          updated[index] = { ...updated[index], khatib: e.target.value };
-                          setNewContent({ ...newContent, jummahPrayers: updated });
-                        }}
-                        placeholder="Sheikh name"
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
-                        type="text"
-                        value={prayer.location}
-                        onChange={(e) => {
-                          const updated = [...newContent.jummahPrayers];
-                          updated[index] = { ...updated[index], location: e.target.value };
-                          setNewContent({ ...newContent, jummahPrayers: updated });
-                        }}
-                        placeholder="Main Musallah"
-                        className="w-full border border-gray-300 rounded px-3 py-2"
-                      />
-                    </div>
-                    <div className="flex justify-end">
-                      <button
-                        onClick={() => {
-                          const updated = newContent.jummahPrayers.filter((_, i) => i !== index);
-                          setNewContent({ ...newContent, jummahPrayers: updated });
-                        }}
-                        className="text-gray-400 hover:text-red-500 p-2 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                {newContent.jummahPrayers.length < 5 && (
-                  <button
-                    onClick={() => setNewContent({
-                      ...newContent,
-                      jummahPrayers: [...newContent.jummahPrayers, { time: '', khatib: '', location: '' }]
-                    })}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center space-x-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Prayer Time</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setNewContent({
-                  weekNumber: getDefaultWeekNumber(selectedYear),
-                  year: selectedYear,
-                  verse: { arabic: '', transliteration: '', translation: '', reference: '' },
-                  hadith: { arabic: '', transliteration: '', translation: '', reference: '' },
-                  jummahPrayers: [{ time: '13:30', khatib: '', location: 'Main Musallah' }]
-                });
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddContent}
-              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all hover:shadow-lg flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Content</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Weekly Content List */}
-      {weeklyContent.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-          <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-          <p>No weekly content configured yet</p>
-          <p className="text-sm">Add content for each week of the year</p>
-        </div>
-      ) : (
-        (() => {
-          const currentYear = new Date().getFullYear();
-          const currentWeekNumber = getCurrentWeekNumber();
-          const yearContent = weeklyContent
-            .filter(content => content.year === selectedYear)
-            .sort((a, b) => a.weekNumber - b.weekNumber);
-          const isPastYear = selectedYear < currentYear;
-          const isFutureYear = selectedYear > currentYear;
-          const currentContent = (!isPastYear && !isFutureYear)
-            ? yearContent.find(content => content.weekNumber === currentWeekNumber)
-            : null;
-          const pastContent = isPastYear
-            ? yearContent
-            : yearContent.filter(content => content.weekNumber < currentWeekNumber);
-          const futureContent = isFutureYear
-            ? yearContent
-            : yearContent.filter(content => content.weekNumber > currentWeekNumber);
-
-          const renderContentCard = (content) => {
-            const isExpanded = expandedWeek === content.id;
-            const weekColor = getWeekColor(content.weekNumber);
-            const isCurrentWeek = content.weekNumber === getCurrentWeekNumber() && content.year === new Date().getFullYear();
-
-            return (
-              <div 
-                key={content.id}
-                className={`border-2 rounded-xl overflow-hidden transition-all ${
-                  isCurrentWeek ? 'ring-2 ring-indigo-400 border-indigo-300' : weekColor
-                }`}
-              >
-                <button
-                  onClick={() => setExpandedWeek(isExpanded ? null : content.id)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-white/50 transition-colors"
-                >
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="h-5 w-5 text-gray-600" />
-                    <div className="text-left">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-900">Week {content.weekNumber}</span>
-                        {isCurrentWeek && (
-                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium">
-                            Current
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {getWeekDateRange(content.weekNumber, content.year, content.weekStart, content.weekEnd)}, {content.year}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {isExpanded ? (
-                      <ChevronUp className="h-5 w-5 text-gray-400" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                </button>
-
-                {isExpanded && (
-                  <div className="p-4 bg-white border-t-2 animate-slideDown space-y-4">
-                    {editingWeek === content.id ? (
-                      <ContentEditForm
-                        content={content}
-                        onSave={handleUpdateContent}
-                        onCancel={() => setEditingWeek(null)}
-                        sampleVerses={sampleVerses}
-                        sampleHadiths={sampleHadiths}
-                        showMessage={showMessage}
-                      />
-                    ) : (
-                      <>
-                        {/* Verse Display */}
-                        <div className="border border-emerald-300 rounded-lg p-4 bg-emerald-50">
-                          <h5 className="font-medium text-emerald-900 mb-3 flex items-center">
-                            <BookOpen className="h-4 w-4 mr-2" />
-                            Verse of the Day
-                          </h5>
-                          <ContentDisplay content={content.verse} type="verse" />
-                        </div>
-
-                        {/* Hadith Display */}
-                        <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
-                          <h5 className="font-medium text-amber-900 mb-3 flex items-center">
-                            <Book className="h-4 w-4 mr-2" />
-                            Hadith of the Day
-                          </h5>
-                          <ContentDisplay content={content.hadith} type="hadith" />
-                        </div>
-
-                        {/* Jummah Prayers Display */}
-                        <div className="border border-green-300 rounded-lg p-4 bg-green-50">
-                          <h5 className="font-medium text-green-900 mb-3 flex items-center">
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Jummah Prayer Details (Friday)
-                          </h5>
-                          {((content.jummahPrayers && content.jummahPrayers.length > 0)
-                            || content.jummahPrayer) ? (
-                            <div className="space-y-2">
-                              {(content.jummahPrayers && content.jummahPrayers.length > 0
-                                ? content.jummahPrayers
-                                : [content.jummahPrayer]
-                              ).map((prayer, index) => (
-                                <div key={index} className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-3 py-2">
-                                  <div className="font-medium text-gray-900">
-                                    {prayer.time || prayer.prayerTime || 'TBD'}
-                                  </div>
-                                  <div className="text-sm text-gray-600">
-                                    {prayer.khatib || 'Khatib TBA'}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {prayer.location || 'Location TBA'}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-gray-400 italic text-sm">No Jummah prayers set</p>
-                          )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex justify-end space-x-2 pt-2">
-                          <button
-                            onClick={() => handleDuplicateContent(content)}
-                            className="text-gray-600 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-all text-sm flex items-center space-x-1"
-                          >
-                            <Copy className="h-4 w-4" />
-                            <span>Duplicate</span>
-                          </button>
-                          <button
-                            onClick={() => setEditingWeek(content.id)}
-                            className="text-gray-600 hover:text-indigo-600 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-all text-sm"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteContent(content.id)}
-                            className="text-gray-600 hover:text-red-600 px-3 py-1 rounded-lg hover:bg-red-50 transition-all text-sm"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          };
-
-          if (activeContentTab === 'past') {
-            return (
-              <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
-                {pastContent.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-                    <p>No past weekly content for this year</p>
-                  </div>
-                ) : (
-                  pastContent.map(renderContentCard)
-                )}
-              </div>
-            );
-          }
-
-          return (
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-gray-700">Current Week</h4>
-                  {!currentContent && (
-                    <span className="text-xs text-gray-400">No content set</span>
-                  )}
-                </div>
-                {currentContent ? renderContentCard(currentContent) : (
-                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-                    <p>No current week content for this year</p>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-700">Future Weeks</h4>
-                {futureContent.length === 0 ? (
-                  <div className="p-6 text-center text-gray-500 bg-gray-50 rounded-xl border border-gray-200">
-                    <p>No future weekly content for this year</p>
-                  </div>
-                ) : (
-                  futureContent.map(renderContentCard)
-                )}
-              </div>
-            </div>
-          );
-        })()
-      )}
-
-      {/* Tips */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Tips</h4>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Configure content for each week of the month (Week 1-5)</li>
-          <li>• Use "Load Sample" to quickly add example content</li>
-          <li>• Duplicate content from one week to another to save time</li>
-          <li>• Arabic text will display right-to-left on the board</li>
-          <li>• Always include proper references for authenticity</li>
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-// Content input fields component
-function ContentInputFields({ data, onChange, prefix }) {
-  return (
-    <div className="space-y-3">
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Arabic Text</label>
-        <textarea
-          value={data.arabic}
-          onChange={(e) => onChange('arabic', e.target.value)}
-          dir="rtl"
-          rows={2}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-lg font-arabic text-right focus:ring-2 focus:ring-indigo-500"
-          placeholder="أدخل النص العربي هنا..."
-          style={{ fontFamily: "'Amiri', 'Traditional Arabic', serif" }}
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Transliteration</label>
-        <input
-          type="text"
-          value={data.transliteration}
-          onChange={(e) => onChange('transliteration', e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm italic focus:ring-2 focus:ring-indigo-500"
-          placeholder="Enter transliteration..."
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Translation</label>
-        <textarea
-          value={data.translation}
-          onChange={(e) => onChange('translation', e.target.value)}
-          rows={2}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-          placeholder="Enter English translation..."
-        />
-      </div>
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">Reference</label>
-        <input
-          type="text"
-          value={data.reference}
-          onChange={(e) => onChange('reference', e.target.value)}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-          placeholder="e.g., Surah Al-Baqarah (2:255)"
-        />
-      </div>
-    </div>
-  );
-}
-
-// Content display component
-function ContentDisplay({ content, type }) {
-  if (!content.arabic && !content.translation) {
-    return <p className="text-gray-400 italic text-sm">No content set</p>;
-  }
-
-  return (
-    <div className="space-y-2">
-      {content.arabic && (
-        <p 
-          className="text-lg leading-relaxed" 
-          dir="rtl"
-          style={{ fontFamily: "'Amiri', 'Traditional Arabic', serif" }}
-        >
-          {content.arabic}
-        </p>
-      )}
-      {content.transliteration && (
-        <p className="text-gray-600 italic text-sm">{content.transliteration}</p>
-      )}
-      {content.translation && (
-        <p className="text-gray-800">{content.translation}</p>
-      )}
-      {content.reference && (
-        <p className="text-sm text-gray-500 font-medium">{content.reference}</p>
-      )}
-    </div>
-  );
-}
-
-// Content edit form component
-function ContentEditForm({ content, onSave, onCancel, sampleVerses, sampleHadiths, showMessage }) {
-  const defaultJummahPrayer = { time: '13:30', khatib: '', location: 'Main Musallah' };
-  const initialJummahPrayers = Array.isArray(content.jummahPrayers)
-    ? content.jummahPrayers
-    : (content.jummahPrayer ? [content.jummahPrayer] : []);
-  const [formData, setFormData] = useState({
-    ...content,
-    jummahPrayers: initialJummahPrayers.map(prayer => ({
-      ...defaultJummahPrayer,
-      ...prayer
-    }))
-  });
-
-  console.log('🔍 ContentEditForm formData:', formData);
-  console.log('🔍 ContentEditForm formData.jummahPrayers:', formData.jummahPrayers);
-
-  const loadSample = (section) => {
-    const samples = section === 'verse' ? sampleVerses : sampleHadiths;
-    const randomSample = samples[Math.floor(Math.random() * samples.length)];
-    setFormData({
-      ...formData,
-      [section]: randomSample
-    });
-    showMessage(`✨ Sample ${section} loaded`);
   };
 
   const handleSave = () => {
-    console.log('🔍 handleSave called with formData:', formData);
-    console.log('🔍 formData.jummahPrayers at save:', formData.jummahPrayers);
-    onSave(formData);
+    if (!editForm.verse.arabic && !editForm.hadith.arabic) {
+      showMessage('Add at least a verse or hadith', true);
+      return;
+    }
+    const existing = weeklyContent.find(c => c.weekNumber === editForm.weekNumber && c.year === editForm.year);
+    if (existing) {
+      onUpdate(weeklyContent.map(c => c.id === existing.id ? { ...editForm, id: existing.id } : c));
+    } else {
+      onUpdate([...weeklyContent, { ...editForm, id: Date.now() }]);
+    }
+    showMessage('Content saved');
+    setIsEditing(false);
+  };
+
+  const handleDelete = () => {
+    if (!confirm('Delete this week\'s content?')) return;
+    const existing = yearContent.find(c => c.weekNumber === selectedWeek);
+    if (existing) {
+      onUpdate(weeklyContent.filter(c => c.id !== existing.id));
+      setSelectedWeek(null);
+      setEditForm(null);
+      showMessage('Content deleted');
+    }
+  };
+
+  const loadSample = (type) => {
+    const sample = samples[type][Math.floor(Math.random() * samples[type].length)];
+    setEditForm({ ...editForm, [type]: sample });
+    showMessage('Sample loaded');
   };
 
   return (
-    <div className="space-y-4 animate-fadeIn">
-      {/* Verse Section */}
-      <div className="border border-emerald-300 rounded-lg p-4 bg-emerald-50">
-        <div className="flex items-center justify-between mb-3">
-          <h5 className="font-medium text-emerald-900 flex items-center">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Verse of the Day
-          </h5>
-          <button
-            onClick={() => loadSample('verse')}
-            className="flex items-center space-x-1 text-sm text-emerald-600 hover:text-emerald-800"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>Load Sample</span>
-          </button>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* Week Selector Panel */}
+      <div className="lg:w-72 flex-shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {/* Year Selector */}
+          <div className="p-4 border-b border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-gray-900">Select Week</span>
+              <select
+                value={selectedYear}
+                onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedWeek(null); }}
+                className="text-sm border border-gray-200 rounded-lg px-2 py-1"
+              >
+                {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Week Grid */}
+          <div className="p-4 max-h-96 overflow-y-auto">
+            <div className="grid grid-cols-7 gap-1 mb-2">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <div key={i} className="text-center text-xs text-gray-400 font-medium">{d}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {Array.from({ length: 52 }, (_, i) => i + 1).map(week => {
+                const hasContent = weeksWithContent.has(week);
+                const isCurrent = week === currentWeek && selectedYear === currentYear;
+                const isSelected = week === selectedWeek;
+                const isPast = selectedYear < currentYear || (selectedYear === currentYear && week < currentWeek);
+                return (
+                  <button
+                    key={week}
+                    onClick={() => handleSelectWeek(week)}
+                    className={`aspect-square rounded-lg text-sm font-medium transition-all ${
+                      isSelected ? 'bg-indigo-600 text-white ring-2 ring-indigo-300' :
+                      isCurrent ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-300' :
+                      hasContent ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' :
+                      isPast ? 'bg-gray-50 text-gray-400 hover:bg-gray-100' :
+                      'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {week}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-500">
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-amber-100 ring-1 ring-amber-300" /> Current</div>
+              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-emerald-100" /> Has Content</div>
+            </div>
+          </div>
         </div>
-        <ContentInputFields
-          data={formData.verse}
-          onChange={(field, value) => setFormData({
-            ...formData,
-            verse: { ...formData.verse, [field]: value }
-          })}
-          prefix="edit-verse"
-        />
       </div>
 
-      {/* Hadith Section */}
-      <div className="border border-amber-300 rounded-lg p-4 bg-amber-50">
-        <div className="flex items-center justify-between mb-3">
-          <h5 className="font-medium text-amber-900 flex items-center">
-            <Book className="h-4 w-4 mr-2" />
-            Hadith of the Day
-          </h5>
-          <button
-            onClick={() => loadSample('hadith')}
-            className="flex items-center space-x-1 text-sm text-amber-600 hover:text-amber-800"
-          >
-            <Sparkles className="h-4 w-4" />
-            <span>Load Sample</span>
-          </button>
-        </div>
-        <ContentInputFields
-          data={formData.hadith}
-          onChange={(field, value) => setFormData({
-            ...formData,
-            hadith: { ...formData.hadith, [field]: value }
-          })}
-          prefix="edit-hadith"
-        />
-      </div>
-
-      {/* Jummah Prayer Section */}
-      <div className="border border-green-300 rounded-lg p-4 bg-green-50">
-        <h5 className="font-medium text-green-900 flex items-center mb-3">
-          <Calendar className="h-4 w-4 mr-2" />
-          Jummah Prayer Details (Friday)
-        </h5>
-        <div className="space-y-3">
-          {formData.jummahPrayers.map((prayer, index) => (
-            <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end bg-white rounded-lg p-3 border border-gray-200">
+      {/* Content Editor Panel */}
+      <div className="flex-1 min-w-0">
+        {!selectedWeek ? (
+          <div className="bg-gray-50 rounded-xl border border-gray-200 p-12 text-center">
+            <Calendar className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-600 font-medium">Select a week to view or edit content</p>
+            <p className="text-sm text-gray-400 mt-1">Click a week number on the left</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                <input
-                  type="time"
-                  value={prayer.time}
-                  onChange={(e) => {
-                    const updated = [...formData.jummahPrayers];
-                    updated[index] = { ...updated[index], time: e.target.value };
-                    setFormData({ ...formData, jummahPrayers: updated });
-                  }}
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
+                <h3 className="font-semibold text-gray-900">Week {selectedWeek}</h3>
+                <p className="text-sm text-gray-500">{getWeekRange(selectedWeek, selectedYear)}, {selectedYear}</p>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Khatib</label>
-                <input
-                  type="text"
-                  value={prayer.khatib}
-                  onChange={(e) => {
-                    const updated = [...formData.jummahPrayers];
-                    updated[index] = { ...updated[index], khatib: e.target.value };
-                    setFormData({ ...formData, jummahPrayers: updated });
-                  }}
-                  placeholder="Sheikh name"
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                <input
-                  type="text"
-                  value={prayer.location}
-                  onChange={(e) => {
-                    const updated = [...formData.jummahPrayers];
-                    updated[index] = { ...updated[index], location: e.target.value };
-                    setFormData({ ...formData, jummahPrayers: updated });
-                  }}
-                  placeholder="Main Musallah"
-                  className="w-full border border-gray-300 rounded px-3 py-2"
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => {
-                    const updated = formData.jummahPrayers.filter((_, i) => i !== index);
-                    setFormData({ ...formData, jummahPrayers: updated });
-                  }}
-                  className="text-gray-400 hover:text-red-500 p-2 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+              <div className="flex items-center gap-2">
+                {!isEditing && weeksWithContent.has(selectedWeek) && (
+                  <>
+                    <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button onClick={handleDelete} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
               </div>
             </div>
-          ))}
-          {formData.jummahPrayers.length < 5 && (
-            <button
-              onClick={() => setFormData({
-                ...formData,
-                jummahPrayers: [...formData.jummahPrayers, { time: '', khatib: '', location: '' }]
-              })}
-              className="w-full border-2 border-dashed border-gray-300 rounded-lg p-2 text-gray-500 hover:border-green-400 hover:text-green-600 transition-colors flex items-center justify-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Prayer Time</span>
-            </button>
-          )}
-        </div>
-      </div>
 
-      <div className="flex justify-end space-x-3">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-all"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-all hover:shadow-lg"
-        >
-          Save Changes
+            {/* Content */}
+            <div className="p-4 space-y-4">
+              {isEditing ? (
+                <>
+                  {/* Verse Editor */}
+                  <ContentSection
+                    title="Verse of the Day"
+                    icon={BookOpen}
+                    color="emerald"
+                    data={editForm.verse}
+                    onChange={(field, val) => setEditForm({ ...editForm, verse: { ...editForm.verse, [field]: val } })}
+                    onLoadSample={() => loadSample('verse')}
+                  />
+
+                  {/* Hadith Editor */}
+                  <ContentSection
+                    title="Hadith of the Day"
+                    icon={Book}
+                    color="amber"
+                    data={editForm.hadith}
+                    onChange={(field, val) => setEditForm({ ...editForm, hadith: { ...editForm.hadith, [field]: val } })}
+                    onLoadSample={() => loadSample('hadith')}
+                  />
+
+                  {/* Jummah Prayers */}
+                  <div className="border border-green-200 rounded-xl p-4 bg-green-50">
+                    <h4 className="font-medium text-green-800 flex items-center gap-2 mb-3">
+                      <Calendar className="h-4 w-4" />
+                      Jummah Prayers
+                    </h4>
+                    <div className="space-y-2">
+                      {editForm.jummahPrayers?.map((prayer, i) => (
+                        <div key={i} className="flex gap-2 items-center bg-white rounded-lg p-2 border border-gray-100">
+                          <input type="time" value={prayer.time} onChange={(e) => {
+                            const updated = [...editForm.jummahPrayers];
+                            updated[i] = { ...updated[i], time: e.target.value };
+                            setEditForm({ ...editForm, jummahPrayers: updated });
+                          }} className="border border-gray-200 rounded px-2 py-1 text-sm w-28" />
+                          <input type="text" value={prayer.khatib} placeholder="Khatib" onChange={(e) => {
+                            const updated = [...editForm.jummahPrayers];
+                            updated[i] = { ...updated[i], khatib: e.target.value };
+                            setEditForm({ ...editForm, jummahPrayers: updated });
+                          }} className="flex-1 border border-gray-200 rounded px-2 py-1 text-sm" />
+                          <input type="text" value={prayer.location} placeholder="Location" onChange={(e) => {
+                            const updated = [...editForm.jummahPrayers];
+                            updated[i] = { ...updated[i], location: e.target.value };
+                            setEditForm({ ...editForm, jummahPrayers: updated });
+                          }} className="flex-1 border border-gray-200 rounded px-2 py-1 text-sm" />
+                          <button onClick={() => setEditForm({ ...editForm, jummahPrayers: editForm.jummahPrayers.filter((_, idx) => idx !== i) })} className="p-1 text-gray-400 hover:text-red-500">
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <button onClick={() => setEditForm({ ...editForm, jummahPrayers: [...(editForm.jummahPrayers || []), { time: '13:30', khatib: '', location: '' }] })} className="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-500 hover:border-green-400 hover:text-green-600 text-sm flex items-center justify-center gap-1">
+                        <Plus className="h-4 w-4" /> Add Prayer Time
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button onClick={() => { setIsEditing(false); if (!weeksWithContent.has(selectedWeek)) setSelectedWeek(null); }} className="px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">Cancel</button>
+                    <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2">
+                      <ChevronRight className="h-4 w-4" /> Save Content
+                    </button>
+                  </div>
+                </>
+              ) : weeksWithContent.has(selectedWeek) ? (
+                <>
+                  {/* Verse Display */}
+                  <ContentDisplay title="Verse" icon={BookOpen} color="emerald" data={editForm?.verse} />
+                  {/* Hadith Display */}
+                  <ContentDisplay title="Hadith" icon={Book} color="amber" data={editForm?.hadith} />
+                  {/* Jummah Display */}
+                  {editForm?.jummahPrayers?.length > 0 && (
+                    <div className="border border-green-200 rounded-xl p-4 bg-green-50">
+                      <h4 className="font-medium text-green-800 flex items-center gap-2 mb-3">
+                        <Calendar className="h-4 w-4" /> Jummah Prayers
+                      </h4>
+                      <div className="space-y-1">
+                        {editForm.jummahPrayers.map((p, i) => (
+                          <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 text-sm">
+                            <span className="font-medium">{p.time}</span>
+                            <span className="text-gray-600">{p.khatib || 'TBA'}</span>
+                            <span className="text-gray-500">{p.location}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 mb-4">No content for this week yet</p>
+                  <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2">
+                    <Plus className="h-4 w-4" /> Add Content
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Reusable content section editor
+function ContentSection({ title, icon: Icon, color, data, onChange, onLoadSample }) {
+  const colors = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800'
+  };
+  return (
+    <div className={`border rounded-xl p-4 ${colors[color]}`}>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-medium flex items-center gap-2">
+          <Icon className="h-4 w-4" /> {title}
+        </h4>
+        <button onClick={onLoadSample} className="text-xs hover:underline flex items-center gap-1 opacity-70 hover:opacity-100">
+          <Sparkles className="h-3 w-3" /> Load Sample
         </button>
       </div>
+      <div className="space-y-2">
+        <textarea value={data.arabic} onChange={(e) => onChange('arabic', e.target.value)} dir="rtl" rows={2} placeholder="Arabic text..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-lg text-right bg-white focus:ring-2 focus:ring-indigo-500" style={{ fontFamily: "'Amiri', serif" }} />
+        <input type="text" value={data.transliteration} onChange={(e) => onChange('transliteration', e.target.value)} placeholder="Transliteration..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm italic bg-white" />
+        <textarea value={data.translation} onChange={(e) => onChange('translation', e.target.value)} rows={2} placeholder="English translation..." className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
+        <input type="text" value={data.reference} onChange={(e) => onChange('reference', e.target.value)} placeholder="Reference (e.g., Surah Al-Baqarah 2:152)" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" />
+      </div>
+    </div>
+  );
+}
+
+// Content display
+function ContentDisplay({ title, icon: Icon, color, data }) {
+  if (!data?.arabic && !data?.translation) return null;
+  const colors = {
+    emerald: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    amber: 'border-amber-200 bg-amber-50 text-amber-800'
+  };
+  return (
+    <div className={`border rounded-xl p-4 ${colors[color]}`}>
+      <h4 className="font-medium flex items-center gap-2 mb-3"><Icon className="h-4 w-4" /> {title}</h4>
+      {data.arabic && <p dir="rtl" className="text-lg mb-2" style={{ fontFamily: "'Amiri', serif" }}>{data.arabic}</p>}
+      {data.transliteration && <p className="text-sm italic text-gray-600 mb-1">{data.transliteration}</p>}
+      {data.translation && <p className="text-gray-800 mb-1">{data.translation}</p>}
+      {data.reference && <p className="text-sm font-medium opacity-70">{data.reference}</p>}
     </div>
   );
 }
