@@ -1,7 +1,7 @@
 import { useState, useMemo, memo } from 'react';
-import { 
+import {
   Plus, Trash2, BookOpen, Book, Edit2, X,
-  Calendar, Sparkles, ChevronRight
+  Calendar, Sparkles, ChevronRight, CheckCircle2, CircleDot
 } from 'lucide-react';
 
 /**
@@ -27,17 +27,22 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   const currentWeek = getCurrentWeek();
   const currentYear = new Date().getFullYear();
 
-  // Get week date range
-  const getWeekRange = (weekNum, year) => {
+  // Get the Monday of a given ISO-style week number
+  const getWeekStart = (weekNum, year) => {
     const jan4 = new Date(year, 0, 4);
     const jan4Day = jan4.getDay() || 7;
     const week1Monday = new Date(jan4);
     week1Monday.setDate(jan4.getDate() - (jan4Day - 1));
     const weekStart = new Date(week1Monday);
     weekStart.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
+    return weekStart;
+  };
+
+  const getWeekRange = (weekNum, year) => {
+    const weekStart = getWeekStart(weekNum, year);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
   };
 
   // Filter content by year
@@ -47,6 +52,31 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
 
   // Get weeks with content
   const weeksWithContent = new Set(yearContent.map(c => c.weekNumber));
+
+  // Build weeks grouped by month for the selected year
+  const monthsWithWeeks = useMemo(() => {
+    const groups = [];
+    let currentMonthIdx = -1;
+    for (let week = 1; week <= 52; week++) {
+      const start = getWeekStart(week, selectedYear);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      // Use the month containing the week's Thursday (ISO convention)
+      const thursday = new Date(start);
+      thursday.setDate(start.getDate() + 3);
+      const monthIdx = thursday.getMonth();
+      if (monthIdx !== currentMonthIdx) {
+        currentMonthIdx = monthIdx;
+        groups.push({
+          monthIdx,
+          monthLabel: thursday.toLocaleDateString('en-US', { month: 'long' }),
+          weeks: []
+        });
+      }
+      groups[groups.length - 1].weeks.push({ week, start, end });
+    }
+    return groups;
+  }, [selectedYear]);
 
   // Sample content
   const samples = {
@@ -115,57 +145,101 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   return (
     <div className="flex flex-col lg:flex-row gap-6">
       {/* Week Selector Panel */}
-      <div className="lg:w-72 flex-shrink-0">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          {/* Year Selector */}
-          <div className="p-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
+      <div className="lg:w-80 flex-shrink-0">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:sticky lg:top-24">
+          {/* Year Selector + Jump to Current */}
+          <div className="p-4 border-b border-gray-100 space-y-3">
+            <div className="flex items-center justify-between gap-2">
               <span className="font-medium text-gray-900">Select Week</span>
               <select
                 value={selectedYear}
                 onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedWeek(null); }}
-                className="text-sm border border-gray-200 rounded-lg px-2 py-1"
+                className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"
               >
                 {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
+            <button
+              onClick={() => {
+                if (selectedYear !== currentYear) setSelectedYear(currentYear);
+                handleSelectWeek(currentWeek);
+              }}
+              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg py-2 transition-colors"
+            >
+              <CircleDot className="h-4 w-4" />
+              Jump to current week
+            </button>
           </div>
 
-          {/* Week Grid */}
-          <div className="p-4 max-h-96 overflow-y-auto">
-            <div className="grid grid-cols-7 gap-1 mb-2">
-              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                <div key={i} className="text-center text-xs text-gray-400 font-medium">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: 52 }, (_, i) => i + 1).map(week => {
-                const hasContent = weeksWithContent.has(week);
-                const isCurrent = week === currentWeek && selectedYear === currentYear;
-                const isSelected = week === selectedWeek;
-                const isPast = selectedYear < currentYear || (selectedYear === currentYear && week < currentWeek);
-                return (
-                  <button
-                    key={week}
-                    onClick={() => handleSelectWeek(week)}
-                    className={`aspect-square rounded-lg text-sm font-medium transition-all ${
-                      isSelected ? 'bg-indigo-600 text-white ring-2 ring-indigo-300' :
-                      isCurrent ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-300' :
-                      hasContent ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' :
-                      isPast ? 'bg-gray-50 text-gray-400 hover:bg-gray-100' :
-                      'bg-gray-50 text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {week}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 mt-4 text-xs text-gray-500">
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-amber-100 ring-1 ring-amber-300" /> Current</div>
-              <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-emerald-100" /> Has Content</div>
-            </div>
+          {/* Month-grouped week list */}
+          <div className="max-h-[28rem] overflow-y-auto">
+            {monthsWithWeeks.map(({ monthIdx, monthLabel, weeks }) => (
+              <div key={monthIdx}>
+                <div className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-100">
+                  {monthLabel}
+                </div>
+                <ul className="divide-y divide-gray-100">
+                  {weeks.map(({ week, start, end }) => {
+                    const hasContent = weeksWithContent.has(week);
+                    const isCurrent = week === currentWeek && selectedYear === currentYear;
+                    const isSelected = week === selectedWeek;
+                    const isPast = selectedYear < currentYear || (selectedYear === currentYear && week < currentWeek);
+                    return (
+                      <li key={week}>
+                        <button
+                          onClick={() => handleSelectWeek(week)}
+                          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                            isSelected
+                              ? 'bg-indigo-600 text-white'
+                              : isCurrent
+                                ? 'bg-amber-50 hover:bg-amber-100'
+                                : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex flex-col items-center justify-center text-[10px] leading-none font-medium ${
+                            isSelected
+                              ? 'bg-white/20 text-white'
+                              : isCurrent
+                                ? 'bg-amber-200 text-amber-800'
+                                : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            <span className="opacity-70">WK</span>
+                            <span className="text-sm font-semibold mt-0.5">{week}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-medium truncate ${
+                              isSelected ? 'text-white' : isPast ? 'text-gray-400' : 'text-gray-900'
+                            }`}>
+                              {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                            <div className={`text-xs flex items-center gap-1.5 mt-0.5 ${
+                              isSelected ? 'text-indigo-100' : 'text-gray-500'
+                            }`}>
+                              {isCurrent && <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${isSelected ? 'bg-white/20' : 'bg-amber-200 text-amber-800'}`}>Current</span>}
+                              {hasContent ? (
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle2 className={`h-3 w-3 ${isSelected ? 'text-emerald-200' : 'text-emerald-500'}`} />
+                                  Content set
+                                </span>
+                              ) : (
+                                <span className={isSelected ? 'text-indigo-200' : 'text-gray-400'}>Empty</span>
+                              )}
+                            </div>
+                          </div>
+                          {isSelected && <ChevronRight className="h-4 w-4 text-white/70 flex-shrink-0" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-300" /> Current</div>
+            <div className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Has content</div>
           </div>
         </div>
       </div>
