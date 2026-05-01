@@ -1,13 +1,132 @@
 import { useState, memo } from 'react';
-import { 
-  Plus, Trash2, Edit2, Check, X, Calendar, Clock, 
+import {
+  Plus, Trash2, Edit2, Check, X, Calendar, Clock,
   MapPin, Users, Search, CalendarDays
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
 
-/**
- * EventsEditor - Clean card-based event management
- */
+const audienceOptions = [
+  { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
+  { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
+  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' }
+];
+
+const formatDateTimeLocal = (timestamp) => {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
+
+function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
+  return (
+    <div className={`rounded-xl border-2 p-5 space-y-4 ${isNew ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
+      <div className="flex items-center justify-between">
+        <h4 className="font-semibold text-gray-900">{isNew ? 'New Event' : 'Edit Event'}</h4>
+        <button onClick={onCancel} className="p-1 hover:bg-gray-200 rounded">
+          <X className="h-5 w-5 text-gray-500" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            placeholder="e.g., Weekly Halaqa"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+          <input
+            type="datetime-local"
+            value={formatDateTimeLocal(formData.startTimestamp)}
+            onChange={(e) => setFormData({ ...formData, startTimestamp: new Date(e.target.value).getTime() })}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+          <input
+            type="datetime-local"
+            value={formatDateTimeLocal(formData.endTimestamp)}
+            onChange={(e) => setFormData({ ...formData, endTimestamp: new Date(e.target.value).getTime() })}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <input
+            type="text"
+            value={formData.location}
+            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            placeholder="e.g., Room 2080"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+          <div className="flex gap-2">
+            {audienceOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setFormData({ ...formData, audience: opt.value })}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
+                  formData.audience === opt.value ? `${opt.color} ${opt.border}` : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            rows={2}
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            placeholder="Brief description..."
+          />
+        </div>
+
+        <div className="md:col-span-2 flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="allDay"
+            checked={formData.allDay}
+            onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
+            className="w-4 h-4 text-indigo-600 rounded"
+          />
+          <label htmlFor="allDay" className="text-sm text-gray-700">All-day event</label>
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2 pt-2">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 text-gray-600 hover:bg-white rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+        >
+          {isNew ? 'Create Event' : 'Save Changes'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function EventsEditor({ events, onUpdate, showMessage }) {
   const [editingId, setEditingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -27,17 +146,6 @@ function EventsEditor({ events, onUpdate, showMessage }) {
       audience: 'both'
     };
   }
-
-  const audienceOptions = [
-    { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
-    { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
-    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' }
-  ];
-
-  const formatDateTimeLocal = (timestamp) => {
-    const date = new Date(timestamp);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-  };
 
   const formatDisplayDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -105,114 +213,11 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${opt.color}`}>{opt.label}</span>;
   };
 
-  const EventForm = ({ isNew }) => (
-    <div className={`rounded-xl border-2 p-5 space-y-4 ${isNew ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
-      <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-gray-900">{isNew ? 'New Event' : 'Edit Event'}</h4>
-        <button onClick={() => { isNew ? setShowAddForm(false) : setEditingId(null); setFormData(getEmptyEvent()); }} className="p-1 hover:bg-gray-200 rounded">
-          <X className="h-5 w-5 text-gray-500" />
-        </button>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-            placeholder="e.g., Weekly Halaqa"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
-          <input
-            type="datetime-local"
-            value={formatDateTimeLocal(formData.startTimestamp)}
-            onChange={(e) => setFormData({ ...formData, startTimestamp: new Date(e.target.value).getTime() })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
-          <input
-            type="datetime-local"
-            value={formatDateTimeLocal(formData.endTimestamp)}
-            onChange={(e) => setFormData({ ...formData, endTimestamp: new Date(e.target.value).getTime() })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-          <input
-            type="text"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-            placeholder="e.g., Room 2080"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
-          <div className="flex gap-2">
-            {audienceOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setFormData({ ...formData, audience: opt.value })}
-                className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  formData.audience === opt.value ? `${opt.color} ${opt.border}` : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            rows={2}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-            placeholder="Brief description..."
-          />
-        </div>
-        
-        <div className="md:col-span-2 flex items-center gap-2">
-          <input
-            type="checkbox"
-            id="allDay"
-            checked={formData.allDay}
-            onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-            className="w-4 h-4 text-indigo-600 rounded"
-          />
-          <label htmlFor="allDay" className="text-sm text-gray-700">All-day event</label>
-        </div>
-      </div>
-      
-      <div className="flex justify-end gap-2 pt-2">
-        <button
-          onClick={() => { isNew ? setShowAddForm(false) : setEditingId(null); setFormData(getEmptyEvent()); }}
-          className="px-4 py-2 text-gray-600 hover:bg-white rounded-lg"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => handleSave(isNew)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
-        >
-          {isNew ? 'Create Event' : 'Save Changes'}
-        </button>
-      </div>
-    </div>
-  );
+  const cancelForm = (isNew) => {
+    if (isNew) setShowAddForm(false);
+    else setEditingId(null);
+    setFormData(getEmptyEvent());
+  };
 
   return (
     <div className="space-y-5">
@@ -273,7 +278,15 @@ function EventsEditor({ events, onUpdate, showMessage }) {
       </div>
 
       {/* Add Form */}
-      {showAddForm && <EventForm isNew={true} />}
+      {showAddForm && (
+        <EventForm
+          isNew={true}
+          formData={formData}
+          setFormData={setFormData}
+          onCancel={() => cancelForm(true)}
+          onSave={() => handleSave(true)}
+        />
+      )}
 
       {/* Events List */}
       {filteredEvents.length === 0 ? (
@@ -286,7 +299,14 @@ function EventsEditor({ events, onUpdate, showMessage }) {
         <div className="space-y-3">
           {filteredEvents.map(event => (
             editingId === event.id ? (
-              <EventForm key={event.id} isNew={false} />
+              <EventForm
+                key={event.id}
+                isNew={false}
+                formData={formData}
+                setFormData={setFormData}
+                onCancel={() => cancelForm(false)}
+                onSave={() => handleSave(false)}
+              />
             ) : (
               <div
                 key={event.id}
