@@ -72,13 +72,13 @@ function BoardManagement() {
             latitude: 43.5890,
             longitude: -79.6441,
             timezone: 'America/Toronto',
-            method: 2
+            method: 'ISNA'
           },
           boardLocation: 'brothers',
-          posterCycleInterval: 10000,
+          posterCycleIntervalMs: 10000,
           refreshAfterIshaMinutes: 30,
           darkModeAfterIsha: true,
-          darkModeMinutesAfterIsha: 45,
+          darkModeAfterIshaMinutes: 45,
           enableScrollingMessage: true,
           scrollingMessages: ['Welcome to UTM MSA - Follow us @utmmsa for updates!']
         };
@@ -122,11 +122,13 @@ function BoardManagement() {
   }, []);
 
   const updateWeeklyContent = useCallback((newContent) => {
+    // Weekly content persists itself per-week via the editor (PUT /weekly-content/{year}/{week}).
+    // We just mirror the latest server state here — no global dirty flag.
     setBoardPayload(prev => ({ ...prev, weeklyContent: newContent }));
-    setHasUnsavedChanges(true);
   }, []);
 
-  // Save changes
+  // Save changes — currently only the BoardConfig section is dirty-flagged;
+  // events, posters, and weekly content all save themselves on edit.
   const handleSave = useCallback(async () => {
     if (!hasRootPermissions()) {
       showToast('Permission denied', 'error');
@@ -135,18 +137,14 @@ function BoardManagement() {
 
     try {
       setSaving(true);
-      
-      if (boardConfigDraftRef.current || boardPayload.boardConfig) {
-        const configToSave = boardConfigDraftRef.current || boardPayload.boardConfig;
+
+      const configToSave = boardConfigDraftRef.current || boardPayload.boardConfig;
+      if (configToSave) {
         const savedConfig = await BoardService.saveConfig(configToSave.boardLocation, configToSave);
         boardConfigDraftRef.current = savedConfig;
         setBoardPayload(prev => ({ ...prev, boardConfig: savedConfig }));
       }
 
-      if (boardPayload.weeklyContent?.length > 0) {
-        await Promise.all(boardPayload.weeklyContent.map(content => BoardService.saveWeeklyContent(content)));
-      }
-      
       setSaveSuccess(true);
       setHasUnsavedChanges(false);
       showToast('All changes saved!', 'success');

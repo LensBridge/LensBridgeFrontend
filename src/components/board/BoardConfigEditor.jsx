@@ -36,20 +36,20 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
   };
 
   const calculationMethods = [
-    { value: 0, label: 'Shia Ithna-Ashari' },
-    { value: 1, label: 'University of Islamic Sciences, Karachi' },
-    { value: 2, label: 'Islamic Society of North America (ISNA)' },
-    { value: 3, label: 'Muslim World League' },
-    { value: 4, label: 'Umm Al-Qura University, Makkah' },
-    { value: 5, label: 'Egyptian General Authority of Survey' },
-    { value: 7, label: 'Institute of Geophysics, University of Tehran' },
-    { value: 8, label: 'Gulf Region' },
-    { value: 9, label: 'Kuwait' },
-    { value: 10, label: 'Qatar' },
-    { value: 11, label: 'Majlis Ugama Islam Singapura' },
-    { value: 12, label: 'Union Organization Islamic de France' },
-    { value: 13, label: 'Diyanet Isleri Baskanligi, Turkey' },
-    { value: 14, label: 'Spiritual Administration of Muslims of Russia' }
+    { value: 'KARACHI', label: 'University of Islamic Sciences, Karachi' },
+    { value: 'ISNA', label: 'Islamic Society of North America (ISNA)' },
+    { value: 'MWL', label: 'Muslim World League' },
+    { value: 'MAKKAH', label: 'Umm Al-Qura University, Makkah' },
+    { value: 'EGYPT', label: 'Egyptian General Authority of Survey' },
+    { value: 'TEHRAN', label: 'Institute of Geophysics, University of Tehran' },
+    { value: 'GULF', label: 'Gulf Region' },
+    { value: 'KUWAIT', label: 'Kuwait' },
+    { value: 'QATAR', label: 'Qatar' },
+    { value: 'SINGAPORE', label: 'Majlis Ugama Islam Singapura' },
+    { value: 'FRANCE', label: 'Union Organization Islamic de France' },
+    { value: 'TURKEY', label: 'Diyanet Isleri Baskanligi, Turkey' },
+    { value: 'RUSSIA', label: 'Spiritual Administration of Muslims of Russia' },
+    { value: 'DUBAI', label: 'Dubai' }
   ];
 
   const timezones = [
@@ -181,8 +181,8 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Calculation Method</label>
               <select
-                value={localConfig.location?.method || 2}
-                onChange={(e) => updateField('location.method', parseInt(e.target.value))}
+                value={localConfig.location?.method || 'ISNA'}
+                onChange={(e) => updateField('location.method', e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-white"
               >
                 {calculationMethods.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -206,8 +206,8 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
                 type="number"
                 min="5"
                 max="60"
-                value={(localConfig.posterCycleInterval || 10000) / 1000}
-                onChange={(e) => updateField('posterCycleInterval', parseInt(e.target.value) * 1000)}
+                value={(localConfig.posterCycleIntervalMs || 10000) / 1000}
+                onChange={(e) => updateField('posterCycleIntervalMs', parseInt(e.target.value) * 1000)}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
               />
               <p className="text-xs text-gray-500 mt-1">How long each poster shows (5-60s)</p>
@@ -218,7 +218,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
                 type="number"
                 min="0"
                 max="120"
-                value={localConfig.refreshAfterIshaMinutes || 30}
+                value={localConfig.refreshAfterIshaMinutes ?? 30}
                 onChange={(e) => updateField('refreshAfterIshaMinutes', parseInt(e.target.value))}
                 className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow"
               />
@@ -255,8 +255,8 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
                   type="number"
                   min="0"
                   max="120"
-                  value={localConfig.darkModeMinutesAfterIsha || 45}
-                  onChange={(e) => updateField('darkModeMinutesAfterIsha', parseInt(e.target.value))}
+                  value={localConfig.darkModeAfterIshaMinutes || 45}
+                  onChange={(e) => updateField('darkModeAfterIshaMinutes', parseInt(e.target.value))}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-white"
                 />
               </div>

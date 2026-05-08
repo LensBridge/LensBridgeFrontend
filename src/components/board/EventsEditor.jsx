@@ -42,8 +42,8 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
           <input
             type="datetime-local"
-            value={formatDateTimeLocal(formData.startTimestamp)}
-            onChange={(e) => setFormData({ ...formData, startTimestamp: new Date(e.target.value).getTime() })}
+            value={formatDateTimeLocal(formData.startEpochMs)}
+            onChange={(e) => setFormData({ ...formData, startEpochMs: new Date(e.target.value).getTime() })}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
           />
         </div>
@@ -52,8 +52,8 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
           <input
             type="datetime-local"
-            value={formatDateTimeLocal(formData.endTimestamp)}
-            onChange={(e) => setFormData({ ...formData, endTimestamp: new Date(e.target.value).getTime() })}
+            value={formatDateTimeLocal(formData.endEpochMs)}
+            onChange={(e) => setFormData({ ...formData, endEpochMs: new Date(e.target.value).getTime() })}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
           />
         </div>
@@ -138,8 +138,8 @@ function EventsEditor({ events, onUpdate, showMessage }) {
   function getEmptyEvent() {
     return {
       name: '',
-      startTimestamp: Date.now() + 86400000,
-      endTimestamp: Date.now() + 90000000,
+      startEpochMs: Date.now() + 86400000,
+      endEpochMs: Date.now() + 90000000,
       location: '',
       description: '',
       allDay: false,
@@ -163,8 +163,8 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                  e.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(e => filterAudience === 'all' || e.audience === filterAudience)
-    .filter(e => !hidePastEvents || e.startTimestamp > Date.now())
-    .sort((a, b) => a.startTimestamp - b.startTimestamp);
+    .filter(e => !hidePastEvents || e.startEpochMs > Date.now())
+    .sort((a, b) => a.startEpochMs - b.startEpochMs);
 
   const handleSave = async (isNew = false) => {
     if (!formData.name.trim()) {
@@ -311,7 +311,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
               <div
                 key={event.id}
                 className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow ${
-                  isUpcoming(event.startTimestamp) ? 'border-gray-200' : 'border-gray-100 opacity-60'
+                  isUpcoming(event.startEpochMs) ? 'border-gray-200' : 'border-gray-100 opacity-60'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -319,7 +319,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h4 className="font-semibold text-gray-900">{event.name}</h4>
                       {getAudienceBadge(event.audience)}
-                      {!isUpcoming(event.startTimestamp) && (
+                      {!isUpcoming(event.startEpochMs) && (
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Past</span>
                       )}
                     </div>
@@ -327,12 +327,12 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        {formatDisplayDate(event.startTimestamp)}
+                        {formatDisplayDate(event.startEpochMs)}
                       </span>
                       {!event.allDay && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4 text-gray-400" />
-                          {formatDisplayTime(event.startTimestamp)} - {formatDisplayTime(event.endTimestamp)}
+                          {formatDisplayTime(event.startEpochMs)} - {formatDisplayTime(event.endEpochMs)}
                         </span>
                       )}
                       {event.allDay && <span className="text-indigo-600 font-medium">All Day</span>}
