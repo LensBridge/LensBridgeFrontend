@@ -1,15 +1,14 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { 
-  Settings, Calendar, Image, Play, BookOpen, 
-  Crown, ChevronLeft, Save, RotateCcw, Monitor,
-  Check, AlertCircle, Loader2, ChevronRight, X
+import { useState, useCallback, useEffect } from 'react';
+import {
+  Calendar, Image, Play, BookOpen,
+  Crown, ChevronLeft, RotateCcw, Monitor,
+  Check, AlertCircle, ChevronRight, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import BoardService from '../services/BoardService';
 
 // Import sub-components
-import BoardConfigEditor from '../components/board/BoardConfigEditor';
 import EventsEditor from '../components/board/EventsEditor';
 import PostersEditor from '../components/board/PostersEditor';
 import FramesEditor from '../components/board/FramesEditor';
@@ -21,13 +20,10 @@ import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
  */
 function BoardManagement() {
   const { user, isLoading: authLoading } = useAuth();
-  const boardConfigDraftRef = useRef(null);
-  const [activeSection, setActiveSection] = useState('config');
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [activeSection, setActiveSection] = useState('events');
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Helper function to check if user has ROLE_ROOT permissions
   const hasRootPermissions = () => {
@@ -41,7 +37,6 @@ function BoardManagement() {
 
   // Initial data state
   const [boardPayload, setBoardPayload] = useState({
-    boardConfig: null,
     events: [],
     posters: [],
     weeklyContent: []
@@ -58,34 +53,13 @@ function BoardManagement() {
     const loadBoardData = async () => {
       try {
         setLoading(true);
-        const [config, events, posters, weeklyContent] = await Promise.all([
-          BoardService.getConfig('brothers').catch(() => null),
+        const [events, posters, weeklyContent] = await Promise.all([
           BoardService.getAllEvents().catch(() => []),
           BoardService.getAllPosters().catch(() => []),
           BoardService.getAllWeeklyContent().catch(() => [])
         ]);
 
-        const initialConfig = config || {
-          location: {
-            city: 'Mississauga',
-            country: 'Canada',
-            latitude: 43.5890,
-            longitude: -79.6441,
-            timezone: 'America/Toronto',
-            method: 'ISNA'
-          },
-          boardLocation: 'brothers',
-          posterCycleIntervalMs: 10000,
-          refreshAfterIshaMinutes: 30,
-          darkModeAfterIsha: true,
-          darkModeAfterIshaMinutes: 45,
-          enableScrollingMessage: true,
-          scrollingMessages: ['Welcome to UTM MSA - Follow us @utmmsa for updates!']
-        };
-
-        boardConfigDraftRef.current = initialConfig;
         setBoardPayload({
-          boardConfig: initialConfig,
           events: events || [],
           posters: posters || [],
           weeklyContent: weeklyContent || []
@@ -108,11 +82,6 @@ function BoardManagement() {
   }, []);
 
   // Update handlers
-  const updateBoardConfig = useCallback((newConfig) => {
-    boardConfigDraftRef.current = newConfig;
-    setHasUnsavedChanges(true);
-  }, []);
-
   const updateEvents = useCallback((newEvents) => {
     setBoardPayload(prev => ({ ...prev, events: newEvents }));
   }, []);
@@ -126,74 +95,6 @@ function BoardManagement() {
     // We just mirror the latest server state here — no global dirty flag.
     setBoardPayload(prev => ({ ...prev, weeklyContent: newContent }));
   }, []);
-
-  // Save changes — currently only the BoardConfig section is dirty-flagged;
-  // events, posters, and weekly content all save themselves on edit.
-  const handleSave = useCallback(async () => {
-    if (!hasRootPermissions()) {
-      showToast('Permission denied', 'error');
-      return;
-    }
-
-    try {
-      setSaving(true);
-
-      const configToSave = boardConfigDraftRef.current || boardPayload.boardConfig;
-      if (configToSave) {
-        const savedConfig = await BoardService.saveConfig(configToSave.boardLocation, configToSave);
-        boardConfigDraftRef.current = savedConfig;
-        setBoardPayload(prev => ({ ...prev, boardConfig: savedConfig }));
-      }
-
-      setSaveSuccess(true);
-      setHasUnsavedChanges(false);
-      showToast('All changes saved!', 'success');
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (err) {
-      showToast('Save failed: ' + err.message, 'error');
-    } finally {
-      setSaving(false);
-    }
-  }, [boardPayload, showToast]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Reset changes
-  const handleReset = useCallback(() => {
-    if (confirm('Discard all unsaved changes?')) {
-      window.location.reload();
-    }
-  }, []);
-
-  // Handle location change - re-fetch config for the new musallah
-  const handleLocationChange = useCallback(async (newLocation) => {
-    try {
-      const config = await BoardService.getConfig(newLocation);
-      if (config) {
-        boardConfigDraftRef.current = config;
-        setBoardPayload(prev => ({ ...prev, boardConfig: config }));
-        showToast(`Loaded ${newLocation} board config`);
-      } else {
-        // No config for this location, create default with new location
-        const newConfig = {
-          ...boardConfigDraftRef.current,
-          boardLocation: newLocation
-        };
-        boardConfigDraftRef.current = newConfig;
-        setBoardPayload(prev => ({ ...prev, boardConfig: newConfig }));
-        setHasUnsavedChanges(true);
-        showToast(`No config found for ${newLocation}, using defaults`);
-      }
-    } catch (err) {
-      console.error('Failed to fetch config for location:', err);
-      // Fallback: just update the location locally
-      const newConfig = {
-        ...boardConfigDraftRef.current,
-        boardLocation: newLocation
-      };
-      boardConfigDraftRef.current = newConfig;
-      setBoardPayload(prev => ({ ...prev, boardConfig: newConfig }));
-      setHasUnsavedChanges(true);
-    }
-  }, [showToast]);
 
   // Refresh boards
   const handleRefreshBoards = useCallback(async () => {
@@ -210,7 +111,6 @@ function BoardManagement() {
 
   // Navigation sections
   const sections = [
-    { id: 'config', label: 'Settings', icon: Settings, description: 'Board configuration' },
     { id: 'events', label: 'Events', icon: Calendar, description: 'Manage events' },
     { id: 'posters', label: 'Posters', icon: Image, description: 'Upload posters' },
     { id: 'frames', label: 'Slideshow', icon: Play, description: 'Preview order' },
@@ -220,8 +120,6 @@ function BoardManagement() {
   // Render section content
   const renderContent = () => {
     switch (activeSection) {
-      case 'config':
-        return <BoardConfigEditor config={boardPayload.boardConfig} onUpdate={updateBoardConfig} showMessage={showToast} onLocationChange={handleLocationChange} />;
       case 'events':
         return <EventsEditor events={boardPayload.events} onUpdate={updateEvents} showMessage={showToast} />;
       case 'posters':
@@ -230,7 +128,7 @@ function BoardManagement() {
         return (
           <FramesEditor 
             posters={boardPayload.posters}
-            boardLocation={boardPayload.boardConfig?.boardLocation || 'brothers'}
+            boardLocation="brothers"
             onUpdatePosterDuration={(posterId, newDuration) => {
               updatePosters(boardPayload.posters.map(p => p.id === posterId ? { ...p, duration: newDuration } : p));
             }}
@@ -278,26 +176,8 @@ function BoardManagement() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Save Banner */}
-      {hasUnsavedChanges && (
-        <div className="sticky top-0 z-50 bg-amber-50 border-b border-amber-200 px-4 py-2">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 text-amber-700">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">You have unsaved changes</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={handleReset} className="px-3 py-1.5 text-sm text-gray-600 hover:bg-amber-100 rounded-lg transition-colors">Discard</button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium transition-colors">
-                {saving ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Saving...</> : <><Save className="h-3.5 w-3.5" />Save Changes</>}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Fixed Header */}
-      <div className={`sticky ${hasUnsavedChanges ? 'top-[41px]' : 'top-0'} z-40 bg-white border-b border-gray-200 shadow-sm`}>
+      <div className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
@@ -314,27 +194,9 @@ function BoardManagement() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button onClick={handleRefreshBoards} disabled={saving} className="hidden sm:flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <button onClick={handleRefreshBoards} disabled={saving} className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
                 <RotateCcw className={`h-4 w-4 ${saving ? 'animate-spin' : ''}`} />
                 <span className="text-sm">Refresh Boards</span>
-              </button>
-
-              {hasUnsavedChanges && (
-                <button onClick={handleReset} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors" title="Discard">
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-
-              <button
-                onClick={handleSave}
-                disabled={!hasUnsavedChanges || saving}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all ${
-                  hasUnsavedChanges ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200' : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                } ${saveSuccess ? 'bg-green-500' : ''}`}
-              >
-                {saving ? <><Loader2 className="h-4 w-4 animate-spin" /><span>Saving...</span></> 
-                  : saveSuccess ? <><Check className="h-4 w-4" /><span>Saved!</span></> 
-                  : <><Save className="h-4 w-4" /><span>Save</span></>}
               </button>
             </div>
           </div>
@@ -410,11 +272,6 @@ function BoardManagement() {
                     <h2 className="text-lg font-semibold text-gray-900">{sections.find(s => s.id === activeSection)?.label}</h2>
                     <p className="text-sm text-gray-500">{sections.find(s => s.id === activeSection)?.description}</p>
                   </div>
-                  {hasUnsavedChanges && activeSection === 'config' && (
-                    <span className="flex items-center gap-1.5 text-amber-600 text-sm bg-amber-50 px-3 py-1 rounded-full">
-                      <AlertCircle className="h-4 w-4" />Unsaved
-                    </span>
-                  )}
                 </div>
               </div>
               <div className="p-6">{renderContent()}</div>
@@ -431,24 +288,6 @@ function BoardManagement() {
           {toast.type === 'error' ? <AlertCircle className="h-5 w-5" /> : <Check className="h-5 w-5" />}
           <span>{toast.message}</span>
           <button onClick={() => setToast(null)} className="p-1 hover:bg-white/20 rounded"><X className="h-4 w-4" /></button>
-        </div>
-      )}
-
-      {/* Mobile Save Bar */}
-      {hasUnsavedChanges && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30 shadow-lg animate-slideUp">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-amber-600">
-              <AlertCircle className="h-5 w-5" />
-              <span className="text-sm font-medium">Unsaved changes</span>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleReset} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg">Discard</button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">
-                {saving ? <><Loader2 className="h-4 w-4 animate-spin" />Saving...</> : <><Save className="h-4 w-4" />Save</>}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

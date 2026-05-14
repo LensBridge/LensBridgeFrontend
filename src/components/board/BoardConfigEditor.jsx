@@ -8,7 +8,7 @@ import {
  * BoardConfigEditor - Clean, card-based configuration editor
  * No collapsible sections - everything visible and organized
  */
-function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) {
+function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange, hideLocationToggle = false }) {
   const [localConfig, setLocalConfig] = useState(config);
   const prevConfigRef = useRef(config);
 
@@ -63,7 +63,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
   return (
     <div className="space-y-6">
       {/* Board Location Toggle */}
-      <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100">
+      {!hideLocationToggle && <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100">
         <div className="flex items-center gap-2 mb-4">
           <Users className="h-5 w-5 text-indigo-600" />
           <h3 className="font-semibold text-gray-900">Board Location</h3>
@@ -112,7 +112,7 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange }) 
             </span>
           </button>
         </div>
-      </div>
+      </div>}
 
       {/* Location Settings */}
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

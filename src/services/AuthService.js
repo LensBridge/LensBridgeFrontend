@@ -389,8 +389,10 @@ class AuthService {
     if (!currentUser) return false;
     
     return (
+      (currentUser.authorities && currentUser.authorities.some(auth => auth.authority === 'ROLE_ROOT')) ||
       (currentUser.authorities && currentUser.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (currentUser.roles && currentUser.roles.some(role => role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
+      (currentUser.roles && currentUser.roles.some(role => role === 'ROLE_ROOT' || role === 'ROOT' || role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
+      currentUser.role === 'ROLE_ROOT' ||
       currentUser.role === 'ROLE_ADMIN'
     );
   }

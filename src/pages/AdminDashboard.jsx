@@ -824,13 +824,21 @@ function AdminDashboard() {
           </p>
           {/* Board Management Quick Access for ROOT users */}
           {hasRootPermissions(user) && (
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap justify-center gap-3">
               <Link
                 to="/admin/board"
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all hover:scale-[1.02]"
               >
                 <Monitor className="h-5 w-5" />
                 <span>Manage Musallah Boards</span>
+                <Crown className="h-4 w-4 text-yellow-300" />
+              </Link>
+              <Link
+                to="/admin/devices"
+                className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-all hover:scale-[1.02]"
+              >
+                <Monitor className="h-5 w-5" />
+                <span>Board Devices</span>
                 <Crown className="h-4 w-4 text-yellow-300" />
               </Link>
             </div>
@@ -912,6 +920,7 @@ function AdminDashboard() {
               ...(hasRootPermissions(user) ? [
                 { id: 'users', label: 'User Management', icon: Users, requiredRole: 'root' },
                 { id: 'boards', label: 'Board Management', icon: Monitor, requiredRole: 'root', isLink: true, href: '/admin/board' },
+                { id: 'devices', label: 'Board Devices', icon: Monitor, requiredRole: 'root', isLink: true, href: '/admin/devices' },
                 { id: 'system', label: 'System Settings', icon: Settings, requiredRole: 'root' },
                 { id: 'permissions', label: 'Role Management', icon: Crown, requiredRole: 'root' }
               ] : [])
@@ -1558,7 +1567,7 @@ function renderAuditTab() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {audit.entityType}: {audit.entityId}
+                  {audit.targetEntityType}: {audit.targetEntityId}
                 </td>
               </tr>
             ))}

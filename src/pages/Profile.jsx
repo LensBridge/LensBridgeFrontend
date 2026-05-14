@@ -62,7 +62,7 @@ function Profile() {
       // Fetch uploads and stats in parallel
       const [uploadsResponse, statsResponse] = await Promise.all([
         makeAuthenticatedRequest(
-          `${API_CONFIG.BASE_URL}/api/user/uploads?page=0&size=100&sort=date,desc`
+          `${API_CONFIG.BASE_URL}/api/user/uploads?page=0&size=100&sort=createdDate,desc`
         ),
         makeAuthenticatedRequest(
           `${API_CONFIG.BASE_URL}/api/user/stats`

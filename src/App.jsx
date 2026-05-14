@@ -9,6 +9,9 @@ import Upload from './pages/Upload';
 import Gallery from './pages/Gallery';
 import AdminDashboard from './pages/AdminDashboard';
 import BoardManagement from './pages/BoardManagement';
+import DeviceList from './pages/DeviceList';
+import EnrollDevice from './pages/EnrollDevice';
+import DeviceDetail from './pages/DeviceDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import SignupSuccess from './pages/SignupSuccess';
@@ -62,10 +65,34 @@ function App() {
                   </AdminRoute>
                 } 
               />
+              <Route 
+                path="/admin/devices" 
+                element={
+                  <AdminRoute>
+                    <DeviceList />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/devices/enroll" 
+                element={
+                  <AdminRoute>
+                    <EnrollDevice />
+                  </AdminRoute>
+                } 
+              />
+              <Route 
+                path="/admin/devices/:deviceId" 
+                element={
+                  <AdminRoute>
+                    <DeviceDetail />
+                  </AdminRoute>
+                } 
+              />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/signup-success" element={<SignupSuccess />} />
-              <Route path="/confirm" element={<ConfirmEmail />} />
+              <Route path="/verify-email" element={<ConfirmEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />

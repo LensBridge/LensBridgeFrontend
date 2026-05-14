@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, ArrowRight, Camera, UserPlus } from 'lucide-react';
+import API_CONFIG from '../config/api.js';
 
 function Signup() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ function Signup() {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/signup`, {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
