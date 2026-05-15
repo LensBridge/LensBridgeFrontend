@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Settings, Save, RotateCcw, Loader2, Check, AlertCircle } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import BoardConfigEditor from '../board/BoardConfigEditor';
@@ -15,19 +15,20 @@ const DEFAULT_CONFIG = {
   posterCycleIntervalMs: 10000,
   refreshAfterIshaMinutes: 30,
   darkModeAfterIsha: true,
-  darkModeAfterIshaMinutes: 45,
+  darkModeAfterMaghribMinutes: 45,
   enableScrollingMessage: true,
   scrollingMessages: ['Welcome to UTM MSA - Follow us @utmmsa for updates!']
 };
 
 function DeviceBoardConfig({ deviceId, disabled }) {
-  const [config, setConfig] = useState(null);
+  const [saved, setSaved] = useState(null);
+  const [draft, setDraft] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState(null);
-  const draftRef = useRef(null);
+
+  const dirty = draft !== null && draft !== saved;
 
   useEffect(() => {
     let cancelled = false;
@@ -37,13 +38,14 @@ function DeviceBoardConfig({ deviceId, disabled }) {
       .then((cfg) => {
         if (cancelled) return;
         const resolved = cfg || { ...DEFAULT_CONFIG };
-        draftRef.current = resolved;
-        setConfig(resolved);
+        setSaved(resolved);
+        setDraft(resolved);
       })
       .catch(() => {
         if (cancelled) return;
-        draftRef.current = { ...DEFAULT_CONFIG };
-        setConfig({ ...DEFAULT_CONFIG });
+        const fallback = { ...DEFAULT_CONFIG };
+        setSaved(fallback);
+        setDraft(fallback);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -51,20 +53,14 @@ function DeviceBoardConfig({ deviceId, disabled }) {
     return () => { cancelled = true; };
   }, [deviceId]);
 
-  const handleUpdate = useCallback((updated) => {
-    draftRef.current = updated;
-    setDirty(true);
-  }, []);
-
   const handleSave = useCallback(async () => {
-    if (!draftRef.current) return;
+    if (!draft) return;
     setSaving(true);
     setError(null);
     try {
-      const saved = await DeviceService.updateDeviceConfig(deviceId, draftRef.current);
-      draftRef.current = saved;
-      setConfig(saved);
-      setDirty(false);
+      const result = await DeviceService.updateDeviceConfig(deviceId, draft);
+      setSaved(result);
+      setDraft(result);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
@@ -72,13 +68,11 @@ function DeviceBoardConfig({ deviceId, disabled }) {
     } finally {
       setSaving(false);
     }
-  }, [deviceId]);
+  }, [deviceId, draft]);
 
   const handleDiscard = useCallback(() => {
-    draftRef.current = config;
-    setDirty(false);
-    setConfig((c) => ({ ...c }));
-  }, [config]);
+    setDraft(saved);
+  }, [saved]);
 
   return (
     <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -139,9 +133,8 @@ function DeviceBoardConfig({ deviceId, disabled }) {
           </div>
         ) : (
           <BoardConfigEditor
-            config={config}
-            onUpdate={handleUpdate}
-            showMessage={() => {}}
+            config={draft}
+            onUpdate={setDraft}
             hideLocationToggle
           />
         )}

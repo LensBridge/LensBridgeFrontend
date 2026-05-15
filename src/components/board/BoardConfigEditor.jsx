@@ -1,38 +1,29 @@
-import { useState, useEffect, memo, useRef } from 'react';
-import { 
-  MapPin, Clock, Globe, Users, Sun, Moon, 
+import { memo } from 'react';
+import {
+  MapPin, Clock, Globe, Users, Sun, Moon,
   MessageSquare, Plus, Trash2, Info
 } from 'lucide-react';
 
 /**
- * BoardConfigEditor - Clean, card-based configuration editor
- * No collapsible sections - everything visible and organized
+ * BoardConfigEditor - Clean, card-based configuration editor.
+ * Fully controlled: parent owns `config` state and receives every edit via `onUpdate`.
  */
 function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange, hideLocationToggle = false }) {
-  const [localConfig, setLocalConfig] = useState(config);
-  const prevConfigRef = useRef(config);
-
-  useEffect(() => {
-    if (config !== prevConfigRef.current) {
-      prevConfigRef.current = config;
-      setLocalConfig(config);
-    }
-  }, [config]);
+  const localConfig = config;
 
   const updateField = (path, value) => {
-    if (!localConfig) return;
+    if (!localConfig || !onUpdate) return;
     const newConfig = { ...localConfig };
     const keys = path.split('.');
     let current = newConfig;
-    
+
     for (let i = 0; i < keys.length - 1; i++) {
       current[keys[i]] = { ...current[keys[i]] };
       current = current[keys[i]];
     }
     current[keys[keys.length - 1]] = value;
-    
-    setLocalConfig(newConfig);
-    if (onUpdate) onUpdate(newConfig);
+
+    onUpdate(newConfig);
   };
 
   const calculationMethods = [
@@ -250,13 +241,13 @@ function BoardConfigEditor({ config, onUpdate, showMessage, onLocationChange, hi
           <div className="p-5 bg-gray-50/50">
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Delay After Isha (minutes)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Delay After Maghrib (minutes)</label>
                 <input
                   type="number"
                   min="0"
                   max="120"
-                  value={localConfig.darkModeAfterIshaMinutes || 45}
-                  onChange={(e) => updateField('darkModeAfterIshaMinutes', parseInt(e.target.value))}
+                  value={localConfig.darkModeAfterMaghribMinutes ?? 45}
+                  onChange={(e) => updateField('darkModeAfterMaghribMinutes', parseInt(e.target.value))}
                   className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-white"
                 />
               </div>

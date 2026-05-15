@@ -7,14 +7,10 @@ const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 /**
  * BoardService - Musallah Board admin API client.
  *
- * Frontend uses the canonical API shapes directly (quotes[], jummahPrayers[]) — see
- * docs/ADMIN_API.md. The only mappings this layer performs are:
+ * Frontend consumes backend config shapes directly. The only transforms this layer performs:
  *   - boardLocation: 'brothers' | 'sisters' <-> 'BROTHERS_MUSALLAH' | 'SISTERS_MUSALLAH'
  *   - audience: 'brothers' | 'sisters' | 'both' <-> 'BROTHERS' | 'SISTERS' | 'BOTH'
  *   - poster.duration: ms (frontend) <-> seconds (backend)
- *   - config field aliases (posterCycleIntervalMs, refreshAfterIshaMinutes, darkModeAfterIshaMinutes)
- *   - event timestamps (startEpochMs/endEpochMs)
- *   - prayer method enums (string)
  */
 class BoardService {
 
@@ -36,37 +32,6 @@ class BoardService {
 
   static fromAudienceEnum(enumValue) {
     return (enumValue || 'BOTH').toLowerCase();
-  }
-
-  static prayerMethodMap() {
-    return {
-      1: 'KARACHI',
-      2: 'ISNA',
-      3: 'MWL',
-      4: 'MAKKAH',
-      5: 'EGYPT',
-      7: 'TEHRAN',
-      8: 'GULF',
-      9: 'KUWAIT',
-      10: 'QATAR',
-      11: 'SINGAPORE',
-      12: 'FRANCE',
-      13: 'TURKEY',
-      14: 'RUSSIA',
-      16: 'DUBAI'
-    };
-  }
-
-  static toPrayerMethodEnum(method) {
-    if (typeof method === 'string' && method.trim()) return method;
-    const map = this.prayerMethodMap();
-    return map[method] || 'ISNA';
-  }
-
-  static fromPrayerMethodEnum(method) {
-    if (typeof method === 'string' && method.trim()) return method;
-    const map = this.prayerMethodMap();
-    return map[method] || 'ISNA';
   }
 
   // ============================================================================
@@ -91,68 +56,13 @@ class BoardService {
   }
 
   // ============================================================================
-  // INTERNAL: shape normalization
+  // CONFIG SHAPE
   // ============================================================================
-
-  static normalizeScrollingMessages(config) {
-    const source = config || {};
-    let messages = [];
-    if (Array.isArray(source.scrollingMessages)) {
-      messages = source.scrollingMessages.filter(m => typeof m === 'string');
-    } else if (typeof source.scrollingMessage === 'string' && source.scrollingMessage.trim()) {
-      messages = [source.scrollingMessage];
-    }
-    return { ...source, scrollingMessages: messages };
-  }
-
-  static normalizeConfigForFrontend(config) {
-    if (!config) return null;
-    const posterCycleIntervalMs = config.posterCycleIntervalMs ?? config.posterCycleInterval;
-    const refreshAfterIshaMinutes = config.refreshAfterIshaMinutes ?? config.refreshAfterIshaaMinutes;
-    const darkModeAfterIshaMinutes = config.darkModeAfterIshaMinutes ?? config.darkModeMinutesAfterIsha;
-    const location = config.location
-      ? { ...config.location, method: this.fromPrayerMethodEnum(config.location.method) }
-      : config.location;
-
-    return {
-      ...config,
-      posterCycleIntervalMs,
-      refreshAfterIshaMinutes,
-      darkModeAfterIshaMinutes,
-      location
-    };
-  }
-
-  static normalizeConfigForBackend(config) {
-    const normalized = this.normalizeScrollingMessages(config);
-    const posterCycleIntervalMs = normalized.posterCycleIntervalMs ?? normalized.posterCycleInterval;
-    const refreshAfterIshaMinutes = normalized.refreshAfterIshaMinutes ?? normalized.refreshAfterIshaaMinutes;
-    const darkModeAfterIshaMinutes = normalized.darkModeAfterIshaMinutes ?? normalized.darkModeMinutesAfterIsha;
-    const location = normalized.location
-      ? { ...normalized.location, method: this.toPrayerMethodEnum(normalized.location.method) }
-      : normalized.location;
-
-    const body = {
-      ...normalized,
-      location
-    };
-
-    if (posterCycleIntervalMs !== undefined) body.posterCycleIntervalMs = posterCycleIntervalMs;
-    if (refreshAfterIshaMinutes !== undefined) body.refreshAfterIshaMinutes = refreshAfterIshaMinutes;
-    if (darkModeAfterIshaMinutes !== undefined) body.darkModeAfterIshaMinutes = darkModeAfterIshaMinutes;
-
-    delete body.posterCycleInterval;
-    delete body.refreshAfterIshaaMinutes;
-    delete body.darkModeMinutesAfterIsha;
-    delete body.scrollingMessage;
-
-    return body;
-  }
 
   static fromBackendConfig(config) {
     if (!config) return null;
     return {
-      ...this.normalizeConfigForFrontend(this.normalizeScrollingMessages(config)),
+      ...config,
       boardLocation: this.fromBoardLocationEnum(config.boardLocation)
     };
   }
@@ -245,10 +155,7 @@ class BoardService {
 
   static async saveConfig(boardLocation, config) {
     const enumLocation = this.toBoardLocationEnum(boardLocation);
-    const body = {
-      ...this.normalizeConfigForBackend(config),
-      boardLocation: enumLocation
-    };
+    const body = { ...config, boardLocation: enumLocation };
 
     const response = await fetch(`${BOARD_BASE}/configs/${enumLocation}`, {
       method: 'PUT',
@@ -264,7 +171,8 @@ class BoardService {
 
   static async updateConfig(boardLocation, updates) {
     const enumLocation = this.toBoardLocationEnum(boardLocation);
-    const body = this.normalizeConfigForBackend(updates);
+    const body = { ...updates };
+    delete body.boardLocation;
 
     const response = await fetch(`${BOARD_BASE}/configs/${enumLocation}`, {
       method: 'PATCH',
