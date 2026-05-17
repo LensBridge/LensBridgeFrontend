@@ -59,7 +59,7 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
           <input
             type="text"
             value={formData.location}
@@ -87,7 +87,7 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -159,16 +159,34 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     });
   };
 
+  // Status is driven by the *end* time so an event in progress isn't "Past".
+  const getEventStatus = (event) => {
+    const now = Date.now();
+    const start = event.startEpochMs ?? 0;
+    const end = event.endEpochMs ?? start;
+    if (now < start) return 'upcoming';
+    if (now <= end) return 'ongoing';
+    return 'past';
+  };
+
   const filteredEvents = events
-    .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                  e.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(e => filterAudience === 'all' || e.audience === filterAudience)
-    .filter(e => !hidePastEvents || e.startEpochMs > Date.now())
+    .filter(e => !hidePastEvents || getEventStatus(e) !== 'past')
     .sort((a, b) => a.startEpochMs - b.startEpochMs);
 
   const handleSave = async (isNew = false) => {
     if (!formData.name.trim()) {
       showMessage('Event name is required', 'error');
+      return;
+    }
+    if (!formData.location.trim()) {
+      showMessage('Location is required', 'error');
+      return;
+    }
+    if (!formData.description.trim()) {
+      showMessage('Description is required', 'error');
       return;
     }
 
@@ -207,7 +225,6 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     setShowAddForm(false);
   };
 
-  const isUpcoming = (timestamp) => timestamp > Date.now();
   const getAudienceBadge = (audience) => {
     const opt = audienceOptions.find(o => o.value === audience) || audienceOptions[0];
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${opt.color}`}>{opt.label}</span>;
@@ -311,7 +328,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
               <div
                 key={event.id}
                 className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow ${
-                  isUpcoming(event.startEpochMs) ? 'border-gray-200' : 'border-gray-100 opacity-60'
+                  getEventStatus(event) === 'past' ? 'border-gray-100 opacity-60' : 'border-gray-200'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -319,7 +336,10 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h4 className="font-semibold text-gray-900">{event.name}</h4>
                       {getAudienceBadge(event.audience)}
-                      {!isUpcoming(event.startEpochMs) && (
+                      {getEventStatus(event) === 'ongoing' && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Now</span>
+                      )}
+                      {getEventStatus(event) === 'past' && (
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Past</span>
                       )}
                     </div>
