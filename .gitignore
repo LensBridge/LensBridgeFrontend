@@ -122,3 +122,8 @@ vite.config.ts.timestamp-*
 
 /email-templates/*
 admin-update-guide.js
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
