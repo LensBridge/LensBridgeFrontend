@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Lock, Eye, EyeOff, CheckCircle, XCircle, Camera, Loader2, ArrowRight } from 'lucide-react';
+import { api } from '../api/client';
 
 function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -33,22 +34,15 @@ function ResetPassword() {
 
   const validateToken = async (resetToken) => {
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/validate-reset-token?token=${encodeURIComponent(resetToken)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
+      const { error } = await api.POST('/api/auth/validate-reset-token', {
+        body: { token: resetToken }
       });
 
-      if (response.ok) {
+      if (!error) {
         setTokenValid(true);
       } else {
-        const data = await response.json();
-        const errorMsg = data.message || data.error || 'Invalid or expired reset token.';
         setTokenValid(false);
-        setErrorMessage(errorMsg);
+        setErrorMessage(error.message || 'Invalid or expired reset token.');
       }
     } catch (error) {
       console.error('Token validation error:', error);
@@ -100,18 +94,11 @@ function ResetPassword() {
     setErrorMessage('');
     
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/reset-password?token=${encodeURIComponent(token)}&newPassword=${encodeURIComponent(formData.password)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
+      const { error } = await api.POST('/api/auth/reset-password', {
+        body: { token, newPassword: formData.password }
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (!error) {
         setIsSuccess(true);
         // Redirect to login after 3 seconds
         setTimeout(() => {
@@ -123,8 +110,7 @@ function ResetPassword() {
           });
         }, 3000);
       } else {
-        const errorMsg = data.message || data.error || 'Failed to reset password. Please try again.';
-        setErrorMessage(errorMsg);
+        setErrorMessage(error.message || 'Failed to reset password. Please try again.');
       }
     } catch (error) {
       console.error('Password reset error:', error);

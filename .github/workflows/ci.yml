@@ -1,0 +1,57 @@
+name: CI
+
+# The API layer in src/api is generated from LensBridgeBackend/openapi.yaml. This
+# job checks the generated client still matches the backend's committed contract,
+# so a server-side rename fails here rather than at runtime in the browser.
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: LensBridgeFrontend
+
+      - name: Check out the backend for its OpenAPI contract
+        uses: actions/checkout@v4
+        with:
+          repository: LensBridge/LensBridgeBackend
+          path: LensBridgeBackend
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: LensBridgeFrontend/package-lock.json
+
+      - run: npm ci
+        working-directory: LensBridgeFrontend
+
+      - name: Fail if the generated client is stale
+        working-directory: LensBridgeFrontend
+        env:
+          OPENAPI_SPEC: ${{ github.workspace }}/LensBridgeBackend/openapi.yaml
+        run: npm run api:check
+
+      - name: Type-check the API layer
+        working-directory: LensBridgeFrontend
+        run: npm run typecheck
+
+      - name: Token refresh tests
+        # Covers the single-flight refresh: concurrent 401s must trigger exactly
+        # one refresh, or the refresh token rotates twice and logs the user out.
+        working-directory: LensBridgeFrontend
+        run: npm test
+
+      - run: npm run lint
+        working-directory: LensBridgeFrontend
+        continue-on-error: true
+
+      - run: npx vite build
+        working-directory: LensBridgeFrontend

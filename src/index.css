@@ -101,4 +101,11 @@
     50% { opacity: 0.7; }
   }
   .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+  /* Horizontal tab strips scroll on mobile; the bar itself is visual noise. */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
 }

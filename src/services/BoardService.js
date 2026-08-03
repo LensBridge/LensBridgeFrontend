@@ -1,6 +1,4 @@
-import API_CONFIG from '../config/api';
-
-const BOARD_BASE = `${API_CONFIG.BASE_URL}/api/admin/board`;
+import { api } from '../api/client';
 
 const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
@@ -34,9 +32,18 @@ class BoardService {
     return VALID_AUDIENCES.has(a) ? a : 'both';
   }
 
-  /** Audience the backend expects on writes: uppercase (BROTHERS|SISTERS|BOTH). */
+  /**
+   * Audience the backend expects on writes: lowercase (brothers|sisters|both),
+   * matching the enum values openapi.yaml declares.
+   *
+   * This used to uppercase. Jackson had no enum configuration so it read and
+   * wrote name() ("BROTHERS") while springdoc documented toString()
+   * ("brothers") -- the server accepted only uppercase while the contract
+   * promised lowercase. The enum now serialises lowercase and still reads
+   * either case, so the wire format and the contract agree.
+   */
   static toApiAudience(audience) {
-    return this.fromApiAudience(audience).toUpperCase();
+    return this.fromApiAudience(audience);
   }
 
   /** ISO date-time string (or null) -> epoch ms (or null). */
@@ -58,39 +65,45 @@ class BoardService {
   // AUTH HEADERS
   // ============================================================================
 
-  static getAuthHeaders() {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...API_CONFIG.HEADERS
-    };
+  /**
+   * Unwrap an openapi-fetch result, rethrowing the server's message.
+   *
+   * This class used to build its own Authorization header and call fetch directly,
+   * so an expired access token produced a hard 401 instead of a refresh and retry.
+   * The shared client now handles that for every call below.
+   *
+   * @template T
+   * @param {{ data?: T, error?: { message?: string } }} result
+   * @param {string} fallback
+   * @returns {T}
+   */
+  static unwrap({ data, error }, fallback) {
+    if (error) throw new Error(error.message || fallback);
+    return /** @type {T} */ (data);
   }
 
-  static getMultipartAuthHeaders() {
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    return {
-      'Authorization': `Bearer ${token}`,
-      ...API_CONFIG.HEADERS
-    };
+  /** Serializes a single-file multipart body; the image-replace endpoint expects "image". */
+  static imageBodySerializer(body) {
+    const formData = new FormData();
+    formData.append('image', body.image);
+    return formData;
   }
 
-  /** Parse a response, surfacing backend error messages. */
-  static async parseError(response, fallback) {
-    const error = await response.json().catch(() => ({}));
-    return new Error(error.message || error.error || fallback);
-  }
-
-  /** DELETE endpoints return a MessageResponse ({ message }); be lenient. */
-  static async readMessage(response, fallback) {
-    if (!response.ok) throw await this.parseError(response, fallback);
-    const text = await response.text();
-    if (!text) return { message: 'OK' };
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { message: text };
+  /**
+   * Serializes the whole CreatePosterRequest as multipart/form-data.
+   *
+   * Each property becomes its own form field so Spring's @ModelAttribute binder
+   * can map them onto the DTO. Undefined entries are skipped rather than sent as
+   * the string "undefined", which is what a naive loop would produce and what the
+   * server would then try to parse as a date or an enum.
+   */
+  static posterBodySerializer(body) {
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(body)) {
+      if (value === undefined || value === null) continue;
+      formData.append(key, value instanceof File || value instanceof Blob ? value : String(value));
     }
+    return formData;
   }
 
   // ============================================================================
@@ -143,36 +156,32 @@ class BoardService {
   }
 
   static async getAllWeeklyContent() {
-    const response = await fetch(`${BOARD_BASE}/weekly-content`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch weekly content');
-    const items = await response.json();
+    const items = this.unwrap(
+      await api.GET('/api/admin/board/weekly-content', {}),
+      'Failed to fetch weekly content'
+    );
     return (Array.isArray(items) ? items : [])
       .map(i => this.fromBackendWeeklyContent(i))
       .filter(Boolean);
   }
 
   static async getWeeklyContentByYear(year) {
-    const response = await fetch(`${BOARD_BASE}/weekly-content/year/${year}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error(`Failed to fetch weekly content for year ${year}`);
-    const items = await response.json();
+    const items = this.unwrap(
+      await api.GET('/api/admin/board/weekly-content/year/{year}', { params: { path: { year } } }),
+      `Failed to fetch weekly content for year ${year}`
+    );
     return (Array.isArray(items) ? items : [])
       .map(i => this.fromBackendWeeklyContent(i))
       .filter(Boolean);
   }
 
   static async getWeeklyContent(year, weekNumber) {
-    const response = await fetch(`${BOARD_BASE}/weekly-content/${year}/${weekNumber}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error(`Failed to fetch content for week ${weekNumber} of ${year}`);
-    return this.fromBackendWeeklyContent(await response.json());
+    return this.fromBackendWeeklyContent(this.unwrap(
+      await api.GET('/api/admin/board/weekly-content/{year}/{weekNumber}', {
+        params: { path: { year, weekNumber } }
+      }),
+      `Failed to fetch content for week ${weekNumber} of ${year}`
+    ));
   }
 
   /**
@@ -193,21 +202,22 @@ class BoardService {
       ? content.jummahPrayers.map(p => this.normalizeJummahPrayer(p)).filter(Boolean)
       : [];
 
-    const response = await fetch(`${BOARD_BASE}/weekly-content/${year}/${weekNumber}`, {
-      method: 'PUT',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify({ quotes, jummahPrayers })
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to save weekly content');
-    return this.fromBackendWeeklyContent(await response.json());
+    return this.fromBackendWeeklyContent(this.unwrap(
+      await api.PUT('/api/admin/board/weekly-content/{year}/{weekNumber}', {
+        params: { path: { year, weekNumber } },
+        body: { quotes, jummahPrayers }
+      }),
+      'Failed to save weekly content'
+    ));
   }
 
   static async deleteWeeklyContent(year, weekNumber) {
-    const response = await fetch(`${BOARD_BASE}/weekly-content/${year}/${weekNumber}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-    return this.readMessage(response, 'Failed to delete weekly content');
+    return this.unwrap(
+      await api.DELETE('/api/admin/board/weekly-content/{year}/{weekNumber}', {
+        params: { path: { year, weekNumber } }
+      }),
+      'Failed to delete weekly content'
+    );
   }
 
   // ============================================================================
@@ -224,63 +234,63 @@ class BoardService {
       // UI's <input type="date"> wants yyyy-mm-dd; backend sends ISO date-time.
       startDate: poster.startTime ? poster.startTime.slice(0, 10) : '',
       endDate: poster.endTime ? poster.endTime.slice(0, 10) : '',
-      audience: this.fromApiAudience(poster.audience)
+      audience: this.fromApiAudience(poster.audience),
+      // Optional; when set the board pairs the poster with a QR code.
+      signupUrl: poster.signupUrl || ''
     };
   }
 
   static async getAllPosters() {
-    const response = await fetch(`${BOARD_BASE}/posters`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch posters');
-    const posters = await response.json();
+    const posters = this.unwrap(
+      await api.GET('/api/admin/board/posters', {}),
+      'Failed to fetch posters'
+    );
     return (Array.isArray(posters) ? posters : []).map(p => this.fromBackendPoster(p));
   }
 
   static async getPostersByAudience(audience) {
-    const params = new URLSearchParams({ audience: this.toApiAudience(audience) });
-    const response = await fetch(`${BOARD_BASE}/posters/by-audience?${params}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch posters');
-    const posters = await response.json();
+    const posters = this.unwrap(
+      await api.GET('/api/admin/board/posters/by-audience', {
+        params: { query: { audience: this.toApiAudience(audience) } }
+      }),
+      'Failed to fetch posters'
+    );
     return (Array.isArray(posters) ? posters : []).map(p => this.fromBackendPoster(p));
   }
 
   static async getPoster(posterId) {
-    const response = await fetch(`${BOARD_BASE}/posters/${posterId}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch poster');
-    return this.fromBackendPoster(await response.json());
+    return this.fromBackendPoster(this.unwrap(
+      await api.GET('/api/admin/board/posters/{posterId}', { params: { path: { posterId } } }),
+      'Failed to fetch poster'
+    ));
   }
 
   /**
-   * Create a poster. Metadata travels as query params; the image file is the
-   * multipart body (field name "image").
+   * Create a poster.
+   *
+   * Everything — metadata and image alike — is one multipart/form-data body,
+   * bound server-side onto CreatePosterRequest. Metadata used to ride in the
+   * query string with only the file in the body.
    */
   static async createPoster(posterData) {
-    const params = new URLSearchParams({
-      title: posterData.title,
-      duration: String(Math.floor((posterData.duration || 0) / 1000)),
-      startTime: this.toIso(posterData.startDate),
-      endTime: this.toIso(posterData.endDate),
-      audience: this.toApiAudience(posterData.audience)
-    });
-
-    const formData = new FormData();
-    formData.append('image', posterData.imageFile);
-
-    const response = await fetch(`${BOARD_BASE}/posters?${params}`, {
-      method: 'POST',
-      headers: this.getMultipartAuthHeaders(),
-      body: formData
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to create poster');
-    return this.fromBackendPoster(await response.json());
+    return this.fromBackendPoster(this.unwrap(
+      await api.POST('/api/admin/board/posters', {
+        body: {
+          title: posterData.title,
+          duration: Math.floor((posterData.duration || 0) / 1000),
+          startTime: this.toIso(posterData.startDate),
+          endTime: this.toIso(posterData.endDate),
+          audience: this.toApiAudience(posterData.audience),
+          imageFile: posterData.imageFile,
+          // Omitted when blank so the server stores null rather than "".
+          ...(posterData.signupUrl?.trim()
+            ? { signupUrl: posterData.signupUrl.trim() }
+            : {})
+        },
+        bodySerializer: this.posterBodySerializer
+      }),
+      'Failed to create poster'
+    ));
   }
 
   /** Patch poster metadata (UpdatePosterRequest, JSON). */
@@ -291,35 +301,35 @@ class BoardService {
     if (updates.startDate !== undefined) body.startTime = this.toIso(updates.startDate);
     if (updates.endDate !== undefined) body.endTime = this.toIso(updates.endDate);
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
+    // Sent as '' rather than omitted when cleared: the server treats an empty
+    // string as "remove the link", where undefined would leave it unchanged.
+    if (updates.signupUrl !== undefined) body.signupUrl = updates.signupUrl.trim();
 
-    const response = await fetch(`${BOARD_BASE}/posters/${posterId}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(body)
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to update poster');
-    return this.fromBackendPoster(await response.json());
+    return this.fromBackendPoster(this.unwrap(
+      await api.PATCH('/api/admin/board/posters/{posterId}', {
+        params: { path: { posterId } },
+        body
+      }),
+      'Failed to update poster'
+    ));
   }
 
   static async updatePosterImage(posterId, imageFile) {
-    const formData = new FormData();
-    formData.append('image', imageFile);
-
-    const response = await fetch(`${BOARD_BASE}/posters/${posterId}/image`, {
-      method: 'PUT',
-      headers: this.getMultipartAuthHeaders(),
-      body: formData
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to update poster image');
-    return this.fromBackendPoster(await response.json());
+    return this.fromBackendPoster(this.unwrap(
+      await api.PUT('/api/admin/board/posters/{posterId}/image', {
+        params: { path: { posterId } },
+        body: { image: imageFile },
+        bodySerializer: this.imageBodySerializer
+      }),
+      'Failed to update poster image'
+    ));
   }
 
   static async deletePoster(posterId) {
-    const response = await fetch(`${BOARD_BASE}/posters/${posterId}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-    return this.readMessage(response, 'Failed to delete poster');
+    return this.unwrap(
+      await api.DELETE('/api/admin/board/posters/{posterId}', { params: { path: { posterId } } }),
+      'Failed to delete poster'
+    );
   }
 
   // ============================================================================
@@ -341,33 +351,28 @@ class BoardService {
   }
 
   static async getAllEvents() {
-    const response = await fetch(`${BOARD_BASE}/events`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch events');
-    const events = await response.json();
+    const events = this.unwrap(
+      await api.GET('/api/admin/board/events', {}),
+      'Failed to fetch events'
+    );
     return (Array.isArray(events) ? events : []).map(e => this.fromBackendEvent(e));
   }
 
   static async getEventsByAudience(audience) {
-    const params = new URLSearchParams({ audience: this.toApiAudience(audience) });
-    const response = await fetch(`${BOARD_BASE}/events/by-audience?${params}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch events');
-    const events = await response.json();
+    const events = this.unwrap(
+      await api.GET('/api/admin/board/events/by-audience', {
+        params: { query: { audience: this.toApiAudience(audience) } }
+      }),
+      'Failed to fetch events'
+    );
     return (Array.isArray(events) ? events : []).map(e => this.fromBackendEvent(e));
   }
 
   static async getEvent(eventId) {
-    const response = await fetch(`${BOARD_BASE}/events/${eventId}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to fetch event');
-    return this.fromBackendEvent(await response.json());
+    return this.fromBackendEvent(this.unwrap(
+      await api.GET('/api/admin/board/events/{eventId}', { params: { path: { eventId } } }),
+      'Failed to fetch event'
+    ));
   }
 
   /** Create an event (CreateCalendarEventRequest: startEpochMs/endEpochMs, int64). */
@@ -382,13 +387,10 @@ class BoardService {
       audience: this.toApiAudience(eventData.audience)
     };
 
-    const response = await fetch(`${BOARD_BASE}/events`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(body)
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to create event');
-    return this.fromBackendEvent(await response.json());
+    return this.fromBackendEvent(this.unwrap(
+      await api.POST('/api/admin/board/events', { body }),
+      'Failed to create event'
+    ));
   }
 
   /** Patch an event (UpdateCalendarEventRequest: startTime/endTime, ISO date-time). */
@@ -402,21 +404,39 @@ class BoardService {
     if (updates.allDay !== undefined) body.allDay = !!updates.allDay;
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
 
-    const response = await fetch(`${BOARD_BASE}/events/${eventId}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(body)
-    });
-    if (!response.ok) throw await this.parseError(response, 'Failed to update event');
-    return this.fromBackendEvent(await response.json());
+    return this.fromBackendEvent(this.unwrap(
+      await api.PATCH('/api/admin/board/events/{eventId}', {
+        params: { path: { eventId } },
+        body
+      }),
+      'Failed to update event'
+    ));
   }
 
   static async deleteEvent(eventId) {
-    const response = await fetch(`${BOARD_BASE}/events/${eventId}`, {
-      method: 'DELETE',
-      headers: this.getAuthHeaders()
-    });
-    return this.readMessage(response, 'Failed to delete event');
+    return this.unwrap(
+      await api.DELETE('/api/admin/board/events/{eventId}', { params: { path: { eventId } } }),
+      'Failed to delete event'
+    );
+  }
+
+  // ============================================================================
+  // ASSEMBLED PAYLOAD
+  // ============================================================================
+
+  /**
+   * The exact payload a given board fetches: `{ deviceConfig, frames, weather }`.
+   *
+   * This is the same endpoint the kiosk hits, so the admin preview shows what
+   * is really on screen rather than the UI's guess at it. Frames arrive already
+   * filtered by the device's audience and ordered by the assembler — do not
+   * re-sort or re-filter them here.
+   */
+  static async getDevicePayload(deviceId) {
+    return this.unwrap(
+      await api.GET('/api/musallah/payload', { params: { query: { deviceId } } }),
+      'Failed to fetch board payload'
+    );
   }
 
   // ============================================================================
@@ -424,11 +444,7 @@ class BoardService {
   // ============================================================================
 
   static async refreshBoards() {
-    const response = await fetch(`${BOARD_BASE}/refresh`, {
-      method: 'POST',
-      headers: this.getAuthHeaders()
-    });
-    if (!response.ok) throw new Error('Failed to refresh boards');
+    this.unwrap(await api.POST('/api/admin/board/refresh', {}), 'Failed to refresh boards');
   }
 }
 

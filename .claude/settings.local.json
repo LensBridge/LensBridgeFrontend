@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:localhost)",
+      "Bash(curl -s http://localhost:8080/v3/api-docs -o /tmp/apidocs.json)",
+      "Read(//tmp/**)",
+      "Bash(python *)",
+      "Bash(npx eslint *)",
+      "Bash(node --check src/services/BoardService.js)"
     ]
   }
 }

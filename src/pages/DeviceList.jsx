@@ -4,22 +4,14 @@ import { useAuth } from '../context/AuthContext';
 import { useDeviceList } from '../hooks/useDeviceList';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
 import { audienceLabel, formatRelativeTime } from '../utils/deviceStatus';
-
-function hasRootPermissions(user) {
-  if (!user) return false;
-  return (
-    user.authorities?.some((auth) => auth.authority === 'ROLE_ROOT') ||
-    user.roles?.some((role) => role === 'ROLE_ROOT' || role === 'ROOT') ||
-    user.role === 'ROLE_ROOT'
-  );
-}
+import { isRoot } from '../utils/auth';
 
 function DeviceList() {
   const { user, isLoading: authLoading } = useAuth();
   const { devices, loading, error, refetch } = useDeviceList();
   const navigate = useNavigate();
 
-  if (!authLoading && !hasRootPermissions(user)) {
+  if (!authLoading && !isRoot(user)) {
     return (
       <div className="mx-auto max-w-md rounded-lg bg-white p-8 text-center shadow-sm">
         <Monitor className="mx-auto mb-4 h-10 w-10 text-red-500" />

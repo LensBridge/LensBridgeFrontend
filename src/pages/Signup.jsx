@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, ArrowRight, Camera, UserPlus } from 'lucide-react';
-import API_CONFIG from '../config/api.js';
+import { api } from '../api/client';
 
 function Signup() {
   const navigate = useNavigate();
@@ -53,24 +53,17 @@ function Signup() {
     setIsLoading(true);
     
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({
+      const { error } = await api.POST('/api/auth/signup', {
+        body: {
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           studentNumber: formData.studentId,
           password: formData.password
-        })
+        }
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (!error) {
         // Redirect to success page with email confirmation message
         navigate('/signup-success', { 
           state: { 
@@ -79,7 +72,9 @@ function Signup() {
           }
         });
       } else {
-        alert(data.message || 'Signup failed. Please try again.');
+        // Validation failures now arrive as a MessageResponse like every other
+        // error, so this shows the actual reason instead of the generic fallback.
+        alert(error.message || 'Signup failed. Please try again.');
       }
     } catch (error) {
       console.error('Signup error:', error);

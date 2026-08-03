@@ -4,14 +4,7 @@ import { ChevronLeft, Loader2, Monitor } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import DeviceService from '../services/DeviceService';
 import EnrollTokenDialog from '../components/devices/EnrollTokenDialog';
-
-function hasRootPermissions(user) {
-  return Boolean(
-    user?.authorities?.some((auth) => auth.authority === 'ROLE_ROOT') ||
-    user?.roles?.some((role) => role === 'ROLE_ROOT' || role === 'ROOT') ||
-    user?.role === 'ROLE_ROOT'
-  );
-}
+import { isRoot } from '../utils/auth';
 
 function EnrollDevice() {
   const { user, isLoading: authLoading } = useAuth();
@@ -52,7 +45,7 @@ function EnrollDevice() {
     }
   };
 
-  if (!authLoading && !hasRootPermissions(user)) {
+  if (!authLoading && !isRoot(user)) {
     return (
       <div className="mx-auto max-w-md rounded-lg bg-white p-8 text-center shadow-sm">
         <h2 className="text-xl font-semibold text-gray-900">ROOT access required</h2>

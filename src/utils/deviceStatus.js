@@ -1,3 +1,5 @@
+import { AUDIENCE_LABELS } from '../models/board';
+
 const HEARTBEAT_STALE_MS = 90 * 1000;
 
 export const TERMINAL_COMMAND_STATUSES = new Set([
@@ -45,8 +47,13 @@ export function formatDateTime(isoString) {
   return date.toLocaleString();
 }
 
+/**
+ * Audience arrives uppercase from DeviceSummary (Jackson serializes the enum
+ * by name) but lowercase from anything that went through Audience.toString().
+ * Match case-insensitively so one path doesn't silently label every board
+ * "Both".
+ */
 export function audienceLabel(audience) {
-  if (audience === 'BROTHERS') return 'Brothers';
-  if (audience === 'SISTERS') return 'Sisters';
-  return 'Both';
+  if (!audience) return AUDIENCE_LABELS.both;
+  return AUDIENCE_LABELS[String(audience).toLowerCase()] ?? AUDIENCE_LABELS.both;
 }

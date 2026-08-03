@@ -1,446 +1,212 @@
-import API_CONFIG from '../config/api.js';
+import { api, authenticatedFetch, BASE_URL } from '../api/client';
+import {
+  clearAuth,
+  getAccessToken,
+  getCurrentUser,
+  getRefreshToken,
+  isLoggedIn,
+  notifyAuthChange,
+  setCurrentUser,
+  storeTokens,
+  storeTokensFromResponse,
+} from '../api/tokenStore';
 
+/**
+ * Session and identity for the app.
+ *
+ * HTTP now goes through the generated client in src/api/client.ts, which owns
+ * access-token refresh. What remains here is the part OpenAPI has nothing to say
+ * about: what a session looks like in localStorage, and what counts as an admin.
+ *
+ * The public surface is unchanged from the hand-written version, so callers were
+ * not touched.
+ */
 class AuthService {
-  constructor() {
-    this.isRefreshing = false;
-    this.failedQueue = [];
-  }
-
-  // Process the queue of failed requests during token refresh
-  processQueue(error, token = null) {
-    this.failedQueue.forEach(({ resolve, reject }) => {
-      if (error) {
-        reject(error);
-      } else {
-        resolve(token);
-      }
-    });
-    
-    this.failedQueue = [];
-  }
-
-  // Add request to queue during token refresh
-  addToQueue() {
-    return new Promise((resolve, reject) => {
-      this.failedQueue.push({ resolve, reject });
-    });
-  }
-
-  // Make authenticated requests with automatic token refresh
+  /**
+   * @deprecated Use `api` from src/api/client.ts -- same credentials and refresh,
+   * but checked against the generated schema. Kept for call sites still on raw URLs.
+   */
   async makeRequest(url, options = {}) {
-    const accessToken = this.getAccessToken();
-    
-    // Initialize headers if not exists
-    if (!options.headers) {
-      options.headers = {};
-    }
-    
-    // Add auth headers if token exists
-    if (accessToken) {
-      options.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-
-    // Add default headers only if not FormData (to preserve boundary for multipart uploads)
-    if (!(options.body instanceof FormData)) {
-      options.headers = {
-        'Content-Type': 'application/json',
-        ...API_CONFIG.HEADERS,
-        ...options.headers, // Keep existing headers including auth
-      };
-    } else {
-      // For FormData, only add API headers and keep existing headers (including auth)
-      options.headers = {
-        ...API_CONFIG.HEADERS,
-        ...options.headers,
-      };
-    }
-
-    try {
-      const response = await fetch(url, options);
-      
-      // If 401 and we have a refresh token, try to refresh
-      if (response.status === 401 && this.getRefreshToken()) {
-        return await this.handleTokenRefresh(url, options);
-      }
-      
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return authenticatedFetch(url, options);
   }
 
-  // Handle token refresh and retry original request
-  async handleTokenRefresh(originalUrl, originalOptions) {
-    // If already refreshing, add to queue
-    if (this.isRefreshing) {
-      try {
-        await this.addToQueue();
-        // Retry with new token
-        const newToken = this.getAccessToken();
-        if (!originalOptions.headers) {
-          originalOptions.headers = {};
-        }
-        originalOptions.headers.Authorization = `Bearer ${newToken}`;
-        return await fetch(originalUrl, originalOptions);
-      } catch (error) {
-        throw error;
-      }
-    }
+  /** Shape the stored user record from whichever endpoint produced it. */
+  #toUserInfo(data) {
+    return {
+      id: data.id,
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      verified: data.verified,
+      roles: data.roles ?? [],
+    };
+  }
 
-    this.isRefreshing = true;
-
+  async login(email, password) {
     try {
-      const refreshToken = this.getRefreshToken();
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/refresh-token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...API_CONFIG.HEADERS,
-        },
-        body: JSON.stringify({ refreshToken }),
+      const { data, error, response } = await api.POST('/api/auth/signin', {
+        body: { email, password },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Token refresh failed: ${response.status} ${errorData.message || 'Unknown error'}`);
+      if (error || !data) {
+        return {
+          success: false,
+          error: error?.message || 'Login failed',
+          status: response?.status,
+        };
       }
 
-      const data = await response.json();
-      
-      // Update stored tokens - handle both response formats
-      if (data.accessToken && data.refreshToken) {
-        this.storeTokens(data.accessToken, data.refreshToken);
-      } else if (data.token && data.refreshToken) {
-        // Legacy format
-        localStorage.setItem('accessToken', data.token);
-        localStorage.setItem('refreshToken', data.refreshToken);
-        localStorage.setItem('tokenType', data.type || 'Bearer');
-      }
-      
-      // Process the queue with success
-      this.processQueue(null, data.accessToken || data.token);
-      
-      // Ensure headers object exists before modifying
-      if (!originalOptions.headers) {
-        originalOptions.headers = {};
-      }
-      
-      // Retry original request with new token
-      originalOptions.headers.Authorization = `Bearer ${data.accessToken || data.token}`;
-      return await fetch(originalUrl, originalOptions);
-      
-    } catch (error) {
-      // Refresh failed - clear tokens and redirect to login
-      this.processQueue(error, null);
-      this.clearAuth();
-      window.location.href = '/login';
-      throw error;
-    } finally {
-      this.isRefreshing = false;
+      storeTokensFromResponse(data);
+      const user = this.#toUserInfo(data);
+      setCurrentUser(user);
+      return { success: true, user };
+    } catch (err) {
+      console.error('Login error:', err);
+      return {
+        success: false,
+        error: 'Network error. Please check your connection and try again.',
+      };
     }
   }
 
-  // Validate current token with backend (direct call without refresh logic)
-  async validateToken() {
+  async logout() {
+    const refreshToken = getRefreshToken();
     try {
-      const accessToken = this.getAccessToken();
-      if (!accessToken) {
-        return null;
+      if (refreshToken) {
+        await api.POST('/api/auth/logout', { body: { refreshToken } });
       }
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Local state is cleared even if the server call fails: the user asked to
+      // be signed out, and a stale token here is worse than an orphaned one there.
+      clearAuth();
+    }
+  }
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/validate-token`, {
+  async logoutAllDevices() {
+    try {
+      if (!getAccessToken()) {
+        throw new Error('No access token available');
+      }
+      const { error } = await api.POST('/api/auth/logout-all-devices', {});
+      if (error) {
+        throw new Error(error.message || 'Failed to logout from all devices');
+      }
+      clearAuth();
+      return { success: true };
+    } catch (error) {
+      console.error('Logout all devices error:', error);
+      clearAuth();
+      throw error;
+    }
+  }
+
+  /**
+   * Validates the stored access token. Does NOT refresh on 401 -- initializeAuth
+   * relies on this returning null so it can decide whether to attempt a refresh.
+   */
+  async validateToken() {
+    const accessToken = getAccessToken();
+    if (!accessToken) return null;
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/auth/validate-token`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          ...API_CONFIG.HEADERS,
+          Authorization: `Bearer ${accessToken}`,
+          'ngrok-skip-browser-warning': 'true',
         },
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.valid) {
-          return {
-            id: data.id,
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            verified: data.verified,
-            roles: data.roles || [],
-          };
-        }
-      }
-      
-      return null;
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.valid ? this.#toUserInfo(data) : null;
     } catch (error) {
       console.error('Token validation error:', error);
       return null;
     }
   }
 
-  // Validate token with automatic refresh (for use in components)
+  /** Same check, but routed through the client so an expired token is refreshed first. */
   async validateTokenWithRefresh() {
+    if (!getAccessToken()) return null;
     try {
-      const accessToken = this.getAccessToken();
-      if (!accessToken) {
-        return null;
-      }
-
-      const response = await this.makeRequest(`${API_CONFIG.BASE_URL}/api/auth/validate-token`, {
-        method: 'GET',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.valid) {
-          return {
-            id: data.id,
-            email: data.email,
-            firstName: data.firstName,
-            lastName: data.lastName,
-            verified: data.verified,
-            roles: data.roles || [],
-          };
-        }
-      }
-      
-      return null;
+      const { data } = await api.GET('/api/auth/validate-token');
+      return data?.valid ? this.#toUserInfo(data) : null;
     } catch (error) {
       console.error('Token validation with refresh error:', error);
       return null;
     }
   }
 
-  // Login method
-  async login(email, password) {
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...API_CONFIG.HEADERS,
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store tokens - handle both new and legacy formats
-        if (data.accessToken && data.refreshToken) {
-          this.storeTokens(data.accessToken, data.refreshToken);
-        } else if (data.token && data.refreshToken) {
-          // Legacy format: main token is 'token', but we still have refreshToken
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('refreshToken', data.refreshToken);
-          localStorage.setItem('tokenType', data.type || 'Bearer');
-        } else if (data.token) {
-          // Fallback for old response format
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('tokenType', data.type || 'Bearer');
-        }
-
-        // Store user info
-        const userInfo = {
-          id: data.id,
-          email: data.email,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          roles: data.roles || [],
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userInfo));
-        
-        // Trigger auth change event
-        window.dispatchEvent(new Event('auth-change'));
-        
-        return { success: true, user: userInfo };
-      } else {
-        return { 
-          success: false, 
-          error: data.message || data.error || 'Login failed',
-          status: response.status 
-        };
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      return { 
-        success: false, 
-        error: 'Network error. Please check your connection and try again.' 
-      };
-    }
-  }
-
-  // Logout method
-  async logout() {
-    const refreshToken = this.getRefreshToken();
-    
-    try {
-      // Call backend logout endpoint if refresh token exists
-      if (refreshToken) {
-        await fetch(`${API_CONFIG.BASE_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...API_CONFIG.HEADERS,
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
-      }
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Always clear local storage
-      this.clearAuth();
-    }
-  }
-
-  // Logout from all devices
-  async logoutAllDevices() {
-    try {
-      const accessToken = this.getAccessToken();
-      if (!accessToken) {
-        throw new Error('No access token available');
-      }
-
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/logout-all-devices`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          ...API_CONFIG.HEADERS,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to logout from all devices');
-      }
-
-      this.clearAuth();
-      return { success: true };
-    } catch (error) {
-      console.error('Logout all devices error:', error);
-      this.clearAuth(); // Clear local auth even if API call fails
-      throw error;
-    }
-  }
-
-  // Store tokens securely
   storeTokens(accessToken, refreshToken) {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('tokenType', 'Bearer');
+    storeTokens(accessToken, refreshToken);
   }
 
-  // Clear all authentication data
   clearAuth() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('token'); // Legacy token key
-    localStorage.removeItem('tokenType');
-    localStorage.removeItem('user');
-    
-    // Trigger auth change event
-    window.dispatchEvent(new Event('auth-change'));
+    clearAuth();
   }
 
-  // Get current user from storage
   getCurrentUser() {
-    try {
-      const userStr = localStorage.getItem('user');
-      return userStr ? JSON.parse(userStr) : null;
-    } catch (error) {
-      console.error('Error parsing user info:', error);
-      return null;
-    }
+    return getCurrentUser();
   }
 
-  // Update stored user information
   updateStoredUser(updatedUser) {
-    try {
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      // Trigger auth change event to sync across components
-      window.dispatchEvent(new Event('auth-change'));
-    } catch (error) {
-      console.error('Error updating stored user:', error);
-    }
+    setCurrentUser(updatedUser);
   }
 
-  // Get access token
   getAccessToken() {
-    return localStorage.getItem('accessToken') || localStorage.getItem('token'); // Support legacy token key
+    return getAccessToken();
   }
 
-  // Get refresh token
   getRefreshToken() {
-    return localStorage.getItem('refreshToken');
+    return getRefreshToken();
   }
 
-  // Check if user is logged in
   isLoggedIn() {
-    return !!this.getAccessToken();
+    return isLoggedIn();
   }
 
-  // Check if user has admin role
   isAdmin(user = null) {
-    const currentUser = user || this.getCurrentUser();
+    const currentUser = user || getCurrentUser();
     if (!currentUser) return false;
-    
+
+    const hasAuthority = (name) =>
+      currentUser.authorities?.some((auth) => auth.authority === name);
+    const hasRole = (...names) =>
+      currentUser.roles?.some((role) => names.includes(role));
+
     return (
-      (currentUser.authorities && currentUser.authorities.some(auth => auth.authority === 'ROLE_ROOT')) ||
-      (currentUser.authorities && currentUser.authorities.some(auth => auth.authority === 'ROLE_ADMIN')) ||
-      (currentUser.roles && currentUser.roles.some(role => role === 'ROLE_ROOT' || role === 'ROOT' || role === 'ROLE_ADMIN' || role === 'ADMIN')) ||
+      hasAuthority('ROLE_ROOT') ||
+      hasAuthority('ROLE_ADMIN') ||
+      hasRole('ROLE_ROOT', 'ROOT', 'ROLE_ADMIN', 'ADMIN') ||
       currentUser.role === 'ROLE_ROOT' ||
       currentUser.role === 'ROLE_ADMIN'
     );
   }
 
-  // Initialize authentication on app start
+  /**
+   * Restores a session on app start: validate the access token, and if that
+   * fails fall back to the refresh token before giving up.
+   */
   async initializeAuth() {
     try {
-      // First try to validate existing token
       const user = await this.validateToken();
-      
       if (user) {
-        // Update user info in storage
-        localStorage.setItem('user', JSON.stringify(user));
-        window.dispatchEvent(new Event('auth-change'));
+        setCurrentUser(user);
         return { success: true, user };
       }
 
-      // If validation failed, try refresh token
-      const refreshToken = this.getRefreshToken();
-      if (refreshToken) {
+      if (getRefreshToken()) {
         try {
-          const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/refresh-token`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...API_CONFIG.HEADERS,
-            },
-            body: JSON.stringify({ refreshToken }),
+          const { data } = await api.POST('/api/auth/refresh-token', {
+            body: { refreshToken: getRefreshToken() },
           });
-
-          if (response.ok) {
-            const data = await response.json();
-            
-            // Handle both response formats
-            if (data.accessToken && data.refreshToken) {
-              this.storeTokens(data.accessToken, data.refreshToken);
-            } else if (data.token && data.refreshToken) {
-              localStorage.setItem('accessToken', data.token);
-              localStorage.setItem('refreshToken', data.refreshToken);
-              localStorage.setItem('tokenType', data.type || 'Bearer');
-            }
-            
-            // Validate the new token
-            const validatedUser = await this.validateToken();
-            if (validatedUser) {
-              localStorage.setItem('user', JSON.stringify(validatedUser));
-              window.dispatchEvent(new Event('auth-change'));
-              return { success: true, user: validatedUser };
+          if (storeTokensFromResponse(data)) {
+            const refreshedUser = await this.validateToken();
+            if (refreshedUser) {
+              setCurrentUser(refreshedUser);
+              return { success: true, user: refreshedUser };
             }
           }
         } catch (refreshError) {
@@ -448,17 +214,15 @@ class AuthService {
         }
       }
 
-      // Both validation and refresh failed - clear auth
-      this.clearAuth();
+      clearAuth();
       return { success: false, user: null };
-      
     } catch (error) {
       console.error('Auth initialization error:', error);
-      this.clearAuth();
+      clearAuth();
       return { success: false, user: null };
     }
   }
 }
 
-// Export singleton instance
 export default new AuthService();
+export { notifyAuthChange };

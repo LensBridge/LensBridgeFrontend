@@ -2,23 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Settings, Save, RotateCcw, Loader2, Check, AlertCircle } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import BoardConfigEditor from '../board/BoardConfigEditor';
-
-const DEFAULT_CONFIG = {
-  location: {
-    city: 'Mississauga',
-    country: 'Canada',
-    latitude: 43.5890,
-    longitude: -79.6441,
-    timezone: 'America/Toronto',
-    method: 'ISNA'
-  },
-  posterCycleIntervalMs: 10000,
-  refreshAfterIshaMinutes: 30,
-  darkModeAfterIsha: true,
-  darkModeAfterMaghribMinutes: 45,
-  enableScrollingMessage: true,
-  scrollingMessages: ['Welcome to UTM MSA - Follow us @utmmsa for updates!']
-};
+import { DEFAULT_DEVICE_CONFIG, toDeviceConfigPatch } from '../../models/board';
 
 function DeviceBoardConfig({ deviceId, disabled }) {
   const [saved, setSaved] = useState(null);
@@ -37,15 +21,17 @@ function DeviceBoardConfig({ deviceId, disabled }) {
     DeviceService.getDeviceConfig(deviceId)
       .then((cfg) => {
         if (cancelled) return;
-        const resolved = cfg || { ...DEFAULT_CONFIG };
+        // A device enrolled but never configured has no row yet; seed the form
+        // with defaults so the first save creates one.
+        const resolved = cfg || DEFAULT_DEVICE_CONFIG;
         setSaved(resolved);
         setDraft(resolved);
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        const fallback = { ...DEFAULT_CONFIG };
-        setSaved(fallback);
-        setDraft(fallback);
+        setError(err.message || 'Failed to load config');
+        setSaved(DEFAULT_DEVICE_CONFIG);
+        setDraft(DEFAULT_DEVICE_CONFIG);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -58,7 +44,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
     setSaving(true);
     setError(null);
     try {
-      const result = await DeviceService.updateDeviceConfig(deviceId, draft);
+      const result = await DeviceService.updateDeviceConfig(deviceId, toDeviceConfigPatch(draft));
       setSaved(result);
       setDraft(result);
       setSaveSuccess(true);
@@ -132,11 +118,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
             Loading config...
           </div>
         ) : (
-          <BoardConfigEditor
-            config={draft}
-            onUpdate={setDraft}
-            hideLocationToggle
-          />
+          <BoardConfigEditor config={draft} onUpdate={setDraft} />
         )}
       </div>
     </section>

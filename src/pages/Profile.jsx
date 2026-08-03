@@ -21,10 +21,10 @@ import {
   Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 
 function Profile() {
-  const { user, makeAuthenticatedRequest, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadsLoading, setUploadsLoading] = useState(true);
@@ -60,26 +60,23 @@ function Profile() {
       setUploadsLoading(true);
       
       // Fetch uploads and stats in parallel
-      const [uploadsResponse, statsResponse] = await Promise.all([
-        makeAuthenticatedRequest(
-          `${API_CONFIG.BASE_URL}/api/user/uploads?page=0&size=100&sort=createdDate,desc`
-        ),
-        makeAuthenticatedRequest(
-          `${API_CONFIG.BASE_URL}/api/user/stats`
-        )
+      const [uploadsResult, statsResult] = await Promise.all([
+        api.GET('/api/user/uploads', {
+          params: { query: { page: 0, size: 100, sort: ['createdDate,desc'] } }
+        }),
+        api.GET('/api/user/stats', {})
       ]);
 
-      if (!uploadsResponse.ok) {
+      if (uploadsResult.error) {
         throw new Error('Failed to fetch uploads');
       }
 
-      const uploadsData = await uploadsResponse.json();
+      const uploadsData = uploadsResult.data;
       setUserUploads(uploadsData.content || []);
-      
+
       // Use stats from dedicated endpoint if available, otherwise calculate
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
+      if (!statsResult.error) {
+        setStats(statsResult.data);
       } else {
         // Fallback to calculating stats from uploads data
         const total = uploadsData.content?.length || 0;
@@ -153,23 +150,14 @@ function Profile() {
 
     setLoading(true);
     try {
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}/api/user/profile`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(editForm),
-        }
-      );
+      const { data: updatedUser, error } = await api.PATCH('/api/user/profile', {
+        body: editForm,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+      if (error) {
+        throw new Error(error.message || 'Failed to update profile');
       }
 
-      const updatedUser = await response.json();
       await updateUser(updatedUser);
       
       setSuccess('Profile updated successfully! 🎉');
@@ -253,16 +241,12 @@ function Profile() {
 
     setDeletingUpload(uploadId);
     try {
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}/api/user/uploads/${uploadId}`,
-        {
-          method: 'DELETE'
-        }
-      );
+      const { error } = await api.DELETE('/api/user/uploads/{uploadId}', {
+        params: { path: { uploadId } },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete upload');
+      if (error) {
+        throw new Error(error.message || 'Failed to delete upload');
       }
 
       // Remove the upload from the local state

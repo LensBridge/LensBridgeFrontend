@@ -8,11 +8,11 @@ import {
   Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon,
   XCircle, StarOff, Monitor
 } from 'lucide-react';
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 function AdminDashboard() {
-  const { user, makeAuthenticatedRequest, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('uploads');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -156,32 +156,19 @@ function AdminDashboard() {
   const fetchUploads = useCallback(async (page = uploadPage, filter = uploadFilter) => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: uploadSize.toString(),
-        sort: 'createdDate,desc'
-      });
+      // openapi-fetch derives parameter and response types from the literal path,
+      // so the filter picks a call rather than building a URL string.
+      const options = {
+        params: { query: { page, size: uploadSize, sort: ['createdDate,desc'] } }
+      };
+      const { data, error } =
+        filter === 'pending' ? await api.GET('/api/admin/uploads/pending', options)
+        : filter === 'approved' ? await api.GET('/api/admin/uploads/approved', options)
+        : filter === 'featured' ? await api.GET('/api/admin/uploads/featured', options)
+        : await api.GET('/api/admin/uploads', options);
 
-      let endpoint = '/api/admin/uploads';
-      switch (filter) {
-        case 'pending':
-          endpoint = '/api/admin/uploads/pending';
-          break;
-        case 'approved':
-          endpoint = '/api/admin/uploads/approved';
-          break;
-        case 'featured':
-          endpoint = '/api/admin/uploads/featured';
-          break;
-        default:
-          endpoint = '/api/admin/uploads';
-      }
+      if (error) throw new Error('Failed to fetch uploads');
 
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`);
-
-      if (!response.ok) throw new Error('Failed to fetch uploads');
-
-      const data = await response.json();
       setUploads(data);
       
       // Calculate stats from all uploads (only when fetching 'all')
@@ -198,26 +185,22 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
+  }, [uploadPage, uploadSize, uploadFilter]);
 
   const approveUpload = useCallback(async (uploadId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'POST'
+      const { data: result, error } = await api.POST('/api/admin/upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   const deleteUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
@@ -226,38 +209,33 @@ function AdminDashboard() {
     if (!confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) throw new Error('Failed to delete upload');
+      if (error) throw new Error('Failed to delete upload');
 
-      const result = await response.json();
       showMessage(`🗑️ ${result.message}`);
       fetchUploads();
     } catch (error) {
       showMessage('❌ Failed to delete upload', true);
     }
-  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [uploads.content, showMessage, fetchUploads]);
 
   const featureUpload = useCallback(async (uploadId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
-        method: 'POST'
+      const { data: result, error } = await api.POST('/api/admin/feature-upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   const unapproveUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
@@ -266,52 +244,43 @@ function AdminDashboard() {
     if (!confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}/approval', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(`⏪ ${result.message}`);
       fetchUploads();
     } catch (error) {
       showMessage(`❌ ${error.message}`, true);
     }
-  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [uploads.content, showMessage, fetchUploads]);
 
   const unfeatureUpload = useCallback(async (uploadId) => {
     if (!confirm('Are you sure you want to unfeature this upload?')) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}/featured', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   // Event Management Functions
   const fetchEvents = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/events`);
+      const { data, error } = await api.GET('/api/admin/events', {});
 
-      if (!response.ok) throw new Error('Failed to fetch events');
+      if (error) throw new Error('Failed to fetch events');
 
-      const data = await response.json();
       setEvents(data);
       setStats(prev => ({ ...prev, totalEvents: data.length }));
     } catch (error) {
@@ -333,22 +302,19 @@ function AdminDashboard() {
         isoDateTime = date.toISOString();
       }
 
-      const formData = new URLSearchParams();
-      formData.append('eventName', newEvent.eventName);
-      formData.append('eventDate', isoDateTime);
-      formData.append('status', newEvent.status);
-
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData
+      // Bound with @RequestParam server-side, so these are query parameters.
+      const { data: result, error } = await api.POST('/api/admin/create-event', {
+        params: {
+          query: {
+            eventName: newEvent.eventName,
+            eventDate: isoDateTime,
+            status: newEvent.status
+          }
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to create event');
+      if (error) throw new Error('Failed to create event');
 
-      const result = await response.json();
       showMessage(result.message);
       setNewEvent({ eventName: '', eventDate: '', eventTime: '', status: 'ONGOING' });
       setShowCreateEvent(false);
@@ -362,41 +328,34 @@ function AdminDashboard() {
   const fetchAudits = useCallback(async (page = auditPage) => {
     setLoading(true);
     try {
-      let url = `${API_CONFIG.BASE_URL}/api/admin/audit`;
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: auditSize.toString(),
-        sort: 'timestamp,desc'
-      });
+      const paging = { page, size: auditSize, sort: ['timestamp,desc'] };
 
-      if (selectedAction) {
-        url = `${API_CONFIG.BASE_URL}/api/admin/audit/action/${selectedAction}`;
-      } else if (dateRange.start && dateRange.end) {
-        url = `${API_CONFIG.BASE_URL}/api/admin/audit/daterange`;
-        queryParams.append('start', dateRange.start);
-        queryParams.append('end', dateRange.end);
-      }
+      const { data, error } = selectedAction
+        ? await api.GET('/api/admin/audit/action/{action}', {
+            params: { path: { action: selectedAction }, query: paging }
+          })
+        : dateRange.start && dateRange.end
+        ? await api.GET('/api/admin/audit/daterange', {
+            params: { query: { ...paging, start: dateRange.start, end: dateRange.end } }
+          })
+        : await api.GET('/api/admin/audit', { params: { query: paging } });
 
-      const response = await makeAuthenticatedRequest(`${url}?${queryParams}`);
+      if (error) throw new Error('Failed to fetch audit logs');
 
-      if (!response.ok) throw new Error('Failed to fetch audit logs');
-
-      const data = await response.json();
       setAudits(data);
     } catch (error) {
       showMessage('Failed to fetch audit logs', true);
     } finally {
       setLoading(false);
     }
-  }, [auditPage, auditSize, selectedAction, dateRange, makeAuthenticatedRequest]);
+  }, [auditPage, auditSize, selectedAction, dateRange]);
 
   const fetchAuditActions = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`);
+      const { data, error } = await api.GET('/api/admin/audit/actions', {});
 
-      if (!response.ok) throw new Error('Failed to fetch audit actions');
+      if (error) throw new Error('Failed to fetch audit actions');
 
-      const data = await response.json();
       setAuditActions(data);
     } catch (error) {
       showMessage('Failed to fetch audit actions', true);
@@ -409,28 +368,23 @@ function AdminDashboard() {
     
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: userSize.toString(),
-        sort: 'firstName,asc'
+      // NOTE: `searchTerm` is not sent. GET /api/admin/users binds only Pageable
+      // (AdminController.getAllUsers -> UserService.getAllUsers), so the previous
+      // `search` query param was discarded server-side and user search has never
+      // filtered anything. Making it work needs backend support first.
+      const { data, error } = await api.GET('/api/admin/users', {
+        params: { query: { page, size: userSize, sort: ['firstName,asc'] } }
       });
 
-      if (searchTerm.trim()) {
-        queryParams.append('search', searchTerm.trim());
-      }
+      if (error) throw new Error('Failed to fetch users');
 
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`);
-
-      if (!response.ok) throw new Error('Failed to fetch users');
-
-      const data = await response.json();
       setUsers(data);
     } catch (error) {
       showMessage('Failed to fetch users', true);
     } finally {
       setLoading(false);
     }
-  }, [userPage, userSize, userSearchTerm, user, makeAuthenticatedRequest]);
+  }, [userPage, userSize, userSearchTerm, user]);
 
   // Debounced search to prevent excessive API calls
   const searchTimeoutRef = useRef(null);
@@ -453,11 +407,10 @@ function AdminDashboard() {
     if (!hasRootPermissions(user)) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`);
+      const { data, error } = await api.GET('/api/admin/roles', {});
 
-      if (!response.ok) throw new Error('Failed to fetch roles');
+      if (error) throw new Error('Failed to fetch roles');
 
-      const data = await response.json();
       setAvailableRoles(data);
       if (data.length > 0) {
         setSelectedRole(data[0]);
@@ -469,15 +422,10 @@ function AdminDashboard() {
 
   const createUser = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
-        method: 'POST',
-        body: JSON.stringify(newUser)
-      });
+      const { data, error } = await api.POST('/api/admin/user/create', { body: newUser });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create user');
+      if (error) {
+        throw new Error(error.message || 'Failed to create user');
       }
 
       showMessage(data.message || 'User created successfully');
@@ -491,14 +439,13 @@ function AdminDashboard() {
 
   const addRoleToUser = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
-        method: 'POST',
-        body: JSON.stringify(selectedRole)
+      const { error } = await api.POST('/api/admin/user/{userId}/add-role', {
+        params: { path: { userId: selectedUserId } },
+        body: selectedRole
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to add role');
+      if (error) {
+        throw new Error(error.message || 'Failed to add role');
       }
 
       showMessage('Role added successfully');
@@ -513,14 +460,13 @@ function AdminDashboard() {
 
   const removeRoleFromUser = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
-        method: 'POST',
-        body: JSON.stringify(selectedRole)
+      const { error } = await api.POST('/api/admin/user/{userId}/remove-role', {
+        params: { path: { userId: selectedUserId } },
+        body: selectedRole
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to remove role');
+      if (error) {
+        throw new Error(error.message || 'Failed to remove role');
       }
 
       showMessage('Role removed successfully');
@@ -536,14 +482,10 @@ function AdminDashboard() {
 
   const verifyUser = async (userId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
-        method: 'POST',
-        body: JSON.stringify({ userId })
-      });
+      const { error } = await api.POST('/api/admin/user/verify', { body: { userId } });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to verify user');
+      if (error) {
+        throw new Error(error.message || 'Failed to verify user');
       }
 
       showMessage('User verified successfully');

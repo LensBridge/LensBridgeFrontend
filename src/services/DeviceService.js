@@ -1,105 +1,83 @@
-import API_CONFIG from '../config/api';
-import AuthService from './AuthService';
+import { api } from '../api/client';
 
-const DEVICE_BASE = `${API_CONFIG.BASE_URL}/api/admin/board/devices`;
-
+/**
+ * Board device administration.
+ *
+ * Every call goes through the generated client, so these now refresh an expired
+ * access token and retry instead of failing with a bare 401 -- the hand-rolled
+ * `getAuthHeaders()` this replaced attached a token but never renewed one.
+ */
 class DeviceService {
-  static getAuthHeaders() {
-    const token = AuthService.getAccessToken();
-    return {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      ...API_CONFIG.HEADERS
-    };
-  }
-
-  static async parseResponse(response, fallbackMessage) {
-    const text = await response.text();
-    if (response.ok) {
-      if (!text) return null;
-      try {
-        return JSON.parse(text);
-      } catch {
-        return text;
-      }
-    }
-
-    let error = {};
-    if (text) {
-      try {
-        error = JSON.parse(text);
-      } catch {
-        error = { message: text };
-      }
-    }
-    throw new Error(error.message || error.error || fallbackMessage);
+  /**
+   * openapi-fetch reports failures as a value rather than throwing. Callers here
+   * expect exceptions, so unwrap and rethrow with the server's message.
+   * @template T
+   * @param {{ data?: T, error?: { message?: string } }} result
+   * @param {string} fallbackMessage
+   * @returns {T}
+   */
+  static unwrap({ data, error }, fallbackMessage) {
+    if (error) throw new Error(error.message || fallbackMessage);
+    return /** @type {T} */ (data);
   }
 
   static async listDevices() {
-    const response = await fetch(DEVICE_BASE, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    return this.parseResponse(response, 'Failed to fetch devices');
+    return this.unwrap(await api.GET('/api/admin/board/devices', {}), 'Failed to fetch devices');
   }
 
   static async getDevice(deviceId) {
-    const response = await fetch(`${DEVICE_BASE}/${encodeURIComponent(deviceId)}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    return this.parseResponse(response, 'Failed to fetch device');
+    return this.unwrap(
+      await api.GET('/api/admin/board/devices/{deviceId}', { params: { path: { deviceId } } }),
+      'Failed to fetch device'
+    );
   }
 
   static async issueEnrollmentToken(request) {
-    const response = await fetch(`${DEVICE_BASE}/enrollment-tokens`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(request)
-    });
-    return this.parseResponse(response, 'Failed to issue enrollment token');
+    return this.unwrap(
+      await api.POST('/api/admin/board/devices/enrollment-tokens', { body: request }),
+      'Failed to issue enrollment token'
+    );
   }
 
   static async revokeDevice(deviceId) {
-    const response = await fetch(`${DEVICE_BASE}/${encodeURIComponent(deviceId)}/revoke`, {
-      method: 'POST',
-      headers: this.getAuthHeaders()
-    });
-    return this.parseResponse(response, 'Failed to revoke device');
+    return this.unwrap(
+      await api.POST('/api/admin/board/devices/{deviceId}/revoke', { params: { path: { deviceId } } }),
+      'Failed to revoke device'
+    );
   }
 
   static async issueCommand(deviceId, request) {
-    const response = await fetch(`${DEVICE_BASE}/${encodeURIComponent(deviceId)}/commands`, {
-      method: 'POST',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(request)
-    });
-    return this.parseResponse(response, 'Failed to issue command');
+    return this.unwrap(
+      await api.POST('/api/admin/board/devices/{deviceId}/commands', {
+        params: { path: { deviceId } },
+        body: request,
+      }),
+      'Failed to issue command'
+    );
   }
 
   static async listCommands(deviceId) {
-    const response = await fetch(`${DEVICE_BASE}/${encodeURIComponent(deviceId)}/commands`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    return this.parseResponse(response, 'Failed to fetch commands');
+    return this.unwrap(
+      await api.GET('/api/admin/board/devices/{deviceId}/commands', { params: { path: { deviceId } } }),
+      'Failed to fetch commands'
+    );
   }
 
   static async getDeviceConfig(deviceId) {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/board/configs/${encodeURIComponent(deviceId)}`, {
-      method: 'GET',
-      headers: this.getAuthHeaders()
-    });
-    return this.parseResponse(response, 'Failed to fetch device config');
+    return this.unwrap(
+      await api.GET('/api/admin/board/configs/{deviceId}', { params: { path: { deviceId } } }),
+      'Failed to fetch device config'
+    );
   }
 
   static async updateDeviceConfig(deviceId, patch) {
-    const response = await fetch(`${API_CONFIG.BASE_URL}/api/admin/board/configs/${encodeURIComponent(deviceId)}`, {
-      method: 'PATCH',
-      headers: this.getAuthHeaders(),
-      body: JSON.stringify(patch)
-    });
-    return this.parseResponse(response, 'Failed to update device config');
+    return this.unwrap(
+      await api.PATCH('/api/admin/board/configs/{deviceId}', {
+        params: { path: { deviceId } },
+        body: patch,
+      }),
+      'Failed to update device config'
+    );
   }
 }
 

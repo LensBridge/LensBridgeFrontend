@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { CheckCircle, XCircle, Camera, Loader2, ArrowRight } from 'lucide-react';
-import API_CONFIG from '../config/api';
+import { api, BASE_URL } from '../api/client';
 
 function ConfirmEmail() {
   const [searchParams] = useSearchParams();
@@ -25,40 +25,16 @@ function ConfirmEmail() {
   const confirmEmail = async (confirmationToken) => {
     try {
       
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({ token: confirmationToken })
+      const { data, error, response } = await api.POST('/api/auth/verify-email', {
+        body: { token: confirmationToken }
       });
 
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      // Try to parse response as JSON, but handle cases where it might not be JSON
-      let data;
-      try {
-        const responseText = await response.text();
-        console.log('Raw response:', responseText);
-        
-        // Try to parse as JSON if response has content
-        if (responseText.trim()) {
-          data = JSON.parse(responseText);
-        } else {
-          data = {};
-        }
-      } catch (parseError) {
-        console.log('Response is not JSON, treating as plain text');
-        data = { message: await response.text() };
-      }
-
-      if (response.ok) {
+      if (!error) {
         setStatus('success');
         setMessage('Your email has been successfully confirmed! You can now sign in to your account.');
-        setUserEmail(data.email || '');
-        
+        // This endpoint returns a MessageResponse; it has never carried an email.
+        setUserEmail('');
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login', { 
@@ -69,8 +45,8 @@ function ConfirmEmail() {
           });
         }, 3000);
       } else {
-        const errorMessage = data.message || data.error || 'Failed to confirm email. Please try again later.';
-        
+        const errorMessage = error.message || 'Failed to confirm email. Please try again later.';
+
         if (response.status === 400 && errorMessage.toLowerCase().includes('expired')) {
           setStatus('expired');
           setMessage('This confirmation link has expired. Please request a new confirmation email.');
@@ -95,7 +71,12 @@ function ConfirmEmail() {
   const resendConfirmation = async () => {
     try {
       setStatus('loading');
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/resend-confirmation`, {
+      // NOTE: /api/auth/resend-confirmation does not exist on the backend -- there is
+      // no such mapping in AuthController and it is absent from openapi.yaml, so this
+      // call 404s and the button has never worked. Left calling the intended path
+      // (rather than deleted) because restoring it is a backend change; it cannot move
+      // to the typed client until the endpoint exists.
+      const response = await fetch(`${BASE_URL}/api/auth/resend-confirmation`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

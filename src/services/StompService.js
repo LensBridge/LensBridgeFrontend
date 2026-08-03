@@ -1,5 +1,7 @@
 import { Client } from '@stomp/stompjs';
-import API_CONFIG from '../config/api';
+// STOMP over WebSocket sits outside the OpenAPI contract entirely -- the spec
+// describes no part of this channel. Only the origin is shared with the REST client.
+import { BASE_URL } from '../api/client';
 import AuthService from './AuthService';
 
 class StompService {
@@ -11,7 +13,7 @@ class StompService {
   }
 
   getBrokerUrl() {
-    return `${API_CONFIG.BASE_URL.replace(/^http/, 'ws')}/api/dashboard/ws`;
+    return `${BASE_URL.replace(/^http/, 'ws')}/api/dashboard/ws`;
   }
 
   ensureClient() {
