@@ -93,7 +93,9 @@ function TelemetryPanel({ device, samples }) {
             Runtime
           </div>
           <div className="text-sm text-gray-600">Kiosk alive: {telemetry.kioskAlive == null ? 'Unknown' : telemetry.kioskAlive ? 'Yes' : 'No'}</div>
-          <div className="text-sm text-gray-600">Displayed frame: {telemetry.displayedFrameId || 'Unknown'}</div>
+          {/* Agents report displayedFrameKey. displayedFrameId is the pre-rename
+              name, kept only for agents that predate the change. */}
+          <div className="text-sm text-gray-600">Displayed frame: {telemetry.displayedFrameKey || telemetry.displayedFrameId || 'Unknown'}</div>
           <ThrottleChips value={telemetry.throttleFlags} />
         </div>
       </div>

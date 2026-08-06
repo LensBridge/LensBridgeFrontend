@@ -69,7 +69,7 @@ function EnrollTokenDialog({ tokenResponse, onClose }) {
           <div className="rounded-lg bg-gray-50 p-4">
             <div className="mb-2 text-sm font-medium text-gray-700">Pi enroll command</div>
             <code className="block break-all rounded bg-white p-3 text-sm text-gray-800">
-              musallahboard-agent enroll --token={tokenResponse.token} --backend=https://api.utmmsa.ca
+              musallahboard-agent enroll --token={tokenResponse.token} --backend=http://localhost:8080
             </code>
           </div>
         </div>
