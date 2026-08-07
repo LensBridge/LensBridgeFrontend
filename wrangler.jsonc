@@ -1,6 +1,5 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "lensbridge-frontend",
+  "name": "lensbridgefrontend",
   "compatibility_date": "2026-08-06",
   "assets": {
     "directory": "./dist",
