@@ -7,7 +7,8 @@
       "Read(//tmp/**)",
       "Bash(python *)",
       "Bash(npx eslint *)",
-      "Bash(node --check src/services/BoardService.js)"
+      "Bash(node --check src/services/BoardService.js)",
+      "PowerShell(npm ls *)"
     ]
   }
 }
