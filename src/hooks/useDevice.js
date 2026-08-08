@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DeviceService from '../services/DeviceService';
 import StompService from '../services/StompService';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../utils/permissions';
 import { getDeviceStatus } from '../utils/deviceStatus';
 
+const POLL_MS = 30000;
+
 export function useDevice(deviceId) {
+  const { can } = useAuth();
   const [device, setDevice] = useState(null);
   const [telemetrySamples, setTelemetrySamples] = useState([]);
   const [lifecycle, setLifecycle] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Without `board:telemetry:subscribe` the SUBSCRIBE is rejected by throwing,
+  // which closes the session and kills the command stream alongside it.
+  const live = can(PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE);
 
   const loadDevice = useCallback(async () => {
     if (!deviceId) return;
@@ -25,6 +34,8 @@ export function useDevice(deviceId) {
 
   useEffect(() => {
     loadDevice();
+    if (!live) return;
+
     const unsubscribeConnect = StompService.onConnect(loadDevice);
     const unsubscribe = StompService.subscribe(`/topic/devices/${deviceId}`, (event) => {
       setLifecycle((prev) => ({
@@ -54,17 +65,23 @@ export function useDevice(deviceId) {
       unsubscribe();
       unsubscribeConnect();
     };
-  }, [deviceId, loadDevice]);
+  }, [deviceId, live, loadDevice]);
+
+  useEffect(() => {
+    if (live) return;
+    const timer = setInterval(loadDevice, POLL_MS);
+    return () => clearInterval(timer);
+  }, [live, loadDevice]);
 
   const mergedDevice = useMemo(() => {
     if (!device) return null;
     return {
       ...device,
-      telemetry: lifecycle.telemetry || null,
+      // Without a live feed the only telemetry is whatever the last GET carried.
+      telemetry: lifecycle.telemetry || (live ? null : device.telemetry) || null,
       status: getDeviceStatus(device, lifecycle)
     };
-  }, [device, lifecycle]);
+  }, [device, lifecycle, live]);
 
-  return { device: mergedDevice, telemetrySamples, loading, error, refetch: loadDevice };
+  return { device: mergedDevice, telemetrySamples, loading, error, live, refetch: loadDevice };
 }
-

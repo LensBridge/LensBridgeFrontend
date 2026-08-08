@@ -1,26 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Monitor, Plus, RefreshCcw, Thermometer } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { ChevronLeft, Monitor, Plus, RefreshCcw, Thermometer, WifiOff } from 'lucide-react';
 import { useDeviceList } from '../hooks/useDeviceList';
+import Can from '../components/Can';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
 import { audienceLabel, formatRelativeTime } from '../utils/deviceStatus';
-import { isRoot } from '../utils/auth';
+import { PERMISSIONS } from '../utils/permissions';
 
 function DeviceList() {
-  const { user, isLoading: authLoading } = useAuth();
-  const { devices, loading, error, refetch } = useDeviceList();
+  const { devices, loading, error, live, refetch } = useDeviceList();
   const navigate = useNavigate();
-
-  if (!authLoading && !isRoot(user)) {
-    return (
-      <div className="mx-auto max-w-md rounded-lg bg-white p-8 text-center shadow-sm">
-        <Monitor className="mx-auto mb-4 h-10 w-10 text-red-500" />
-        <h2 className="text-xl font-semibold text-gray-900">ROOT access required</h2>
-        <p className="mt-2 text-gray-600">Device control is restricted to ROOT administrators.</p>
-        <Link to="/admin" className="mt-6 inline-flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">Back to Admin</Link>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -42,14 +30,25 @@ function DeviceList() {
             <RefreshCcw className="h-4 w-4" />
             Refresh
           </button>
-          <Link to="/admin/devices/enroll" className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
-            <Plus className="h-4 w-4" />
-            Enroll new device
-          </Link>
+          <Can permission={PERMISSIONS.BOARD_DEVICE_ENROLL}>
+            <Link to="/admin/devices/enroll" className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+              <Plus className="h-4 w-4" />
+              Enroll new device
+            </Link>
+          </Can>
         </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+      {!live && (
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          <WifiOff className="h-4 w-4 flex-shrink-0" />
+          Live telemetry is off — this account doesn&apos;t hold
+          <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs">board:telemetry:subscribe</code>.
+          The table refreshes on a timer instead.
+        </div>
+      )}
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="overflow-x-auto">

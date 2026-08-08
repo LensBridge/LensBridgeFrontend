@@ -10,13 +10,14 @@ import TelemetryPanel from '../components/devices/TelemetryPanel';
 import CommandLauncher from '../components/devices/CommandLauncher';
 import CommandRow from '../components/devices/CommandRow';
 import DeviceBoardConfig from '../components/devices/DeviceBoardConfig';
+import Can from '../components/Can';
 import { audienceLabel, formatDateTime, formatRelativeTime } from '../utils/deviceStatus';
-import { isRoot } from '../utils/auth';
+import { PERMISSIONS } from '../utils/permissions';
 
 function DeviceDetail() {
   const { deviceId } = useParams();
-  const { user, isLoading: authLoading } = useAuth();
-  const { device, telemetrySamples, loading, error, refetch } = useDevice(deviceId);
+  const { user, can } = useAuth();
+  const { device, telemetrySamples, loading, error, live, refetch } = useDevice(deviceId);
   const { commands, loading: commandsLoading, error: commandsError, refetch: refetchCommands, setCommands } = useCommandStream(deviceId);
   const [showRevoke, setShowRevoke] = useState(false);
   const [revoking, setRevoking] = useState(false);
@@ -43,6 +44,7 @@ function DeviceDetail() {
   };
 
   const revokeDevice = async () => {
+    if (!can(PERMISSIONS.BOARD_DEVICE_REVOKE)) return;
     try {
       setRevoking(true);
       setRevokeError('');
@@ -55,15 +57,6 @@ function DeviceDetail() {
       setRevoking(false);
     }
   };
-
-  if (!authLoading && !isRoot(user)) {
-    return (
-      <div className="mx-auto max-w-md rounded-lg bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">ROOT access required</h2>
-        <Link to="/admin/devices" className="mt-6 inline-flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">Back to Devices</Link>
-      </div>
-    );
-  }
 
   if (loading) {
     return <div className="py-16 text-center text-gray-500">Loading device...</div>;
@@ -99,10 +92,12 @@ function DeviceDetail() {
             <RefreshCcw className="h-4 w-4" />
             Sync
           </button>
-          <button type="button" onClick={() => setShowRevoke(true)} disabled={Boolean(device.revokedAt)} className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
-            <Ban className="h-4 w-4" />
-            Revoke device
-          </button>
+          <Can permission={PERMISSIONS.BOARD_DEVICE_REVOKE}>
+            <button type="button" onClick={() => setShowRevoke(true)} disabled={Boolean(device.revokedAt)} className="inline-flex items-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+              <Ban className="h-4 w-4" />
+              Revoke device
+            </button>
+          </Can>
         </div>
       </div>
 
@@ -124,16 +119,24 @@ function DeviceDetail() {
 
       <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-5">
-          <h2 className="text-lg font-semibold text-gray-900">Live Telemetry</h2>
-          <p className="text-sm text-gray-500">Patched by `/topic/devices/{deviceId}` heartbeat events.</p>
+          <h2 className="text-lg font-semibold text-gray-900">Telemetry</h2>
+          <p className="text-sm text-gray-500">
+            {live
+              ? `Patched by \`/topic/devices/${deviceId}\` heartbeat events.`
+              : 'Live updates are off for this account; values come from the last fetch.'}
+          </p>
         </div>
-        <TelemetryPanel device={device} samples={telemetrySamples} />
+        <TelemetryPanel device={device} samples={telemetrySamples} live={live} />
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="border-b border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900">Commands</h2>
-          <p className="mt-1 text-sm text-gray-500">Issue commands and watch lifecycle updates from the agent.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            {live
+              ? 'Issue commands and watch lifecycle updates from the agent.'
+              : 'History only — command results arrive on a topic this account cannot subscribe to.'}
+          </p>
           <div className="mt-4">
             <CommandLauncher deviceId={deviceId} onIssued={handleIssued} disabled={Boolean(device.revokedAt)} />
           </div>
@@ -151,7 +154,9 @@ function DeviceDetail() {
         </div>
       </section>
 
-      <DeviceBoardConfig deviceId={deviceId} disabled={Boolean(device.revokedAt)} />
+      <Can permission={PERMISSIONS.BOARD_CONFIG_READ}>
+        <DeviceBoardConfig deviceId={deviceId} disabled={Boolean(device.revokedAt)} />
+      </Can>
 
       {showRevoke && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

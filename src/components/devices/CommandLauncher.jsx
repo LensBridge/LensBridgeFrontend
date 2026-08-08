@@ -1,6 +1,8 @@
-import { createElement, useState } from 'react';
+import { createElement, useMemo, useState } from 'react';
 import { Camera, FileText, Loader2, MoreHorizontal, Power, RefreshCcw, RotateCw, ServerCog } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
+import { useAuth } from '../../context/AuthContext';
+import { COMMAND_PERMISSIONS, COMMAND_RISK, PERMISSIONS } from '../../utils/permissions';
 
 const QUICK_COMMANDS = [
   { kind: 'chrome.reload', label: 'Reload Chrome', icon: RotateCw, confirm: false },
@@ -10,11 +12,47 @@ const QUICK_COMMANDS = [
   { kind: 'system.reboot', label: 'Reboot Device', icon: Power, confirm: true }
 ];
 
+/**
+ * The three command permissions are separately grantable, so the buttons have to
+ * carry their risk class on their face. `inspect` in particular is a surveillance
+ * primitive — a screenshot of a display in a prayer space, or the device's logs —
+ * and it should not look like a page reload.
+ */
+const RISK_CHIP = {
+  benign: 'bg-gray-100 text-gray-600',
+  disruptive: 'bg-amber-100 text-amber-700',
+  inspect: 'bg-purple-100 text-purple-700'
+};
+
+function RiskChip({ permission }) {
+  const risk = COMMAND_RISK[permission];
+  if (!risk) return null;
+  return (
+    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${RISK_CHIP[risk]}`}>
+      {risk}
+    </span>
+  );
+}
+
 function CommandLauncher({ deviceId, onIssued, disabled }) {
+  const { can, canAny } = useAuth();
   const [submitting, setSubmitting] = useState('');
   const [showLogs, setShowLogs] = useState(false);
   const [lines, setLines] = useState(100);
   const [error, setError] = useState('');
+
+  // The endpoint resolves its @PreAuthorize from the request body, so there is
+  // no single permission that gates the row — each kind is checked on its own.
+  const allowedCommands = useMemo(
+    () => QUICK_COMMANDS.filter((command) => can(COMMAND_PERMISSIONS[command.kind])),
+    [can]
+  );
+  const canTailLogs = can(PERMISSIONS.BOARD_COMMAND_INSPECT);
+  const canIssueAny = canAny([
+    PERMISSIONS.BOARD_COMMAND_BENIGN,
+    PERMISSIONS.BOARD_COMMAND_DISRUPTIVE,
+    PERMISSIONS.BOARD_COMMAND_INSPECT
+  ]);
 
   const issue = async (kind, payload = {}, confirmCommand = false) => {
     if (confirmCommand && !confirm(`Issue ${kind} to this device?`)) return;
@@ -36,12 +74,14 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
     }
   };
 
+  if (!canIssueAny) return null;
+
   return (
     <div className="space-y-4">
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="flex flex-wrap gap-2">
-        {QUICK_COMMANDS.map((command) => (
+        {allowedCommands.map((command) => (
           <button
             key={command.kind}
             type="button"
@@ -51,19 +91,23 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
           >
             {submitting === command.kind ? <Loader2 className="h-4 w-4 animate-spin" /> : createElement(command.icon, { className: 'h-4 w-4' })}
             {command.label}
+            <RiskChip permission={COMMAND_PERMISSIONS[command.kind]} />
           </button>
         ))}
 
-        <button
-          type="button"
-          disabled={disabled || Boolean(submitting)}
-          onClick={() => setShowLogs(true)}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <FileText className="h-4 w-4" />
-          Tail Logs
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
+        {canTailLogs && (
+          <button
+            type="button"
+            disabled={disabled || Boolean(submitting)}
+            onClick={() => setShowLogs(true)}
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <FileText className="h-4 w-4" />
+            Tail Logs
+            <RiskChip permission={PERMISSIONS.BOARD_COMMAND_INSPECT} />
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {showLogs && (

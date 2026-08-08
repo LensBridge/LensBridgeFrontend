@@ -10,6 +10,7 @@ import {
   storeTokens,
   storeTokensFromResponse,
 } from '../api/tokenStore';
+import { isAdmin } from '../utils/auth';
 
 /**
  * Session and identity for the app.
@@ -30,7 +31,19 @@ class AuthService {
     return authenticatedFetch(url, options);
   }
 
-  /** Shape the stored user record from whichever endpoint produced it. */
+  /**
+   * Shape the stored user record from whichever endpoint produced it.
+   *
+   * `permissions` is the effective set — role bundles unioned with any direct
+   * grants — resolved server-side and returned by both `/auth/signin` and
+   * `/auth/validate-token`. It is what every gate in the console checks, so it
+   * has to survive into localStorage alongside the roles.
+   *
+   * There is deliberately no client-side fallback that derives permissions from
+   * role names. Duplicating the bundles here would mean two copies of the policy
+   * that can disagree, and the disagreement would show up as controls that
+   * render and then 403.
+   */
   #toUserInfo(data) {
     return {
       id: data.id,
@@ -39,6 +52,7 @@ class AuthService {
       lastName: data.lastName,
       verified: data.verified,
       roles: data.roles ?? [],
+      permissions: data.permissions ?? [],
     };
   }
 
@@ -168,21 +182,7 @@ class AuthService {
   }
 
   isAdmin(user = null) {
-    const currentUser = user || getCurrentUser();
-    if (!currentUser) return false;
-
-    const hasAuthority = (name) =>
-      currentUser.authorities?.some((auth) => auth.authority === name);
-    const hasRole = (...names) =>
-      currentUser.roles?.some((role) => names.includes(role));
-
-    return (
-      hasAuthority('ROLE_ROOT') ||
-      hasAuthority('ROLE_ADMIN') ||
-      hasRole('ROLE_ROOT', 'ROOT', 'ROLE_ADMIN', 'ADMIN') ||
-      currentUser.role === 'ROLE_ROOT' ||
-      currentUser.role === 'ROLE_ADMIN'
-    );
+    return isAdmin(user || getCurrentUser());
   }
 
   /**

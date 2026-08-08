@@ -1,13 +1,60 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield } from 'lucide-react';
+import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield, Crown } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { ADMIN_SECTION_PERMISSIONS, BOARD_SECTION_PERMISSIONS } from '../utils/permissions';
 
 function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout, isAdmin, isLoading } = useAuth();
+  const { user, logout, isAdmin, isRoot, isLoading, canAny } = useAuth();
+
+  /**
+   * Where the shield goes.
+   *
+   * A BOARD_EDITOR holds no media permission, so `isAdmin()` is false for them
+   * and they used to get no link at all — while /admin/board, the page they
+   * exist to use, sat one URL away. Sending them to /admin instead would be
+   * worse: PermissionRoute refuses it. So the destination follows the
+   * permissions, and the link disappears only when neither section is reachable.
+   */
+  const adminLink = canAny(ADMIN_SECTION_PERMISSIONS)
+    ? { href: '/admin', label: 'Admin', mobileLabel: 'Admin Dashboard' }
+    : canAny(BOARD_SECTION_PERMISSIONS)
+    ? { href: '/admin/board', label: 'Boards', mobileLabel: 'Board Management' }
+    : null;
+
+  /**
+   * How the account presents itself in the profile block.
+   *
+   * ROOT gets its own tier rather than sharing the admin badge. It is the one
+   * account that can grant roles, and an operator glancing at the header should
+   * be able to tell they are signed in as it — the same treatment as a media
+   * moderator invites exactly the "I thought I was on my normal account" mistake.
+   *
+   * Purely cosmetic; nothing here gates anything.
+   */
+  const identity = isRoot()
+    ? {
+        badge: 'ROOT',
+        Icon: Crown,
+        gradient: 'from-red-600 to-orange-500',
+        tint: 'bg-red-50 hover:bg-red-100',
+      }
+    : isAdmin()
+    ? {
+        badge: 'Admin',
+        Icon: Shield,
+        gradient: 'from-purple-600 to-blue-600',
+        tint: 'bg-purple-50 hover:bg-purple-100',
+      }
+    : {
+        badge: null,
+        Icon: User,
+        gradient: 'from-blue-600 to-green-600',
+        tint: 'bg-blue-50 hover:bg-blue-100',
+      };
 
   const handleLogout = async () => {
     try {
@@ -85,20 +132,20 @@ function Header() {
           <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
             {user ? (
               <>
-                {/* Admin Dashboard Link (only for admins) */}
-                {isAdmin() && (
+                {/* Admin link, pointed at whichever console section is reachable */}
+                {adminLink && (
                   <Link
-                    to="/admin"
+                    to={adminLink.href}
                     className={`group relative flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
-                      isActive('/admin')
+                      isActive(adminLink.href)
                         ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
                         : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
                     }`}
-                    title="Admin Dashboard"
+                    title={adminLink.mobileLabel}
                   >
-                    <Shield className={`h-4 w-4 ${isActive('/admin') ? 'text-white' : 'text-red-500'}`} />
-                    <span className="text-xs">Admin</span>
-                    {isActive('/admin') && (
+                    <Shield className={`h-4 w-4 ${isActive(adminLink.href) ? 'text-white' : 'text-red-500'}`} />
+                    <span className="text-xs">{adminLink.label}</span>
+                    {isActive(adminLink.href) && (
                       <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-orange-600 rounded-xl animate-pulse opacity-20"></div>
                     )}
                   </Link>
@@ -112,22 +159,18 @@ function Header() {
                   >
                     <p className="text-sm font-medium text-gray-900">
                       {user.firstName} {user.lastName}
-                      {isAdmin() && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                          Admin
+                      {identity.badge && (
+                        <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r ${identity.gradient} text-white`}>
+                          {identity.badge}
                         </span>
                       )}
                     </p>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </Link>
                   <Link to="/profile" className="relative">
-                    <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                    <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full hover:scale-105 transition-transform`}>
-                      {isAdmin() ? (
-                        <Shield className="h-5 w-5 text-white" />
-                      ) : (
-                        <User className="h-5 w-5 text-white" />
-                      )}
+                    <div className={`absolute inset-0 bg-gradient-to-r ${identity.gradient} rounded-full blur-sm opacity-20`}></div>
+                    <div className={`relative bg-gradient-to-r ${identity.gradient} p-2 rounded-full hover:scale-105 transition-transform`}>
+                      <identity.Icon className="h-5 w-5 text-white" />
                     </div>
                   </Link>
                 </div>
@@ -211,19 +254,18 @@ function Header() {
                 );
               })}
               
-              {/* Admin Dashboard Link in Mobile (only for admins) */}
-              {user && isAdmin() && (
+              {user && adminLink && (
                 <Link
-                  to="/admin"
+                  to={adminLink.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive('/admin')
+                    isActive(adminLink.href)
                       ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
                       : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
                   }`}
                 >
-                  <Shield className={`h-5 w-5 ${isActive('/admin') ? 'text-white' : 'text-red-500'}`} />
-                  <span>Admin Dashboard</span>
+                  <Shield className={`h-5 w-5 ${isActive(adminLink.href) ? 'text-white' : 'text-red-500'}`} />
+                  <span>{adminLink.mobileLabel}</span>
                 </Link>
               )}
               
@@ -233,24 +275,20 @@ function Header() {
                   <Link
                     to="/profile"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 ${isAdmin() ? 'bg-purple-50' : 'bg-blue-50'} rounded-xl hover:bg-opacity-80 transition-colors`}
+                    className={`flex items-center space-x-3 px-4 py-3 ${identity.tint} rounded-xl transition-colors`}
                   >
                     <div className="relative">
-                      <div className={`absolute inset-0 bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} rounded-full blur-sm opacity-20`}></div>
-                      <div className={`relative bg-gradient-to-r ${isAdmin() ? 'from-purple-600 to-blue-600' : 'from-blue-600 to-green-600'} p-2 rounded-full`}>
-                        {isAdmin() ? (
-                          <Shield className="h-4 w-4 text-white" />
-                        ) : (
-                          <User className="h-4 w-4 text-white" />
-                        )}
+                      <div className={`absolute inset-0 bg-gradient-to-r ${identity.gradient} rounded-full blur-sm opacity-20`}></div>
+                      <div className={`relative bg-gradient-to-r ${identity.gradient} p-2 rounded-full`}>
+                        <identity.Icon className="h-4 w-4 text-white" />
                       </div>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-900">
                         {user.firstName} {user.lastName}
-                        {isAdmin() && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-                            Admin
+                        {identity.badge && (
+                          <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r ${identity.gradient} text-white`}>
+                            {identity.badge}
                           </span>
                         )}
                       </p>

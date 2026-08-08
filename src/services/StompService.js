@@ -3,6 +3,10 @@ import { Client } from '@stomp/stompjs';
 // describes no part of this channel. Only the origin is shared with the REST client.
 import { BASE_URL } from '../api/client';
 import AuthService from './AuthService';
+import { hasPermission } from '../utils/auth';
+import { PERMISSIONS } from '../utils/permissions';
+
+const DEVICE_TOPIC_PREFIX = '/topic/devices';
 
 class StompService {
   constructor() {
@@ -55,7 +59,24 @@ class StompService {
     return this.client;
   }
 
+  /**
+   * `/topic/devices/**` requires `board:telemetry:subscribe`. The server rejects
+   * a SUBSCRIBE it doesn't like by throwing, which makes the broker emit an
+   * ERROR frame and close the session — so one unauthorized subscription takes
+   * every other subscription on the page down with it. Callers gate themselves;
+   * this is the backstop that keeps a missed gate from costing the whole socket.
+   */
+  canSubscribe(topic) {
+    if (!topic.startsWith(DEVICE_TOPIC_PREFIX)) return true;
+    return hasPermission(AuthService.getCurrentUser(), PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE);
+  }
+
   subscribe(topic, handler) {
+    if (!this.canSubscribe(topic)) {
+      console.warn(`Refusing to subscribe to ${topic} without ${PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE}`);
+      return () => {};
+    }
+
     const id = `${topic}:${Date.now()}:${Math.random()}`;
     this.subscriptions.set(id, { topic, handler, subscription: null });
     this.ensureClient();

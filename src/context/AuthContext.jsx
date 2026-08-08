@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 import AuthService from '../services/AuthService.js';
+import {
+  hasAllPermissions,
+  hasAnyPermission,
+  hasPermission,
+  isRoot as isRootUser,
+  permissionsOf,
+} from '../utils/auth';
 
 const AuthContext = createContext();
 
@@ -195,6 +202,37 @@ export const AuthProvider = ({ children }) => {
     return AuthService.isAdmin(state.user);
   }, [state.user]);
 
+  /**
+   * The effective permission set — role bundles unioned with direct grants,
+   * resolved server-side. Every gate in the console reads from this rather than
+   * from a role name; see src/utils/permissions.js for why.
+   */
+  const permissions = useMemo(() => permissionsOf(state.user), [state.user]);
+
+  /** Holds this exact permission, e.g. `can(PERMISSIONS.BOARD_POSTER_WRITE)`. */
+  const can = useCallback(
+    (permission) => hasPermission(state.user, permission),
+    [state.user]
+  );
+
+  /** Holds at least one of these — for section-level gates. */
+  const canAny = useCallback(
+    (list) => hasAnyPermission(state.user, list),
+    [state.user]
+  );
+
+  /** Holds all of these. */
+  const canAll = useCallback(
+    (list) => hasAllPermissions(state.user, list),
+    [state.user]
+  );
+
+  /**
+   * Display only. Not an authorization check — gating on this is what made every
+   * board feature ROOT-only before the permission model existed.
+   */
+  const isRoot = useCallback(() => isRootUser(state.user), [state.user]);
+
   // Clear any auth errors
   const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
@@ -222,6 +260,11 @@ export const AuthProvider = ({ children }) => {
     logoutAllDevices,
     updateUser,
     isAdmin,
+    isRoot,
+    permissions,
+    can,
+    canAny,
+    canAll,
     clearError,
     makeAuthenticatedRequest,
     // Helper methods

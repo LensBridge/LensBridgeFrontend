@@ -1,15 +1,35 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DeviceService from '../services/DeviceService';
 import StompService from '../services/StompService';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../utils/permissions';
 import { getDeviceStatus } from '../utils/deviceStatus';
 
-export function useDeviceList() {
+/**
+ * How often to refetch when there is no live feed. Heartbeats arrive far more
+ * often than this; the poll only exists so the page isn't frozen on its first
+ * render for someone without the telemetry grant.
+ */
+const POLL_MS = 30000;
+
+/**
+ * `enabled: false` skips the fetch entirely, for callers that render without
+ * `board:device:read` — a 403 here would surface as an error banner on a page
+ * the user is otherwise allowed to use.
+ */
+export function useDeviceList({ enabled = true } = {}) {
+  const { can } = useAuth();
   const [devices, setDevices] = useState([]);
   const [lifecycle, setLifecycle] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState('');
 
+  // A denied SUBSCRIBE closes the whole WebSocket session server-side, so an
+  // unauthorized attempt would take down every other subscription on the page.
+  const live = enabled && can(PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE);
+
   const loadDevices = useCallback(async () => {
+    if (!enabled) return;
     try {
       setError('');
       const data = await DeviceService.listDevices();
@@ -19,10 +39,16 @@ export function useDeviceList() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      return;
+    }
     loadDevices();
+    if (!live) return;
+
     const unsubscribeConnect = StompService.onConnect(loadDevices);
     const unsubscribe = StompService.subscribe('/topic/devices', (event) => {
       setLifecycle((prev) => ({
@@ -55,7 +81,13 @@ export function useDeviceList() {
       unsubscribe();
       unsubscribeConnect();
     };
-  }, [loadDevices]);
+  }, [enabled, live, loadDevices]);
+
+  useEffect(() => {
+    if (!enabled || live) return;
+    const timer = setInterval(loadDevices, POLL_MS);
+    return () => clearInterval(timer);
+  }, [enabled, live, loadDevices]);
 
   const mergedDevices = useMemo(() => devices.map((device) => ({
     ...device,
@@ -63,6 +95,5 @@ export function useDeviceList() {
     status: getDeviceStatus(device, lifecycle[device.id])
   })), [devices, lifecycle]);
 
-  return { devices: mergedDevices, loading, error, refetch: loadDevices };
+  return { devices: mergedDevices, loading, error, live, refetch: loadDevices };
 }
-

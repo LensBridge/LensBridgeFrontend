@@ -5,9 +5,11 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BoardService from '../../services/BoardService';
+import Can from '../Can';
 import { audienceLabel } from '../../utils/deviceStatus';
+import { PERMISSIONS } from '../../utils/permissions';
 import {
-  FRAME_TYPES, FRAME_SLOTS, frameTypeLabel, frameDurationLabel
+  FRAME_TYPES, FRAME_SLOTS, frameTypeLabel, frameDurationLabel, normalizeFrameType
 } from '../../models/board';
 
 /**
@@ -19,23 +21,28 @@ import {
  * came from (Posters, Events, Weekly) and its ordering by the assembler.
  */
 
+// Keyed on the enum name Jackson actually sends — see FRAME_TYPES in
+// models/board.js for why that is not what openapi.yaml documents.
 const FRAME_ICONS = {
-  poster: Image,
-  event_list: Calendar,
-  daily_schedule: Calendar,
-  next_prayer: Clock,
-  jummah: Users,
-  islamic_quote: Quote
+  POSTER: Image,
+  EVENT_LIST: Calendar,
+  DAILY_SCHEDULE: Calendar,
+  NEXT_PRAYER: Clock,
+  JUMMAH: Users,
+  ISLAMIC_QUOTE: Quote
 };
 
 const FRAME_COLORS = {
-  poster: 'bg-purple-500',
-  event_list: 'bg-blue-500',
-  daily_schedule: 'bg-green-500',
-  next_prayer: 'bg-amber-500',
-  jummah: 'bg-teal-500',
-  islamic_quote: 'bg-emerald-500'
+  POSTER: 'bg-purple-500',
+  EVENT_LIST: 'bg-blue-500',
+  DAILY_SCHEDULE: 'bg-green-500',
+  NEXT_PRAYER: 'bg-amber-500',
+  JUMMAH: 'bg-teal-500',
+  ISLAMIC_QUOTE: 'bg-emerald-500'
 };
+
+/** The slot every frame lands in unless the assembler says otherwise. */
+const DEFAULT_SLOT = 'PRIMARY';
 
 function formatTime(iso, timezone) {
   if (!iso) return '';
@@ -48,13 +55,14 @@ function formatTime(iso, timezone) {
 
 /** One-line gist of a frame's payload, per frame type. */
 function FrameSummary({ frame, timezone }) {
+  const type = normalizeFrameType(frame.frameType);
   const config = frame.frameConfig;
   if (!config) {
-    return <p className="text-xs text-gray-500">{FRAME_TYPES[frame.frameType]?.description}</p>;
+    return <p className="text-xs text-gray-500">{FRAME_TYPES[type]?.description}</p>;
   }
 
-  switch (frame.frameType) {
-    case 'poster':
+  switch (type) {
+    case 'POSTER':
       return (
         <div className="flex items-center gap-2">
           {config.posterUrl && (
@@ -64,8 +72,8 @@ function FrameSummary({ frame, timezone }) {
         </div>
       );
 
-    case 'event_list':
-    case 'daily_schedule': {
+    case 'EVENT_LIST':
+    case 'DAILY_SCHEDULE': {
       const events = config.events || [];
       if (events.length === 0) return <p className="text-xs text-gray-400">No events</p>;
       return (
@@ -78,7 +86,7 @@ function FrameSummary({ frame, timezone }) {
       );
     }
 
-    case 'jummah': {
+    case 'JUMMAH': {
       const prayers = config.prayers || [];
       if (prayers.length === 0) return <p className="text-xs text-gray-400">No slots set for this week</p>;
       return (
@@ -88,16 +96,19 @@ function FrameSummary({ frame, timezone }) {
       );
     }
 
-    case 'islamic_quote':
+    case 'ISLAMIC_QUOTE':
       return (
         <p className="text-xs text-gray-500 truncate">
           <span className="font-medium capitalize">{(config.kind || '').toLowerCase()}</span>
           {config.reference ? ` — ${config.reference}` : ''}
+          {config.translation && (
+            <span className="text-gray-400"> — &ldquo;{config.translation}&rdquo;</span>
+          )}
         </p>
       );
 
     default:
-      return <p className="text-xs text-gray-500">{FRAME_TYPES[frame.frameType]?.description}</p>;
+      return <p className="text-xs text-gray-500">{FRAME_TYPES[type]?.description}</p>;
   }
 }
 
@@ -166,13 +177,15 @@ function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
         <p className="mb-4 text-sm text-amber-600">
           Frames are assembled per device, so there is nothing to preview yet.
         </p>
-        <Link
-          to="/admin/devices/enroll"
-          className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-        >
-          Enroll a board
-          <ExternalLink className="h-4 w-4" />
-        </Link>
+        <Can permission={PERMISSIONS.BOARD_DEVICE_ENROLL}>
+          <Link
+            to="/admin/devices/enroll"
+            className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
+          >
+            Enroll a board
+            <ExternalLink className="h-4 w-4" />
+          </Link>
+        </Can>
       </div>
     );
   }
@@ -238,11 +251,12 @@ function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
           </div>
           <div className="flex gap-1 overflow-x-auto pb-2">
             {frames.map((frame, i) => {
-              const Icon = FRAME_ICONS[frame.frameType] || Layers;
+              const type = normalizeFrameType(frame.frameType);
+              const Icon = FRAME_ICONS[type] || Layers;
               return (
                 <div
-                  key={`${frame.frameType}-${i}`}
-                  className={`flex h-10 flex-shrink-0 items-center justify-center rounded-lg ${FRAME_COLORS[frame.frameType] || 'bg-gray-400'}`}
+                  key={`${type}-${i}`}
+                  className={`flex h-10 flex-shrink-0 items-center justify-center rounded-lg ${FRAME_COLORS[type] || 'bg-gray-400'}`}
                   style={{ width: Math.max(40, (frame.durationInSeconds || 10) * 4) }}
                   title={`${frameTypeLabel(frame.frameType)} — ${frameDurationLabel(frame.durationInSeconds)}`}
                 >
@@ -269,45 +283,49 @@ function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
       ) : (
         <div className="space-y-2">
           {frames.map((frame, i) => {
-            const Icon = FRAME_ICONS[frame.frameType] || Layers;
-            const meta = FRAME_TYPES[frame.frameType];
+            const type = normalizeFrameType(frame.frameType);
+            const Icon = FRAME_ICONS[type] || Layers;
+            const meta = FRAME_TYPES[type];
+            // Nearly every frame is PRIMARY, so badging all of them says nothing.
+            // The chip earns its place only when a frame is somewhere unusual.
+            const offSlot = frame.slot && frame.slot !== DEFAULT_SLOT;
             return (
               <div
-                key={`${frame.frameType}-${i}`}
+                key={`${type}-${i}`}
                 className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-3"
               >
                 <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-500">
                   {i + 1}
                 </div>
-                <div className={`flex-shrink-0 rounded-lg p-2 ${FRAME_COLORS[frame.frameType] || 'bg-gray-400'}`}>
+                <div className={`flex-shrink-0 rounded-lg p-2 ${FRAME_COLORS[type] || 'bg-gray-400'}`}>
                   <Icon className="h-4 w-4 text-white" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-gray-900">{frameTypeLabel(frame.frameType)}</p>
                     {meta?.source && (
                       <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-500">
                         {meta.source}
                       </span>
                     )}
+                    {offSlot && (
+                      <span
+                        className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700"
+                        title={FRAME_SLOTS[frame.slot]?.description}
+                      >
+                        {FRAME_SLOTS[frame.slot]?.label || frame.slot}
+                      </span>
+                    )}
                   </div>
                   <FrameSummary frame={frame} timezone={timezone} />
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-3 text-right">
-                  {frame.slot && (
-                    <span
-                      className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
-                      title={FRAME_SLOTS[frame.slot]?.description}
-                    >
-                      {FRAME_SLOTS[frame.slot]?.label || frame.slot}
-                    </span>
-                  )}
+                <div className="flex flex-shrink-0 items-center gap-3">
                   {frame.priority != null && (
                     <span className="text-xs text-gray-400" title="Higher shows first within a slot">
                       P{frame.priority}
                     </span>
                   )}
-                  <span className="w-10 text-sm text-gray-400">
+                  <span className="w-12 text-right text-sm tabular-nums text-gray-500">
                     {frameDurationLabel(frame.durationInSeconds)}
                   </span>
                 </div>

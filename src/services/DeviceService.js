@@ -79,6 +79,21 @@ class DeviceService {
       'Failed to update device config'
     );
   }
+
+  /**
+   * The ticker is its own sub-resource so `board:ticker:write` can be granted
+   * without `board:config:write` -- a BOARD_EDITOR changes the copy scrolling
+   * along the bottom without also being able to move the board's coordinates.
+   */
+  static async updateDeviceTicker(deviceId, { scrollingMessages, enableScrollingMessage }) {
+    return this.unwrap(
+      await api.PATCH('/api/admin/board/configs/{deviceId}/ticker', {
+        params: { path: { deviceId } },
+        body: { scrollingMessages, enableScrollingMessage },
+      }),
+      'Failed to update ticker'
+    );
+  }
 }
 
 export default DeviceService;

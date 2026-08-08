@@ -3,27 +3,32 @@ import { MapPin, Moon, MessageSquare, Plus, QrCode, Trash2 } from 'lucide-react'
 import { CALCULATION_METHODS, TIMEZONES } from '../../models/board';
 
 /**
- * BoardConfigEditor — edits one device's DeviceConfig.
+ * BoardConfigEditor — edits one device's DeviceConfig, minus the ticker.
  *
  * The fields here are exactly the ones UpdateBoardConfigRequest accepts:
- * location, darkModeAfterIsha, enableScrollingMessage, scrollingMessages,
- * socialUrl.
+ * location, darkModeAfterIsha, socialUrl.
  * Anything else is dropped server-side without an error, so adding a control
  * for a field the backend doesn't have produces a setting that silently never
  * applies — which is how poster-cycle and refresh-after-Isha lingered here.
  *
+ * The scrolling ticker moved to TickerEditor below: it is its own sub-resource
+ * under `board:ticker:write`, which a BOARD_EDITOR holds without holding
+ * `board:config:write`. Keeping one form would mean one Save the editor could
+ * never press.
+ *
  * Fully controlled: the parent owns `config` and receives every edit.
  */
 
-function Toggle({ checked, onChange, label }) {
+function Toggle({ checked, onChange, label, disabled }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 rounded-full transition-colors ${checked ? 'bg-indigo-600' : 'bg-gray-200'}`}
+      className={`relative h-7 w-12 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checked ? 'bg-indigo-600' : 'bg-gray-200'}`}
     >
       <span
         className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`}
@@ -43,9 +48,9 @@ function Field({ label, hint, children }) {
 }
 
 const INPUT_CLASS =
-  'w-full rounded-lg border border-gray-200 px-3 py-2.5 transition-shadow focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500';
+  'w-full rounded-lg border border-gray-200 px-3 py-2.5 transition-shadow focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500';
 
-function BoardConfigEditor({ config, onUpdate }) {
+function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
   const setField = useCallback((key, value) => {
     if (!config || !onUpdate) return;
     onUpdate({ ...config, [key]: value });
@@ -56,20 +61,9 @@ function BoardConfigEditor({ config, onUpdate }) {
     onUpdate({ ...config, location: { ...(config.location || {}), [key]: value } });
   }, [config, onUpdate]);
 
-  const setMessage = useCallback((index, value) => {
-    const messages = [...(config.scrollingMessages || [])];
-    messages[index] = value;
-    setField('scrollingMessages', messages);
-  }, [config, setField]);
-
-  const removeMessage = useCallback((index) => {
-    setField('scrollingMessages', (config.scrollingMessages || []).filter((_, i) => i !== index));
-  }, [config, setField]);
-
   if (!config) return null;
 
   const location = config.location || {};
-  const messages = config.scrollingMessages || [];
 
   // A QR encoding a malformed URL renders fine and fails only when someone
   // scans it, which nobody is around to notice. Validate before it ships.
@@ -115,6 +109,7 @@ function BoardConfigEditor({ config, onUpdate }) {
                 type="text"
                 value={location.city || ''}
                 onChange={(e) => setLocationField('city', e.target.value)}
+                disabled={readOnly}
                 className={INPUT_CLASS}
                 placeholder="Mississauga"
               />
@@ -124,6 +119,7 @@ function BoardConfigEditor({ config, onUpdate }) {
                 type="text"
                 value={location.country || ''}
                 onChange={(e) => setLocationField('country', e.target.value)}
+                disabled={readOnly}
                 className={INPUT_CLASS}
                 placeholder="Canada"
               />
@@ -137,6 +133,7 @@ function BoardConfigEditor({ config, onUpdate }) {
                 step="0.0001"
                 value={location.latitude ?? ''}
                 onChange={(e) => setLocationField('latitude', numeric(e.target.value, location.latitude))}
+                disabled={readOnly}
                 className={INPUT_CLASS}
               />
             </Field>
@@ -146,6 +143,7 @@ function BoardConfigEditor({ config, onUpdate }) {
                 step="0.0001"
                 value={location.longitude ?? ''}
                 onChange={(e) => setLocationField('longitude', numeric(e.target.value, location.longitude))}
+                disabled={readOnly}
                 className={INPUT_CLASS}
               />
             </Field>
@@ -156,6 +154,7 @@ function BoardConfigEditor({ config, onUpdate }) {
               <select
                 value={location.timezone || 'America/Toronto'}
                 onChange={(e) => setLocationField('timezone', e.target.value)}
+                disabled={readOnly}
                 className={`${INPUT_CLASS} bg-white`}
               >
                 {TIMEZONES.map(tz => (
@@ -167,6 +166,7 @@ function BoardConfigEditor({ config, onUpdate }) {
               <select
                 value={location.method || 'ISNA'}
                 onChange={(e) => setLocationField('method', e.target.value)}
+                disabled={readOnly}
                 className={`${INPUT_CLASS} bg-white`}
               >
                 {CALCULATION_METHODS.map(m => (
@@ -192,6 +192,7 @@ function BoardConfigEditor({ config, onUpdate }) {
             checked={!!config.darkModeAfterIsha}
             onChange={(v) => setField('darkModeAfterIsha', v)}
             label="Enable night mode after Isha"
+            disabled={readOnly}
           />
         </header>
       </section>
@@ -221,48 +222,82 @@ function BoardConfigEditor({ config, onUpdate }) {
               inputMode="url"
               value={config.socialUrl || ''}
               onChange={(e) => setField('socialUrl', e.target.value)}
+              disabled={readOnly}
               placeholder="https://instagram.com/utmmsa"
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 ${
+              className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 ${
                 socialUrlError ? 'border-red-300' : 'border-gray-200'
               }`}
             />
           </Field>
         </div>
       </section>
+    </div>
+  );
+}
 
-      {/* Scrolling messages */}
-      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-purple-600" />
-            <div>
-              <h3 className="font-semibold text-gray-900">Scrolling Messages</h3>
-              <p className="text-xs text-gray-500">Cycled in the ticker along the bottom</p>
-            </div>
+/**
+ * TickerEditor — the `scrollingMessages` / `enableScrollingMessage` pair.
+ *
+ * Lives here rather than in its own file so it keeps sharing the Toggle and
+ * input styling with the config form it used to be part of; it is a separate
+ * card with a separate Save because it is a separate permission.
+ */
+function TickerEditor({ config, onUpdate, readOnly = false }) {
+  const setField = useCallback((key, value) => {
+    if (!config || !onUpdate) return;
+    onUpdate({ ...config, [key]: value });
+  }, [config, onUpdate]);
+
+  const setMessage = useCallback((index, value) => {
+    const messages = [...(config.scrollingMessages || [])];
+    messages[index] = value;
+    setField('scrollingMessages', messages);
+  }, [config, setField]);
+
+  const removeMessage = useCallback((index) => {
+    setField('scrollingMessages', (config.scrollingMessages || []).filter((_, i) => i !== index));
+  }, [config, setField]);
+
+  if (!config) return null;
+
+  const messages = config.scrollingMessages || [];
+
+  return (
+    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+      <header className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-5 w-5 text-purple-600" />
+          <div>
+            <h3 className="font-semibold text-gray-900">Scrolling Messages</h3>
+            <p className="text-xs text-gray-500">Cycled in the ticker along the bottom</p>
           </div>
-          <Toggle
-            checked={!!config.enableScrollingMessage}
-            onChange={(v) => setField('enableScrollingMessage', v)}
-            label="Enable scrolling messages"
-          />
-        </header>
+        </div>
+        <Toggle
+          checked={!!config.enableScrollingMessage}
+          onChange={(v) => setField('enableScrollingMessage', v)}
+          label="Enable scrolling messages"
+          disabled={readOnly}
+        />
+      </header>
 
-        {config.enableScrollingMessage && (
-          <div className="space-y-3 p-5">
-            {messages.length === 0 && (
-              <p className="text-sm text-gray-400">
-                No messages — the ticker stays hidden until you add one.
-              </p>
-            )}
-            {messages.map((message, index) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={message}
-                  onChange={(e) => setMessage(index, e.target.value)}
-                  className={`${INPUT_CLASS} flex-1`}
-                  placeholder="Enter message..."
-                />
+      {config.enableScrollingMessage && (
+        <div className="space-y-3 p-5">
+          {messages.length === 0 && (
+            <p className="text-sm text-gray-400">
+              No messages — the ticker stays hidden until you add one.
+            </p>
+          )}
+          {messages.map((message, index) => (
+            <div key={index} className="flex gap-2">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(index, e.target.value)}
+                disabled={readOnly}
+                className={`${INPUT_CLASS} flex-1`}
+                placeholder="Enter message..."
+              />
+              {!readOnly && (
                 <button
                   type="button"
                   onClick={() => removeMessage(index)}
@@ -271,8 +306,10 @@ function BoardConfigEditor({ config, onUpdate }) {
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
-              </div>
-            ))}
+              )}
+            </div>
+          ))}
+          {!readOnly && (
             <button
               type="button"
               onClick={() => setField('scrollingMessages', [...messages, ''])}
@@ -281,11 +318,14 @@ function BoardConfigEditor({ config, onUpdate }) {
               <Plus className="h-4 w-4" />
               Add Message
             </button>
-          </div>
-        )}
-      </section>
-    </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
+
+const MemoTickerEditor = memo(TickerEditor);
+export { MemoTickerEditor as TickerEditor };
 
 export default memo(BoardConfigEditor);

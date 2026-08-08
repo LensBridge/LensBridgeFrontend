@@ -134,6 +134,23 @@ export interface paths {
         patch: operations["updateBoardConfig"];
         trace?: never;
     };
+    "/api/admin/board/configs/{deviceId}/ticker": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update a board's scrolling messages */
+        patch: operations["updateBoardTicker"];
+        trace?: never;
+    };
     "/api/admin/board/devices": {
         parameters: {
             query?: never;
@@ -197,7 +214,7 @@ export interface paths {
         put?: never;
         /**
          * Queue a command for a device
-         * @description Returns as soon as the command is queued; delivery and execution are reported asynchronously over the agent websocket.
+         * @description Returns as soon as the command is queued; delivery and execution are reported asynchronously over the agent websocket. The permission required depends on the command kind: board:command:benign, :disruptive, or :inspect.
          */
         post: operations["issueDeviceCommand"];
         delete?: never;
@@ -456,6 +473,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List every permission, for building a direct-grant picker */
+        get: operations["getAvailablePermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/roles": {
         parameters: {
             query?: never;
@@ -463,7 +497,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List the roles that can be assigned to a user */
+        /** List assignable roles with the permissions each one confers */
         get: operations["getAvailableRoles"];
         put?: never;
         post?: never;
@@ -595,6 +629,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /**
+         * Create an account for someone else
+         * @description Omit the password — the normal case — and the account is created disabled and the user is emailed a password reset link; setting a password through that link is what enables the account. Supply a password only when the account has to be usable immediately: it is then enabled on creation and no email is sent.
+         */
         post: operations["createUser"];
         delete?: never;
         options?: never;
@@ -634,6 +672,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/user/{userId}/grant-permission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Grant a single permission directly to a user */
+        post: operations["grantUserPermission"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/user/{userId}/remove-role": {
         parameters: {
             query?: never;
@@ -644,6 +699,23 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["removeRoleFromUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/user/{userId}/revoke-permission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a directly-granted permission from a user */
+        post: operations["revokeUserPermission"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1262,18 +1334,19 @@ export interface components {
         };
         AuditEventDto: {
             /** @enum {string} */
-            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             adminEmail?: string;
             /** Format: uuid */
             adminId?: string;
             adminName?: string;
+            details?: string;
             /** Format: uuid */
             id?: string;
             ipAddress?: string;
             /** Format: uuid */
             targetEntityId?: string;
             /** @enum {string} */
-            targetEntityType?: "USER" | "UPLOAD" | "MUSALLAH_BOARD" | "EVENT";
+            targetEntityType?: "USER" | "UPLOAD" | "MUSALLAH_BOARD" | "DEVICE" | "EVENT";
             /** Format: date-time */
             timestamp?: string;
             userAgent?: string;
@@ -1361,6 +1434,14 @@ export interface components {
             /** Format: date-time */
             startTime: string;
             title: string;
+        };
+        CreateUserRequest: {
+            email: string;
+            firstName: string;
+            lastName: string;
+            /** @description Optional. Omit it to create a disabled account and email the user a password reset link; supply it to create an account that can sign in right away. */
+            password?: string;
+            studentNumber: string;
         };
         DailyScheduleFrameConfig: {
             type: "DailyScheduleFrameConfig";
@@ -1500,6 +1581,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             lastName?: string;
+            permissions?: string[];
             refreshToken?: string;
             roles?: string[];
             token?: string;
@@ -1634,6 +1716,11 @@ export interface components {
             size?: number;
             sort?: string[];
         };
+        PermissionResponse: {
+            authority?: string;
+            domain?: string;
+            name?: string;
+        };
         Poster: {
             /** @enum {string} */
             audience?: "brothers" | "sisters" | "both";
@@ -1679,6 +1766,11 @@ export interface components {
             newPassword: string;
             token: string;
         };
+        RoleDefinitionResponse: {
+            description?: string;
+            name?: string;
+            permissions?: string[];
+        };
         SignupRequest: {
             email: string;
             firstName: string;
@@ -1705,6 +1797,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             lastName?: string;
+            permissions?: string[];
             roles?: string[];
             valid?: boolean;
             verified?: boolean;
@@ -1744,6 +1837,10 @@ export interface components {
             firstName?: string;
             lastName?: string;
             studentNumber?: string;
+        };
+        UpdateTickerRequest: {
+            enableScrollingMessage?: boolean;
+            scrollingMessages?: string[];
         };
         UploadCompletionResponse: {
             /** Format: uuid */
@@ -1793,12 +1890,14 @@ export interface components {
             videoMaxDurationSeconds?: number;
         };
         UserInfoResponse: {
+            directPermissions?: string[];
+            effectivePermissions?: string[];
             email?: string;
             firstName?: string;
             /** Format: uuid */
             id?: string;
             lastName?: string;
-            roles?: ("USER" | "ADMIN" | "ROOT")[];
+            roles?: ("USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT")[];
             studentNumber?: string;
             verified?: boolean;
         };
@@ -1893,7 +1992,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             };
             cookie?: never;
         };
@@ -1934,7 +2033,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
+                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2183,6 +2282,41 @@ export interface operations {
             };
         };
     };
+    updateBoardTicker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTickerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceConfig"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     listDevices: {
         parameters: {
             query?: never;
@@ -2338,6 +2472,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CommandIssuedResponse"];
+                };
+            };
+            /** @description Caller lacks the permission for this command kind */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3091,6 +3234,35 @@ export interface operations {
             };
         };
     };
+    getAvailablePermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     getAvailableRoles: {
         parameters: {
             query?: never;
@@ -3106,7 +3278,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ("USER" | "ADMIN" | "ROOT")[];
+                    "application/json": components["schemas"]["RoleDefinitionResponse"][];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3397,7 +3569,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SignupRequest"];
+                "application/json": components["schemas"]["CreateUserRequest"];
             };
         };
         responses: {
@@ -3465,7 +3637,42 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "USER" | "ADMIN" | "ROOT";
+                "application/json": "USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT";
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    grantUserPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {
@@ -3500,7 +3707,42 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "USER" | "ADMIN" | "ROOT";
+                "application/json": "USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT";
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    revokeUserPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {

@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, Loader2, Monitor } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
 import DeviceService from '../services/DeviceService';
 import EnrollTokenDialog from '../components/devices/EnrollTokenDialog';
-import { isRoot } from '../utils/auth';
 
 function EnrollDevice() {
-  const { user, isLoading: authLoading } = useAuth();
   const [form, setForm] = useState({ displayName: '', audience: 'BOTH', expiresInMinutes: 30 });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -44,15 +41,6 @@ function EnrollDevice() {
       setSubmitting(false);
     }
   };
-
-  if (!authLoading && !isRoot(user)) {
-    return (
-      <div className="mx-auto max-w-md rounded-lg bg-white p-8 text-center shadow-sm">
-        <h2 className="text-xl font-semibold text-gray-900">ROOT access required</h2>
-        <Link to="/admin/devices" className="mt-6 inline-flex rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">Back to Devices</Link>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

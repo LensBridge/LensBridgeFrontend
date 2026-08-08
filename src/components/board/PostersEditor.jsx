@@ -4,11 +4,18 @@ import {
   Eye, Upload, X, Search, Loader2, CheckCircle
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 /**
- * PostersEditor - Grid-based poster management with drag-drop upload
+ * PostersEditor - Grid-based poster management with drag-drop upload.
+ *
+ * `board:content:read` gets the grid and the preview; everything that writes
+ * needs `board:poster:write` on top of it.
  */
 function PostersEditor({ posters = [], onUpdate, showMessage }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BOARD_POSTER_WRITE);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,6 +120,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
   const signupUrlError = validateSignupUrl(formData.signupUrl);
 
   const handleSave = async (isNew) => {
+    if (!canWrite) return;
     if (!formData.title.trim()) {
       showMessage('Title is required', 'error');
       return;
@@ -148,6 +156,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
   };
 
   const handleDelete = async (id) => {
+    if (!canWrite) return;
     if (!confirm('Delete this poster?')) return;
     try {
       await BoardService.deletePoster(id);
@@ -191,13 +200,15 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
           />
         </div>
         
-        <button
-          onClick={() => { setShowAddForm(true); setEditingId(null); resetForm(); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Poster
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => { setShowAddForm(true); setEditingId(null); resetForm(); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Poster
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -416,18 +427,22 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   >
                     <Eye className="h-5 w-5 text-gray-700" />
                   </button>
-                  <button
-                    onClick={() => startEdit(poster)}
-                    className="p-2 bg-white rounded-lg hover:bg-gray-100"
-                  >
-                    <Edit2 className="h-5 w-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(poster.id)}
-                    className="p-2 bg-white rounded-lg hover:bg-red-50"
-                  >
-                    <Trash2 className="h-5 w-5 text-red-500" />
-                  </button>
+                  {canWrite && (
+                    <>
+                      <button
+                        onClick={() => startEdit(poster)}
+                        className="p-2 bg-white rounded-lg hover:bg-gray-100"
+                      >
+                        <Edit2 className="h-5 w-5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(poster.id)}
+                        className="p-2 bg-white rounded-lg hover:bg-red-50"
+                      >
+                        <Trash2 className="h-5 w-5 text-red-500" />
+                      </button>
+                    </>
+                  )}
                 </div>
                 
                 {/* Status Badge */}

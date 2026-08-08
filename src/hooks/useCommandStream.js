@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import DeviceService from '../services/DeviceService';
 import StompService from '../services/StompService';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../utils/permissions';
+
+const POLL_MS = 30000;
 
 function statusFromResult(resultStatus) {
   if (resultStatus === 'ok') return 'SUCCEEDED';
@@ -86,9 +90,15 @@ export function upsertCommand(prev, incoming) {
 }
 
 export function useCommandStream(deviceId) {
+  const { can } = useAuth();
   const [commands, setCommands] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // `/topic/devices/{id}/commands` is where screenshot and log output lands, so
+  // it sits behind `board:telemetry:subscribe`. Subscribing without it does not
+  // fail quietly — the server throws and the session closes.
+  const live = can(PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE);
 
   const loadCommands = useCallback(async () => {
     if (!deviceId) return;
@@ -105,6 +115,8 @@ export function useCommandStream(deviceId) {
 
   useEffect(() => {
     loadCommands();
+    if (!live) return;
+
     const unsubscribeConnect = StompService.onConnect(loadCommands);
     const unsubscribe = StompService.subscribe(`/topic/devices/${deviceId}/commands`, (rawEvent) => {
       const event = normalizeCommandEvent(rawEvent);
@@ -143,11 +155,19 @@ export function useCommandStream(deviceId) {
       unsubscribe();
       unsubscribeConnect();
     };
-  }, [deviceId, loadCommands]);
+  }, [deviceId, live, loadCommands]);
+
+  // A command issued without the live stream still resolves server-side; poll so
+  // its result shows up without the user pressing Sync.
+  useEffect(() => {
+    if (live) return;
+    const timer = setInterval(loadCommands, POLL_MS);
+    return () => clearInterval(timer);
+  }, [live, loadCommands]);
 
   const sortedCommands = useMemo(() => [...commands].sort((a, b) => (
     new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime()
   )), [commands]);
 
-  return { commands: sortedCommands, loading, error, refetch: loadCommands, setCommands };
+  return { commands: sortedCommands, loading, error, live, refetch: loadCommands, setCommands };
 }

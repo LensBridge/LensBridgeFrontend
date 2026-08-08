@@ -3,13 +3,19 @@ import { Cpu, HardDrive, MemoryStick, Network, Radio, Thermometer, Wifi } from '
 import ThrottleChips from './ThrottleChips';
 import { formatRelativeTime } from '../../utils/deviceStatus';
 
-function MiniSparkline({ samples, field, suffix = '' }) {
+function MiniSparkline({ samples, field, suffix = '', live = true }) {
   const values = samples
     .map((sample) => Number(sample[field]))
     .filter((value) => Number.isFinite(value));
 
   if (values.length < 2) {
-    return <div className="h-12 rounded bg-gray-50 text-xs text-gray-400 flex items-center justify-center">Waiting for data</div>;
+    // Samples only accumulate from heartbeat frames, so without the telemetry
+    // grant this never fills in — say so rather than spinning on "Waiting".
+    return (
+      <div className="h-12 rounded bg-gray-50 text-xs text-gray-400 flex items-center justify-center">
+        {live ? 'Waiting for data' : 'Needs live telemetry'}
+      </div>
+    );
   }
 
   const max = Math.max(...values);
@@ -43,7 +49,7 @@ function Metric({ icon, label, value }) {
   );
 }
 
-function TelemetryPanel({ device, samples }) {
+function TelemetryPanel({ device, samples, live = true }) {
   const telemetry = device?.telemetry || {};
   const memValue = telemetry.memUsedMb && telemetry.memTotalMb
     ? `${telemetry.memUsedMb} / ${telemetry.memTotalMb} MB`
@@ -61,15 +67,15 @@ function TelemetryPanel({ device, samples }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="mb-3 text-sm font-medium text-gray-700">CPU temperature</div>
-          <MiniSparkline samples={samples} field="cpuTempC" suffix=" C" />
+          <MiniSparkline samples={samples} field="cpuTempC" suffix=" C" live={live} />
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="mb-3 text-sm font-medium text-gray-700">Memory used</div>
-          <MiniSparkline samples={samples} field="memUsedMb" suffix=" MB" />
+          <MiniSparkline samples={samples} field="memUsedMb" suffix=" MB" live={live} />
         </div>
         <div className="rounded-lg border border-gray-200 bg-white p-4">
           <div className="mb-3 text-sm font-medium text-gray-700">Disk used</div>
-          <MiniSparkline samples={samples} field="diskUsedPct" suffix="%" />
+          <MiniSparkline samples={samples} field="diskUsedPct" suffix="%" live={live} />
         </div>
       </div>
 

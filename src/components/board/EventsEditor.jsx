@@ -4,6 +4,8 @@ import {
   MapPin, Users, Search, CalendarDays
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const audienceOptions = [
   { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
@@ -128,6 +130,8 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
 }
 
 function EventsEditor({ events, onUpdate, showMessage }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BOARD_EVENT_WRITE);
   const [editingId, setEditingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -177,6 +181,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     .sort((a, b) => a.startEpochMs - b.startEpochMs);
 
   const handleSave = async (isNew = false) => {
+    if (!canWrite) return;
     if (!formData.name.trim()) {
       showMessage('Event name is required', 'error');
       return;
@@ -209,6 +214,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
   };
 
   const handleDelete = async (id) => {
+    if (!canWrite) return;
     if (!confirm('Delete this event?')) return;
     try {
       await BoardService.deleteEvent(id);
@@ -251,13 +257,15 @@ function EventsEditor({ events, onUpdate, showMessage }) {
           />
         </div>
         
-        <button
-          onClick={() => { setShowAddForm(true); setEditingId(null); setFormData(getEmptyEvent()); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Event
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => { setShowAddForm(true); setEditingId(null); setFormData(getEmptyEvent()); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Event
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -369,20 +377,22 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => startEdit(event)}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(event.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  {canWrite && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => startEdit(event)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )

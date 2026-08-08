@@ -5,6 +5,8 @@ import {
   GripVertical, Quote
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 // ---------------------------------------------------------------------------
 // Constants & samples
@@ -89,6 +91,11 @@ const getCurrentWeekNumber = () => {
 // ---------------------------------------------------------------------------
 
 function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
+  const { can } = useAuth();
+  // Every path into the edit view runs through `isEditing`, so a reader must
+  // never be able to set it — selecting an empty week would otherwise drop them
+  // straight into a form whose Save always 403s.
+  const canWrite = can(PERMISSIONS.BOARD_WEEKLY_WRITE);
   const currentYear = new Date().getFullYear();
   const currentWeek = getCurrentWeekNumber();
 
@@ -161,7 +168,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
     const existing = contentByKey.get(`${selectedYear}-${weekNum}`);
     setSelectedWeek(weekNum);
     setEditForm(buildForm(selectedYear, weekNum, existing));
-    setIsEditing(!existing);
+    setIsEditing(canWrite && !existing);
   };
 
   const handleJumpToCurrent = () => {
@@ -169,7 +176,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
     const existing = contentByKey.get(`${currentYear}-${currentWeek}`);
     setSelectedWeek(currentWeek);
     setEditForm(buildForm(currentYear, currentWeek, existing));
-    setIsEditing(!existing);
+    setIsEditing(canWrite && !existing);
   };
 
   // -------- Quote helpers --------
@@ -225,6 +232,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
 
   // -------- Persistence --------
   const handleSave = async () => {
+    if (!canWrite) return;
     const cleanQuotes = editForm.quotes.filter(q => q.arabic.trim() || q.translation.trim());
     if (cleanQuotes.length === 0) {
       showMessage('Add at least one quote with Arabic or translation text', 'error');
@@ -257,6 +265,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
   };
 
   const handleDelete = async () => {
+    if (!canWrite) return;
     const existing = contentByKey.get(`${selectedYear}-${selectedWeek}`);
     if (!existing) return;
     if (!confirm(`Delete content for week ${selectedWeek} of ${selectedYear}?`)) return;
@@ -403,7 +412,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                 <p className="text-sm text-gray-500">{formatRange(selectedWeek, selectedYear)}</p>
               </div>
               <div className="flex items-center gap-2">
-                {!isEditing && hasExisting && (
+                {canWrite && !isEditing && hasExisting && (
                   <>
                     <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit">
                       <Edit2 className="h-4 w-4" />
@@ -438,9 +447,11 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No content for this week yet</p>
-                  <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> Add Content
-                  </button>
+                  {canWrite && (
+                    <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2">
+                      <Plus className="h-4 w-4" /> Add Content
+                    </button>
+                  )}
                 </div>
               )}
             </div>

@@ -546,13 +546,13 @@ function Gallery() {
 
       {/* Media Viewer Modal */}
       {selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
           <div className="relative w-full h-full max-w-6xl max-h-full flex items-center justify-center">
             
             {/* Close Button */}
             <button
               onClick={closeViewer}
-              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-2 transition-all duration-300 hover:scale-110"
+              className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-all duration-300 hover:scale-110"
             >
               <X className="h-6 w-6" />
             </button>
@@ -562,13 +562,13 @@ function Gallery() {
               <>
                 <button
                   onClick={() => navigateViewer('prev')}
-                  className="absolute left-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
+                  className="absolute left-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
                 >
                   <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   onClick={() => navigateViewer('next')}
-                  className="absolute right-4 z-10 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
+                  className="absolute right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-all duration-300 hover:scale-110"
                 >
                   <ChevronRight className="h-6 w-6" />
                 </button>
@@ -593,7 +593,7 @@ function Gallery() {
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
                     <button
                       onClick={toggleVideoPlayback}
-                      className="bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-4 transition-all duration-300 hover:scale-110"
+                      className="bg-black/50 hover:bg-black/70 text-white rounded-full p-4 transition-all duration-300 hover:scale-110"
                     >
                       {isVideoPlaying ? (
                         <Pause className="h-8 w-8" />
@@ -614,11 +614,11 @@ function Gallery() {
 
             {/* Media Info */}
             <div className="absolute bottom-4 left-4 right-4 z-10">
-              <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-2xl p-6 text-white">
+              <div className="bg-black/50 backdrop-blur-sm rounded-2xl p-6 text-white">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold mb-2">{selectedItem.title}</h2>
-                    <p className="text-blue-300 font-medium mb-2 bg-blue-600 bg-opacity-30 px-3 py-1 rounded-full w-fit">
+                    <p className="text-blue-300 font-medium mb-2 bg-blue-600/30 px-3 py-1 rounded-full w-fit">
                       {selectedItem.event}
                     </p>
                   </div>
@@ -646,7 +646,7 @@ function Gallery() {
             {/* Navigation Indicator */}
             {filteredItems.length > 1 && (
               <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-                <div className="bg-black bg-opacity-50 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
+                <div className="bg-black/50 backdrop-blur-sm rounded-full px-4 py-2 text-white text-sm">
                   {currentIndex + 1} / {filteredItems.length}
                 </div>
               </div>

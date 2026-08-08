@@ -20,44 +20,62 @@
 // ============================================================================
 
 /**
- * Frame types the assembler can emit. The wire value is the lowercase
- * snake_case form — FrameType.toString() on the backend, and the Jackson
- * subtype discriminator on FrameConfig.
+ * Frame types the assembler can emit, keyed by the enum name Jackson actually
+ * puts on the wire.
  *
- * @typedef {'poster'|'event_list'|'daily_schedule'|'next_prayer'|'jummah'|'islamic_quote'} FrameType
+ * `FrameType` overrides `toString()` to return a lowercase snake_case form, and
+ * that is what springdoc wrote into openapi.yaml — but Jackson serializes enums
+ * with `name()` unless `@JsonValue` or `WRITE_ENUMS_USING_TO_STRING` says
+ * otherwise, and neither is set. So the documented value is `poster` while the
+ * response body says `POSTER`. Keying this map on the lowercase form is what
+ * made every frame render as an unlabelled grey box.
+ *
+ * `normalizeFrameType` accepts both, so whichever side of that contract gets
+ * fixed, this keeps working. `FrameSlot` has no custom `toString()` and so was
+ * never affected — which is why the slot chip resolved while the type did not.
+ *
+ * @typedef {'POSTER'|'EVENT_LIST'|'DAILY_SCHEDULE'|'NEXT_PRAYER'|'JUMMAH'|'ISLAMIC_QUOTE'} FrameType
  */
 export const FRAME_TYPES = {
-  poster: {
+  POSTER: {
     label: 'Poster',
     description: 'A single uploaded poster image',
     source: 'Posters tab'
   },
-  event_list: {
+  EVENT_LIST: {
     label: 'Upcoming Events',
     description: 'Events ahead of today, for this board audience',
     source: 'Events tab'
   },
-  daily_schedule: {
+  DAILY_SCHEDULE: {
     label: "Today's Schedule",
     description: "Events falling inside the device's current day",
     source: 'Events tab'
   },
-  next_prayer: {
+  NEXT_PRAYER: {
     label: 'Next Prayer',
     description: 'Computed on the board itself from deviceConfig.location',
     source: 'Device config'
   },
-  jummah: {
+  JUMMAH: {
     label: 'Jummah',
     description: 'Khutbah slots for the current week',
     source: 'Weekly tab'
   },
-  islamic_quote: {
+  ISLAMIC_QUOTE: {
     label: 'Verse & Hadith',
     description: "The week's verse and hadith",
     source: 'Weekly tab'
   }
 };
+
+/**
+ * Both spellings of a frame type collapse to the enum name. The lowercase wire
+ * form is exactly the snake_case of the name, so upcasing is the whole mapping.
+ */
+export function normalizeFrameType(frameType) {
+  return frameType ? String(frameType).toUpperCase() : '';
+}
 
 /** Layout grouping the board uses to place a frame. */
 export const FRAME_SLOTS = {
@@ -69,7 +87,19 @@ export const FRAME_SLOTS = {
 
 /** Human label for a frame type, tolerating anything the backend adds later. */
 export function frameTypeLabel(frameType) {
-  return FRAME_TYPES[frameType]?.label ?? frameType ?? 'Unknown frame';
+  const key = normalizeFrameType(frameType);
+  // An unknown type still reads better title-cased than as a raw SCREAMING_CASE
+  // token, and the assembler gaining a frame type is not a reason to show one.
+  return FRAME_TYPES[key]?.label ?? titleCase(key) ?? 'Unknown frame';
+}
+
+function titleCase(value) {
+  if (!value) return null;
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 }
 
 /** `durationInSeconds: null` means the board picks the duration itself. */
@@ -149,6 +179,17 @@ export const DEVICE_CONFIG_FIELDS = [
 ];
 
 /**
+ * The ticker sub-resource, PATCHed separately at
+ * /api/admin/board/configs/{deviceId}/ticker under `board:ticker:write`.
+ *
+ * UpdateBoardConfigRequest still accepts these — `board:config:write` is the
+ * strictly broader grant — but the two cards save through their own endpoints,
+ * so the main patch drops them rather than letting a config save silently
+ * overwrite ticker copy the user never opened.
+ */
+export const TICKER_FIELDS = ['enableScrollingMessage', 'scrollingMessages'];
+
+/**
  * @typedef {Object} Location
  * @property {string} city
  * @property {string} country
@@ -175,10 +216,23 @@ export const DEFAULT_DEVICE_CONFIG = {
   socialUrl: ''
 };
 
-/** Strip anything the backend's UpdateBoardConfigRequest won't accept. */
+/**
+ * Strip anything the backend's UpdateBoardConfigRequest won't accept, and the
+ * ticker fields on top of that — those belong to `toTickerPatch`.
+ */
 export function toDeviceConfigPatch(config) {
   if (!config) return {};
   return DEVICE_CONFIG_FIELDS.reduce((patch, field) => {
+    if (TICKER_FIELDS.includes(field)) return patch;
+    if (config[field] !== undefined) patch[field] = config[field];
+    return patch;
+  }, {});
+}
+
+/** The ticker half of a config, for the ticker endpoint's UpdateTickerRequest. */
+export function toTickerPatch(config) {
+  if (!config) return {};
+  return TICKER_FIELDS.reduce((patch, field) => {
     if (config[field] !== undefined) patch[field] = config[field];
     return patch;
   }, {});
