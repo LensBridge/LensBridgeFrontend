@@ -10,7 +10,7 @@
  * and a handful of pages used bare fetch and so simply failed once the access token
  * expired, instead of refreshing and retrying.
  */
-import createClient, { type Middleware } from "openapi-fetch";
+import createClient from "openapi-fetch";
 import type { paths } from "./schema";
 import {
   clearAuth,
@@ -129,25 +129,21 @@ async function authFetch(request: Request): Promise<Response> {
 }
 
 /**
- * Strips the Content-Type header openapi-fetch sets for bodyless requests.
- * Sending `Content-Type: application/json` with no body makes Spring's
- * HttpMessageConverter attempt to parse one and reject the request.
+ * Bodyless requests must not carry `Content-Type: application/json` -- Spring's
+ * HttpMessageConverter then tries to parse a body that is not there and rejects
+ * the request. openapi-fetch handles this itself: it only sets the header when
+ * the serialized body is defined and is not FormData.
+ *
+ * Do not reintroduce a middleware that infers "has a body" from `request.body`.
+ * That getter is not Baseline -- Firefox does not implement it, so it reads
+ * `undefined` for every request, and the header gets stripped from requests that
+ * do have a body. Signup then reaches the server with no Content-Type, which
+ * Spring reads as application/octet-stream and fails before the controller.
  */
-const dropEmptyJsonBody: Middleware = {
-  onRequest({ request }) {
-    if (!request.body && request.headers.get("Content-Type") === "application/json") {
-      request.headers.delete("Content-Type");
-    }
-    return request;
-  },
-};
-
 export const api = createClient<paths>({
   baseUrl: BASE_URL,
   fetch: authFetch,
 });
-
-api.use(dropEmptyJsonBody);
 
 export { BASE_URL };
 
