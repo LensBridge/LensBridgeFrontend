@@ -1,12 +1,19 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo, useId, memo } from 'react';
 import {
   Plus, Trash2, BookOpen, Book, Edit2, X, Save,
   Calendar, Sparkles, ChevronRight, CheckCircle2, CircleDot, Loader2,
-  GripVertical, Quote
+  GripVertical, Quote, Timer
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
 import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
+import {
+  QUOTE_AUTO_RANGE_LABEL,
+  SLIDE_DURATION_MAX_SECONDS,
+  SLIDE_DURATION_MIN_SECONDS,
+  frameDurationLabel,
+  quoteDurationError
+} from '../../models/board';
 
 // ---------------------------------------------------------------------------
 // Constants & samples
@@ -52,7 +59,9 @@ const emptyQuote = (kind = 'VERSE') => ({
   arabic: '',
   transliteration: '',
   translation: '',
-  reference: ''
+  reference: '',
+  // null, not 0 or '': a new quote is auto-timed until someone says otherwise.
+  durationSeconds: null
 });
 
 const emptyJummahPrayer = () => ({
@@ -236,6 +245,14 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
     const cleanQuotes = editForm.quotes.filter(q => q.arabic.trim() || q.translation.trim());
     if (cleanQuotes.length === 0) {
       showMessage('Add at least one quote with Arabic or translation text', 'error');
+      return;
+    }
+
+    // An out-of-range duration would come back as a 400 with no indication of
+    // which quote caused it, so name the quote here instead.
+    const badIndex = cleanQuotes.findIndex(q => quoteDurationError(q.durationSeconds));
+    if (badIndex >= 0) {
+      showMessage(`Quote ${badIndex + 1} duration: ${quoteDurationError(cleanQuotes[badIndex].durationSeconds)}`, 'error');
       return;
     }
 
@@ -608,6 +625,16 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
   const meta = QUOTE_KINDS.find(k => k.value === quote.kind) || QUOTE_KINDS[0];
   const theme = KIND_THEME[meta.color];
   const Icon = meta.icon;
+  const durationId = useId();
+  const durationErr = quoteDurationError(quote.durationSeconds);
+
+  // Emptying the box is how an admin asks for auto, so '' becomes null right
+  // here rather than lingering in form state — there is no sentinel to convert
+  // to on save, and null is what the request body carries.
+  const setDuration = (raw) => {
+    const parsed = parseInt(raw, 10);
+    onChange({ durationSeconds: Number.isNaN(parsed) ? null : parsed });
+  };
 
   return (
     <div className={`border rounded-xl ${theme.border} ${theme.bg}`}>
@@ -703,6 +730,36 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
           placeholder={quote.kind === 'HADITH' ? 'e.g., Sahih al-Bukhari' : 'e.g., Surah Al-Baqarah (2:152)'}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
+
+        {/* Slide duration — per quote, because a one-line verse and a long
+            hadith do not deserve the same time on screen. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
+          <label htmlFor={durationId} className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+            <Timer className="h-3.5 w-3.5 text-gray-500" />
+            Slide duration <span className="font-normal text-gray-400">(seconds)</span>
+          </label>
+          <input
+            id={durationId}
+            type="number"
+            min={SLIDE_DURATION_MIN_SECONDS}
+            max={SLIDE_DURATION_MAX_SECONDS}
+            step="1"
+            inputMode="numeric"
+            value={quote.durationSeconds ?? ''}
+            onChange={(e) => setDuration(e.target.value)}
+            placeholder="Auto"
+            className={`w-24 rounded-lg border px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${durationErr ? 'border-red-300' : 'border-gray-200'}`}
+          />
+          {durationErr ? (
+            <p className="text-xs text-red-600">{durationErr}</p>
+          ) : (
+            <p className="text-xs text-gray-500">
+              {quote.durationSeconds == null
+                ? `Auto - ${QUOTE_AUTO_RANGE_LABEL}.`
+                : `Leave empty for auto. ${SLIDE_DURATION_MIN_SECONDS}-${SLIDE_DURATION_MAX_SECONDS} seconds.`}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -751,6 +808,10 @@ function QuoteDisplay({ quote }) {
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`h-4 w-4 ${theme.icon}`} />
         <span className={`text-xs font-semibold uppercase tracking-wide ${theme.icon}`}>{meta.label}</span>
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white/70 px-2 py-0.5 text-[10px] font-medium tabular-nums text-gray-600">
+          <Timer className="h-3 w-3" />
+          {frameDurationLabel(quote.durationSeconds)}
+        </span>
       </div>
       {quote.arabic && (
         <p dir="rtl" className="text-lg mb-2 text-gray-900" style={{ fontFamily: "'Amiri', serif" }}>{quote.arabic}</p>

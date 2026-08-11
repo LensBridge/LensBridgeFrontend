@@ -1,4 +1,5 @@
 import { api } from '../api/client';
+import { toQuoteDurationSeconds } from '../models/board';
 
 const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
@@ -121,7 +122,10 @@ class BoardService {
       arabic: quote.arabic || '',
       transliteration: quote.transliteration || '',
       translation: quote.translation || '',
-      reference: quote.reference || ''
+      reference: quote.reference || '',
+      // null is auto, in both directions. The editor's box is '' when empty and
+      // QuoteEntry validates @Min(5), so neither '' nor 0 may reach the wire.
+      durationSeconds: toQuoteDurationSeconds(quote.durationSeconds)
     };
   }
 

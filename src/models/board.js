@@ -286,6 +286,49 @@ function durationError(value) {
   return '';
 }
 
+// ---------------------------------------------------------------------------
+// QUOTE SLIDE DURATION
+// ---------------------------------------------------------------------------
+
+/**
+ * What the board does when a quote's duration is auto.
+ *
+ * Auto is plain `null` here, with no 0 sentinel. PUT
+ * /weekly-content/{year}/{weekNumber} replaces the whole quote list instead of
+ * patching field by field, so a null `durationSeconds` cannot be mistaken for
+ * "leave this one alone" the way `agendaDurationSeconds` can — which is exactly
+ * why that field needs AGENDA_DURATION_AUTO and this one does not. The backend
+ * validates `@Min(5) @Max(120)`, so 0 and '' are both rejected: null is the
+ * only way to say auto.
+ */
+export const QUOTE_AUTO_RANGE_LABEL = 'sized to the length of the text';
+
+/**
+ * A duration box's value as the request body wants it: a whole number of
+ * seconds, or null for auto.
+ *
+ * Anything that is not a number an admin actually typed collapses to null — an
+ * emptied box, a stray string, a quote saved before this field existed. Numbers
+ * pass through unchanged even when out of range, so `quoteDurationError` can
+ * report them rather than this silently clamping to a value nobody asked for.
+ */
+export function toQuoteDurationSeconds(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = typeof value === 'number' ? value : parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * Message for one quote's duration, or '' when it is fine.
+ *
+ * Auto is always fine — it is the field's default, not an unfilled input.
+ */
+export function quoteDurationError(value) {
+  const seconds = toQuoteDurationSeconds(value);
+  if (seconds === null) return '';
+  return durationError(seconds);
+}
+
 /**
  * Per-field messages for the two slide durations, keyed by field name; an empty
  * object means the config is safe to PATCH.
@@ -299,7 +342,11 @@ function durationError(value) {
  * @returns {Record<string, string>}
  */
 export function slideDurationErrors(config) {
-  const errors = {};
+  // Annotated rather than inferred: BoardService imports from this file, which
+  // puts it inside `npm run typecheck`'s program, and TS narrows a bare `{}` to
+  // the two keys assigned below — which does not satisfy the Record the callers
+  // index into by field name.
+  const errors = /** @type {Record<string, string>} */ ({});
   if (!config) return errors;
 
   // null is auto, which is always valid.
@@ -364,7 +411,7 @@ export function toDeviceConfigPatch(config) {
     if (TICKER_FIELDS.includes(field)) return acc;
     if (config[field] !== undefined) acc[field] = config[field];
     return acc;
-  }, {});
+  }, /** @type {Record<string, any>} */ ({}));
 
   // Auto is null everywhere in the UI, but a null field is skipped by the
   // endpoint rather than cleared, so it travels as the 0 sentinel.
