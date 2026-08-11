@@ -16,6 +16,9 @@ const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
  *   - posters: UI uses imageUrl + startDate/endDate (yyyy-mm-dd) + duration (ms);
  *              backend uses image + startTime/endTime (ISO date-time) + duration (seconds)
  *   - weekly content: flat { year, weekNumber, quotes[], jummahPrayers[] }
+ *   - socials: duration stays in seconds on both sides (the poster ms/seconds
+ *              split is a poster-only wart); `handle` is nullable server-side
+ *              and '' in the UI, and PATCHing '' is what clears it
  *
  * Device-keyed board configuration lives in DeviceService — it is not a
  * board-location concept anymore.
@@ -329,6 +332,123 @@ class BoardService {
     return this.unwrap(
       await api.DELETE('/api/admin/board/posters/{posterId}', { params: { path: { posterId } } }),
       'Failed to delete poster'
+    );
+  }
+
+  // ============================================================================
+  // PROMOTED SOCIALS
+  // (PromotableSocialMedia: { id, name, duration[s], audience, type, url,
+  //                           headerText, heroText, handle, footerText })
+  // ============================================================================
+
+  /**
+   * Normalize one promoted social.
+   *
+   * Unlike posters, duration stays in seconds all the way to the input box.
+   * The backend field is seconds, the board reads seconds, and the poster
+   * seconds/ms dance exists only because PostersEditor predates the contract —
+   * there is no reason to reproduce it here.
+   *
+   * `handle` is nullable: WhatsApp invites have no handle. It normalizes to ''
+   * so the form has a controlled value, and `updateSocial` sends '' back as an
+   * explicit clear.
+   */
+  static fromBackendSocial(social) {
+    return {
+      id: social.id,
+      name: social.name || '',
+      duration: social.duration ?? 0,
+      audience: this.fromApiAudience(social.audience),
+      type: social.type || 'other',
+      url: social.url || '',
+      headerText: social.headerText || '',
+      heroText: social.heroText || '',
+      // Nullable server-side; '' in the UI, and '' is also how it gets cleared.
+      handle: social.handle || '',
+      footerText: social.footerText || ''
+    };
+  }
+
+  static async getAllSocials() {
+    const socials = this.unwrap(
+      await api.GET('/api/admin/board/socials', {}),
+      'Failed to fetch promoted socials'
+    );
+    return (Array.isArray(socials) ? socials : []).map(s => this.fromBackendSocial(s));
+  }
+
+  static async getSocialsByAudience(audience) {
+    const socials = this.unwrap(
+      await api.GET('/api/admin/board/socials/by-audience', {
+        params: { query: { audience: this.toApiAudience(audience) } }
+      }),
+      'Failed to fetch promoted socials'
+    );
+    return (Array.isArray(socials) ? socials : []).map(s => this.fromBackendSocial(s));
+  }
+
+  static async getSocial(socialId) {
+    return this.fromBackendSocial(this.unwrap(
+      await api.GET('/api/admin/board/socials/{socialId}', { params: { path: { socialId } } }),
+      'Failed to fetch promoted social'
+    ));
+  }
+
+  /** Create a promoted social (CreatePromotableSocialMediaRequest, JSON). */
+  static async createSocial(social) {
+    return this.fromBackendSocial(this.unwrap(
+      await api.POST('/api/admin/board/socials', {
+        body: {
+          name: social.name?.trim(),
+          duration: social.duration,
+          audience: this.toApiAudience(social.audience),
+          type: social.type,
+          url: social.url?.trim(),
+          headerText: social.headerText ?? '',
+          heroText: social.heroText ?? '',
+          footerText: social.footerText ?? '',
+          // Omitted rather than sent blank so a handle-less platform stores
+          // null instead of the empty string.
+          ...(social.handle?.trim() ? { handle: social.handle.trim() } : {})
+        }
+      }),
+      'Failed to create promoted social'
+    ));
+  }
+
+  /**
+   * Patch a promoted social (UpdatePromotableSocialMediaRequest, JSON).
+   *
+   * Omitted fields are left alone, so only what the caller passed is sent.
+   * `handle` is the exception worth naming: '' means *clear the handle*, where
+   * omitting it means "leave it as it was". The edit form always passes the
+   * field, which is what makes clearing a handle possible at all.
+   */
+  static async updateSocial(socialId, updates) {
+    const body = {};
+    if (updates.name !== undefined) body.name = updates.name.trim();
+    if (updates.duration !== undefined) body.duration = updates.duration;
+    if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
+    if (updates.type !== undefined) body.type = updates.type;
+    if (updates.url !== undefined) body.url = updates.url.trim();
+    if (updates.headerText !== undefined) body.headerText = updates.headerText;
+    if (updates.heroText !== undefined) body.heroText = updates.heroText;
+    if (updates.footerText !== undefined) body.footerText = updates.footerText;
+    if (updates.handle !== undefined) body.handle = updates.handle.trim();
+
+    return this.fromBackendSocial(this.unwrap(
+      await api.PATCH('/api/admin/board/socials/{socialId}', {
+        params: { path: { socialId } },
+        body
+      }),
+      'Failed to update promoted social'
+    ));
+  }
+
+  static async deleteSocial(socialId) {
+    return this.unwrap(
+      await api.DELETE('/api/admin/board/socials/{socialId}', { params: { path: { socialId } } }),
+      'Failed to delete promoted social'
     );
   }
 

@@ -33,6 +33,7 @@ export const PERMISSIONS = {
   BOARD_EVENT_WRITE: 'board:event:write',
   BOARD_WEEKLY_WRITE: 'board:weekly:write',
   BOARD_TICKER_WRITE: 'board:ticker:write',
+  BOARD_SOCIAL_WRITE: 'board:social:write',
 
   // Board configuration
   BOARD_CONFIG_READ: 'board:config:read',
@@ -122,6 +123,7 @@ export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.BOARD_EVENT_WRITE]: 'Create, edit, and delete calendar events',
   [PERMISSIONS.BOARD_WEEKLY_WRITE]: 'Edit weekly quotes and Jummah times',
   [PERMISSIONS.BOARD_TICKER_WRITE]: 'Edit the scrolling ticker copy',
+  [PERMISSIONS.BOARD_SOCIAL_WRITE]: 'Promote social accounts to the boards',
 
   [PERMISSIONS.BOARD_CONFIG_READ]: 'View board configuration',
   [PERMISSIONS.BOARD_CONFIG_WRITE]: 'Change location, dark mode, and layout',

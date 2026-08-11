@@ -199,7 +199,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["updateDevice"];
         trace?: never;
     };
     "/api/admin/board/devices/{deviceId}/commands": {
@@ -372,6 +372,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/socials": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllSocials"];
+        put?: never;
+        post: operations["createSocial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/socials/by-audience": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSocialsForAudience"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/socials/{socialId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSocialById"];
+        put?: never;
+        post?: never;
+        delete: operations["deleteSocial"];
+        options?: never;
+        head?: never;
+        patch: operations["updateSocial"];
         trace?: never;
     };
     "/api/admin/board/weekly-content": {
@@ -1095,22 +1143,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/musallah/posters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getActivePosterFrames"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/musallah/weekly-content": {
         parameters: {
             query?: never;
@@ -1320,6 +1352,16 @@ export interface components {
             /** Format: uuid */
             uuid?: string;
         };
+        AgendaFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
+            days?: components["schemas"]["DayBucket"][];
+            heading?: string;
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "agenda";
+        };
         AgentEnrollRequest: {
             agentVersion?: string;
             hardwareModel?: string;
@@ -1334,7 +1376,7 @@ export interface components {
         };
         AuditEventDto: {
             /** @enum {string} */
-            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             adminEmail?: string;
             /** Format: uuid */
             adminId?: string;
@@ -1435,6 +1477,20 @@ export interface components {
             startTime: string;
             title: string;
         };
+        CreatePromotableSocialMediaRequest: {
+            /** @enum {string} */
+            audience: "brothers" | "sisters" | "both";
+            /** Format: int32 */
+            duration?: number;
+            footerText: string;
+            handle?: string;
+            headerText: string;
+            heroText: string;
+            name: string;
+            /** @enum {string} */
+            type: "instagram" | "youtube" | "tiktok" | "whatsapp" | "other";
+            url: string;
+        };
         CreateUserRequest: {
             email: string;
             firstName: string;
@@ -1443,20 +1499,22 @@ export interface components {
             password?: string;
             studentNumber: string;
         };
-        DailyScheduleFrameConfig: {
-            type: "DailyScheduleFrameConfig";
-        } & (Omit<components["schemas"]["FrameConfig"], "type"> & {
+        DayBucket: {
+            /** Format: date */
+            date?: string;
             events?: components["schemas"]["EventView"][];
-            heading?: string;
-        });
+        };
         DeviceConfig: {
+            /** Format: int32 */
+            agendaDurationSeconds?: number;
             darkModeAfterIsha?: boolean;
             enableScrollingMessage?: boolean;
             /** Format: uuid */
             id?: string;
             location?: components["schemas"]["Location"];
+            /** Format: int32 */
+            nextPrayerDurationSeconds?: number;
             scrollingMessages?: string[];
-            socialUrl?: string;
         };
         DeviceSummary: {
             agentVersion?: string;
@@ -1474,12 +1532,6 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
-        EventListFrameConfig: {
-            type: "EventListFrameConfig";
-        } & (Omit<components["schemas"]["FrameConfig"], "type"> & {
-            events?: components["schemas"]["EventView"][];
-            heading?: string;
-        });
         EventView: {
             allDay?: boolean;
             description?: string;
@@ -1496,13 +1548,10 @@ export interface components {
         FrameDefinition: {
             /** Format: int32 */
             durationInSeconds?: number;
-            frameConfig?: components["schemas"]["DailyScheduleFrameConfig"] | components["schemas"]["EventListFrameConfig"] | components["schemas"]["IslamicQuoteFrameConfig"] | components["schemas"]["JummahFrameConfig"] | components["schemas"]["PosterFrameConfig"];
+            frameConfig?: components["schemas"]["AgendaFrameConfig"] | components["schemas"]["IslamicQuoteFrameConfig"] | components["schemas"]["JummahFrameConfig"] | components["schemas"]["NextPrayerFrameConfig"] | components["schemas"]["PosterFrameConfig"] | components["schemas"]["PromotableSocialMediaFrameConfig"];
+            frameId?: string;
             /** @enum {string} */
-            frameType?: "poster" | "event_list" | "daily_schedule" | "next_prayer" | "jummah" | "islamic_quote";
-            /** Format: int32 */
-            priority?: number;
-            /** @enum {string} */
-            slot?: "PRIMARY" | "TICKER" | "SIDEBAR" | "OVERLAY";
+            frameType?: "poster" | "next_prayer" | "agenda" | "jummah" | "islamic_quote" | "socials";
         };
         GalleryItemDto: {
             author?: string;
@@ -1525,16 +1574,20 @@ export interface components {
             translation?: string;
             transliteration?: string;
         };
-        IslamicQuoteFrameConfig: {
-            type: "IslamicQuoteFrameConfig";
-        } & (Omit<components["schemas"]["FrameConfig"], "type"> & {
+        IslamicQuoteFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
             arabic?: string;
             /** @enum {string} */
             kind?: "VERSE" | "HADITH";
             reference?: string;
             translation?: string;
             transliteration?: string;
-        });
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "islamic_quote";
+        };
         IssueCommandRequest: {
             /** Format: int32 */
             deadlineMs?: number;
@@ -1558,11 +1611,15 @@ export interface components {
             tokenId?: string;
         };
         JsonNode: unknown;
-        JummahFrameConfig: {
-            type: "JummahFrameConfig";
-        } & (Omit<components["schemas"]["FrameConfig"], "type"> & {
+        JummahFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
             prayers?: components["schemas"]["JummahSlot"][];
-        });
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "jummah";
+        };
         JummahPrayer: {
             /** Format: uuid */
             id?: string;
@@ -1618,6 +1675,13 @@ export interface components {
             deviceConfig?: components["schemas"]["DeviceConfig"];
             frames?: components["schemas"]["FrameDefinition"][];
             weather?: components["schemas"]["JsonNode"];
+        };
+        NextPrayerFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "next_prayer";
         };
         PageAdminUploadDto: {
             content?: components["schemas"]["AdminUploadDto"][];
@@ -1736,13 +1800,17 @@ export interface components {
             startTime?: string;
             title?: string;
         };
-        PosterFrameConfig: {
-            type: "PosterFrameConfig";
-        } & (Omit<components["schemas"]["FrameConfig"], "type"> & {
+        PosterFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
             posterUrl?: string;
             signupUrl?: string;
             title?: string;
-        });
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "poster";
+        };
         PresignedUploadResponse: {
             contentType?: string;
             /** Format: uuid */
@@ -1753,6 +1821,37 @@ export interface components {
             method?: string;
             objectKey?: string;
             uploadUrl?: string;
+        };
+        PromotableSocialMedia: {
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            /** Format: int32 */
+            duration?: number;
+            footerText?: string;
+            handle?: string;
+            headerText?: string;
+            heroText?: string;
+            /** Format: uuid */
+            id?: string;
+            name?: string;
+            /** @enum {string} */
+            type?: "instagram" | "youtube" | "tiktok" | "whatsapp" | "other";
+            url?: string;
+        };
+        PromotableSocialMediaFrameConfig: Omit<components["schemas"]["FrameConfig"], "type"> & {
+            footerText?: string;
+            handle?: string;
+            headerText?: string;
+            heroText?: string;
+            /** @enum {string} */
+            socialType?: "instagram" | "youtube" | "tiktok" | "whatsapp" | "other";
+            url?: string;
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "socials";
         };
         QuoteEntry: {
             arabic?: string;
@@ -1803,11 +1902,14 @@ export interface components {
             verified?: boolean;
         };
         UpdateBoardConfigRequest: {
+            /** Format: int32 */
+            agendaDurationSeconds?: number;
             darkModeAfterIsha?: boolean;
             enableScrollingMessage?: boolean;
             location?: components["schemas"]["Location"];
+            /** Format: int32 */
+            nextPrayerDurationSeconds?: number;
             scrollingMessages?: string[];
-            socialUrl?: string;
         };
         UpdateCalendarEventRequest: {
             allDay?: boolean;
@@ -1820,6 +1922,11 @@ export interface components {
             name?: string;
             /** Format: date-time */
             startTime?: string;
+        };
+        UpdateDeviceRequest: {
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            displayName?: string;
         };
         UpdatePosterRequest: {
             /** @enum {string} */
@@ -1837,6 +1944,20 @@ export interface components {
             firstName?: string;
             lastName?: string;
             studentNumber?: string;
+        };
+        UpdatePromotableSocialMediaRequest: {
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            /** Format: int32 */
+            duration?: number;
+            footerText?: string;
+            handle?: string;
+            headerText?: string;
+            heroText?: string;
+            name?: string;
+            /** @enum {string} */
+            type?: "instagram" | "youtube" | "tiktok" | "whatsapp" | "other";
+            url?: string;
         };
         UpdateTickerRequest: {
             enableScrollingMessage?: boolean;
@@ -1992,7 +2113,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             };
             cookie?: never;
         };
@@ -2033,7 +2154,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
+                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2406,6 +2527,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceSummary"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2968,6 +3124,196 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAllSocials: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotableSocialMedia"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createSocial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePromotableSocialMediaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotableSocialMedia"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getSocialsForAudience: {
+        parameters: {
+            query: {
+                audience: "brothers" | "sisters" | "both";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotableSocialMedia"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getSocialById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                socialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotableSocialMedia"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteSocial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                socialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateSocial: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                socialId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePromotableSocialMediaRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotableSocialMedia"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3672,7 +4018,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {
@@ -3742,7 +4088,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {
@@ -4561,37 +4907,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MusallahBoardPayload"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getActivePosterFrames: {
-        parameters: {
-            query: {
-                audience: "brothers" | "sisters" | "both";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FrameDefinition"][];
                 };
             };
             /** @description Request failed; body carries a human-readable message */

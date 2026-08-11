@@ -9,7 +9,7 @@ import Can from '../Can';
 import { audienceLabel } from '../../utils/deviceStatus';
 import { PERMISSIONS } from '../../utils/permissions';
 import {
-  FRAME_TYPES, FRAME_SLOTS, frameTypeLabel, frameDurationLabel, normalizeFrameType
+  FRAME_TYPES, frameTypeLabel, frameDurationLabel, normalizeFrameType
 } from '../../models/board';
 
 /**
@@ -41,8 +41,6 @@ const FRAME_COLORS = {
   ISLAMIC_QUOTE: 'bg-emerald-500'
 };
 
-/** The slot every frame lands in unless the assembler says otherwise. */
-const DEFAULT_SLOT = 'PRIMARY';
 
 function formatTime(iso, timezone) {
   if (!iso) return '';
@@ -286,9 +284,6 @@ function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
             const type = normalizeFrameType(frame.frameType);
             const Icon = FRAME_ICONS[type] || Layers;
             const meta = FRAME_TYPES[type];
-            // Nearly every frame is PRIMARY, so badging all of them says nothing.
-            // The chip earns its place only when a frame is somewhere unusual.
-            const offSlot = frame.slot && frame.slot !== DEFAULT_SLOT;
             return (
               <div
                 key={`${type}-${i}`}
@@ -308,23 +303,10 @@ function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
                         {meta.source}
                       </span>
                     )}
-                    {offSlot && (
-                      <span
-                        className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-700"
-                        title={FRAME_SLOTS[frame.slot]?.description}
-                      >
-                        {FRAME_SLOTS[frame.slot]?.label || frame.slot}
-                      </span>
-                    )}
                   </div>
                   <FrameSummary frame={frame} timezone={timezone} />
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3">
-                  {frame.priority != null && (
-                    <span className="text-xs text-gray-400" title="Higher shows first within a slot">
-                      P{frame.priority}
-                    </span>
-                  )}
                   <span className="w-12 text-right text-sm tabular-nums text-gray-500">
                     {frameDurationLabel(frame.durationInSeconds)}
                   </span>

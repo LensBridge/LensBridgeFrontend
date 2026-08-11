@@ -77,13 +77,6 @@ export function normalizeFrameType(frameType) {
   return frameType ? String(frameType).toUpperCase() : '';
 }
 
-/** Layout grouping the board uses to place a frame. */
-export const FRAME_SLOTS = {
-  PRIMARY: { label: 'Primary', description: 'Main carousel area' },
-  TICKER: { label: 'Ticker', description: 'Bottom scroller' },
-  SIDEBAR: { label: 'Sidebar', description: 'Persistent side panel' },
-  OVERLAY: { label: 'Overlay', description: 'Interrupts the carousel' }
-};
 
 /** Human label for a frame type, tolerating anything the backend adds later. */
 export function frameTypeLabel(frameType) {
@@ -124,6 +117,79 @@ export const AUDIENCE_LABELS = {
   sisters: 'Sisters',
   both: 'Both'
 };
+
+// ============================================================================
+// PROMOTED SOCIALS
+// ============================================================================
+
+/**
+ * The platforms a `PromotableSocialMedia` can carry, in the order the enum
+ * declares them. Values are lowercase on the wire — unlike `FrameType`, this
+ * enum is documented and serialized the same way, so there is no dual spelling
+ * to normalize.
+ *
+ * `handled: false` marks a platform with no public handle to show. WhatsApp
+ * community invites are a link and nothing else, so the frame's handle line is
+ * simply absent — that is a real state, not a field an operator forgot.
+ *
+ * Backend source: model/board/PromotableSocialMedia.java
+ *
+ * @typedef {'instagram'|'youtube'|'tiktok'|'whatsapp'|'other'} SocialType
+ */
+export const SOCIAL_PLATFORMS = [
+  {
+    value: 'instagram',
+    label: 'Instagram',
+    handled: true,
+    urlHint: 'https://instagram.com/utmmsa',
+    handleHint: '@utmmsa'
+  },
+  {
+    value: 'youtube',
+    label: 'YouTube',
+    handled: true,
+    urlHint: 'https://youtube.com/@utmmsa',
+    handleHint: '@utmmsa'
+  },
+  {
+    value: 'tiktok',
+    label: 'TikTok',
+    handled: true,
+    urlHint: 'https://tiktok.com/@utmmsa',
+    handleHint: '@utmmsa'
+  },
+  {
+    value: 'whatsapp',
+    label: 'WhatsApp',
+    handled: false,
+    urlHint: 'https://chat.whatsapp.com/...',
+    handleHint: ''
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    handled: true,
+    urlHint: 'https://linktr.ee/utmmsa',
+    handleHint: '@utmmsa'
+  }
+];
+
+export const SOCIAL_TYPES = SOCIAL_PLATFORMS.map(p => p.value);
+
+/** Platform metadata, falling back to `other` for anything the enum gains later. */
+export function socialPlatform(type) {
+  return SOCIAL_PLATFORMS.find(p => p.value === type)
+    ?? SOCIAL_PLATFORMS[SOCIAL_PLATFORMS.length - 1];
+}
+
+/** Human label for a platform, tolerating a value this file has not caught up to. */
+export function socialTypeLabel(type) {
+  const known = SOCIAL_PLATFORMS.find(p => p.value === type);
+  return known?.label ?? titleCase(type) ?? 'Other';
+}
+
+/** What a brand-new promoted social starts as, before the operator types. */
+export const DEFAULT_SOCIAL_DURATION_SECONDS = 15;
 
 // ============================================================================
 // PRAYER TIME CALCULATION
@@ -168,15 +234,87 @@ export const TIMEZONES = [
  * @property {boolean} darkModeAfterIsha
  * @property {boolean} enableScrollingMessage
  * @property {string[]} scrollingMessages
- * @property {string} socialUrl - destination for the closing slide's QR code
+ * @property {number|null} agendaDurationSeconds - null means the board picks it
+ * @property {number} nextPrayerDurationSeconds - never null server-side
  */
 export const DEVICE_CONFIG_FIELDS = [
   'location',
   'darkModeAfterIsha',
   'enableScrollingMessage',
   'scrollingMessages',
-  'socialUrl'
+  'agendaDurationSeconds',
+  'nextPrayerDurationSeconds'
 ];
+
+// ---------------------------------------------------------------------------
+// SLIDE DURATIONS
+// ---------------------------------------------------------------------------
+
+/** Bounds UpdateBoardConfigRequest validates, in seconds. */
+export const SLIDE_DURATION_MIN_SECONDS = 5;
+export const SLIDE_DURATION_MAX_SECONDS = 120;
+
+/**
+ * `agendaDurationSeconds: null` on the way in means auto — the board sizes the
+ * slide from how many events are on it.
+ *
+ * On the way out it cannot stay null: PATCH /configs/{deviceId} patches by
+ * null-skipping, so a null field means "leave it alone", not "clear it". 0 is
+ * the sentinel that puts the field back to auto — the same shape as the empty
+ * string that clears a promoted social's `handle`. `toDeviceConfigPatch` does
+ * that translation, so the rest of the UI only ever handles null.
+ */
+export const AGENDA_DURATION_AUTO = 0;
+
+/** What the board actually does when the agenda duration is auto. */
+export const AGENDA_AUTO_RANGE_LABEL = 'grows with the number of events, 12-30s';
+
+/** Used when an admin turns auto off and there is no previous number to restore. */
+export const DEFAULT_AGENDA_DURATION_SECONDS = 20;
+export const DEFAULT_NEXT_PRAYER_DURATION_SECONDS = 12;
+
+function durationError(value) {
+  if (value === '' || value === null || value === undefined) {
+    return 'Enter a duration in seconds.';
+  }
+  if (!Number.isInteger(value)) {
+    return 'Enter a whole number of seconds.';
+  }
+  if (value < SLIDE_DURATION_MIN_SECONDS || value > SLIDE_DURATION_MAX_SECONDS) {
+    return `Must be between ${SLIDE_DURATION_MIN_SECONDS} and ${SLIDE_DURATION_MAX_SECONDS} seconds.`;
+  }
+  return '';
+}
+
+/**
+ * Per-field messages for the two slide durations, keyed by field name; an empty
+ * object means the config is safe to PATCH.
+ *
+ * `undefined` is never an error: it is a field the form has not touched, which
+ * `toDeviceConfigPatch` drops. Only a value the admin actually typed — including
+ * an emptied input — is checked, so a config loaded from a backend that predates
+ * these fields does not light the form up red.
+ *
+ * @param {DeviceConfig|null} config
+ * @returns {Record<string, string>}
+ */
+export function slideDurationErrors(config) {
+  const errors = {};
+  if (!config) return errors;
+
+  // null is auto, which is always valid.
+  if (config.agendaDurationSeconds !== null && config.agendaDurationSeconds !== undefined) {
+    const error = durationError(config.agendaDurationSeconds);
+    if (error) errors.agendaDurationSeconds = error;
+  }
+
+  if (config.nextPrayerDurationSeconds !== undefined) {
+    const error = durationError(config.nextPrayerDurationSeconds);
+    if (error) errors.nextPrayerDurationSeconds = error;
+  }
+
+  return errors;
+}
 
 /**
  * The ticker sub-resource, PATCHed separately at
@@ -211,9 +349,9 @@ export const DEFAULT_DEVICE_CONFIG = {
   darkModeAfterIsha: true,
   enableScrollingMessage: true,
   scrollingMessages: ['Welcome to UTM MSA — follow @utmmsa for updates'],
-  // Empty by default: the board falls back to its built-in Instagram link, and
-  // an operator sets this per device only when it should point elsewhere.
-  socialUrl: ''
+  // null is auto — the board sizes the agenda slide from its event count.
+  agendaDurationSeconds: null,
+  nextPrayerDurationSeconds: DEFAULT_NEXT_PRAYER_DURATION_SECONDS
 };
 
 /**
@@ -222,11 +360,19 @@ export const DEFAULT_DEVICE_CONFIG = {
  */
 export function toDeviceConfigPatch(config) {
   if (!config) return {};
-  return DEVICE_CONFIG_FIELDS.reduce((patch, field) => {
-    if (TICKER_FIELDS.includes(field)) return patch;
-    if (config[field] !== undefined) patch[field] = config[field];
-    return patch;
+  const patch = DEVICE_CONFIG_FIELDS.reduce((acc, field) => {
+    if (TICKER_FIELDS.includes(field)) return acc;
+    if (config[field] !== undefined) acc[field] = config[field];
+    return acc;
   }, {});
+
+  // Auto is null everywhere in the UI, but a null field is skipped by the
+  // endpoint rather than cleared, so it travels as the 0 sentinel.
+  if (patch.agendaDurationSeconds === null) {
+    patch.agendaDurationSeconds = AGENDA_DURATION_AUTO;
+  }
+
+  return patch;
 }
 
 /** The ticker half of a config, for the ticker endpoint's UpdateTickerRequest. */

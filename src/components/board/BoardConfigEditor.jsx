@@ -1,15 +1,29 @@
-import { memo, useCallback } from 'react';
-import { MapPin, Moon, MessageSquare, Plus, QrCode, Trash2 } from 'lucide-react';
-import { CALCULATION_METHODS, TIMEZONES } from '../../models/board';
+import { memo, useCallback, useState } from 'react';
+import { MapPin, Moon, MessageSquare, Plus, Timer, Trash2 } from 'lucide-react';
+import {
+  AGENDA_AUTO_RANGE_LABEL,
+  CALCULATION_METHODS,
+  DEFAULT_AGENDA_DURATION_SECONDS,
+  SLIDE_DURATION_MAX_SECONDS,
+  SLIDE_DURATION_MIN_SECONDS,
+  TIMEZONES,
+  slideDurationErrors
+} from '../../models/board';
 
 /**
  * BoardConfigEditor — edits one device's DeviceConfig, minus the ticker.
  *
  * The fields here are exactly the ones UpdateBoardConfigRequest accepts:
- * location, darkModeAfterIsha, socialUrl.
+ * location, darkModeAfterIsha, agendaDurationSeconds, nextPrayerDurationSeconds.
  * Anything else is dropped server-side without an error, so adding a control
  * for a field the backend doesn't have produces a setting that silently never
  * applies — which is how poster-cycle and refresh-after-Isha lingered here.
+ *
+ * `socialUrl` used to be here too, as a "Stay Connected QR" section. It is gone
+ * from DeviceConfig, from UpdateBoardConfigRequest and from the database. The
+ * QR destination is no longer one value per board: it lives on each
+ * PromotableSocialMedia record instead, which is what lets a single board
+ * promote several accounts. Edit those on the Socials tab.
  *
  * The scrolling ticker moved to TickerEditor below: it is its own sub-resource
  * under `board:ticker:write`, which a BOARD_EDITOR holds without holding
@@ -37,18 +51,32 @@ function Toggle({ checked, onChange, label, disabled }) {
   );
 }
 
-function Field({ label, hint, children }) {
+function Field({ label, hint, error, children }) {
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
       {children}
-      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+      {error ? (
+        <p className="mt-1 text-xs text-red-600">{error}</p>
+      ) : (
+        hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>
+      )}
     </div>
   );
 }
 
-const INPUT_CLASS =
-  'w-full rounded-lg border border-gray-200 px-3 py-2.5 transition-shadow focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500';
+const INPUT_BASE_CLASS =
+  'w-full rounded-lg border px-3 py-2.5 transition-shadow focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500';
+
+const INPUT_CLASS = `${INPUT_BASE_CLASS} border-gray-200`;
+
+/**
+ * The border colour has to be picked, not appended: two `border-*` utilities on
+ * one element resolve by their order in the stylesheet, not in the attribute,
+ * so `${INPUT_CLASS} border-red-300` is a coin flip.
+ */
+const inputClass = (error, extra = '') =>
+  `${INPUT_BASE_CLASS} ${error ? 'border-red-300' : 'border-gray-200'} ${extra}`;
 
 function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
   const setField = useCallback((key, value) => {
@@ -61,32 +89,49 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
     onUpdate({ ...config, location: { ...(config.location || {}), [key]: value } });
   }, [config, onUpdate]);
 
+  // Turning Auto off has to put *some* number in the box. Remember the one the
+  // admin last typed so a mis-click on the toggle is undoable.
+  const [lastAgendaSeconds, setLastAgendaSeconds] = useState(
+    typeof config?.agendaDurationSeconds === 'number' && config.agendaDurationSeconds > 0
+      ? config.agendaDurationSeconds
+      : DEFAULT_AGENDA_DURATION_SECONDS
+  );
+
   if (!config) return null;
 
   const location = config.location || {};
-
-  // A QR encoding a malformed URL renders fine and fails only when someone
-  // scans it, which nobody is around to notice. Validate before it ships.
-  const socialUrlError = (() => {
-    const value = (config.socialUrl || '').trim();
-    if (!value) return '';
-    let parsed;
-    try {
-      parsed = new URL(value);
-    } catch {
-      return 'Enter a complete URL, including https://';
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return 'Only http:// and https:// links can be opened by a phone camera.';
-    }
-    return '';
-  })();
 
   // Latitude/longitude are doubles server-side; an empty input must not become
   // NaN, so fall back to the previous value while the field is mid-edit.
   const numeric = (raw, previous) => {
     const parsed = parseFloat(raw);
     return Number.isNaN(parsed) ? (previous ?? 0) : parsed;
+  };
+
+  const durationErrors = slideDurationErrors(config);
+
+  // An emptied box stays empty rather than snapping back to the old number —
+  // `slideDurationErrors` flags it and the parent's Save stays disabled, so the
+  // admin can clear and retype without the field fighting them.
+  const setDuration = (key, raw) => {
+    const parsed = parseInt(raw, 10);
+    setField(key, Number.isNaN(parsed) ? '' : parsed);
+  };
+
+  // Auto is null in the UI and on the wire in; `toDeviceConfigPatch` turns it
+  // into the 0 sentinel on the way out. Undefined counts as auto too — that is
+  // a config stored before this field existed.
+  const agendaAuto = config.agendaDurationSeconds == null;
+
+  const setAgendaAuto = (auto) => {
+    if (auto) {
+      if (typeof config.agendaDurationSeconds === 'number') {
+        setLastAgendaSeconds(config.agendaDurationSeconds);
+      }
+      setField('agendaDurationSeconds', null);
+    } else {
+      setField('agendaDurationSeconds', lastAgendaSeconds);
+    }
   };
 
   return (
@@ -197,36 +242,66 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
         </header>
       </section>
 
-      {/* Stay Connected QR */}
+      {/* Slide timing */}
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
         <header className="flex items-center gap-2 border-b border-gray-100 px-5 py-4">
-          <QrCode className="h-5 w-5 text-emerald-600" />
+          <Timer className="h-5 w-5 text-indigo-600" />
           <div>
-            <h3 className="font-semibold text-gray-900">Stay Connected QR</h3>
-            <p className="text-xs text-gray-500">Encoded on the board&apos;s closing slide</p>
+            <h3 className="font-semibold text-gray-900">Slide Timing</h3>
+            <p className="text-xs text-gray-500">How long the board holds each of these slides</p>
           </div>
         </header>
-        <div className="p-5">
+        <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
           <Field
-            label="Social link"
+            label={<>Agenda slide duration <span className="font-normal text-gray-400">(seconds)</span></>}
+            error={durationErrors.agendaDurationSeconds}
             hint={
-              socialUrlError
-                ? socialUrlError
-                : config.socialUrl?.trim()
-                  ? 'Scanning the closing slide opens this link.'
-                  : 'Leave empty to show the closing slide without a QR code.'
+              agendaAuto
+                ? `Auto - ${AGENDA_AUTO_RANGE_LABEL}.`
+                : 'The agenda holds this long however many events it lists.'
             }
           >
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="number"
+                min={SLIDE_DURATION_MIN_SECONDS}
+                max={SLIDE_DURATION_MAX_SECONDS}
+                step="1"
+                inputMode="numeric"
+                value={agendaAuto ? '' : config.agendaDurationSeconds}
+                onChange={(e) => setDuration('agendaDurationSeconds', e.target.value)}
+                disabled={readOnly || agendaAuto}
+                placeholder={agendaAuto ? 'Auto' : ''}
+                className={inputClass(durationErrors.agendaDurationSeconds, 'min-w-[6rem] flex-1')}
+              />
+              <div className="flex shrink-0 items-center gap-2">
+                <Toggle
+                  checked={agendaAuto}
+                  onChange={setAgendaAuto}
+                  label="Set the agenda slide duration automatically"
+                  disabled={readOnly}
+                />
+                <span className="text-sm font-medium text-gray-700">Auto</span>
+              </div>
+            </div>
+          </Field>
+
+          <Field
+            label={<>Next prayer slide duration <span className="font-normal text-gray-400">(seconds)</span></>}
+            error={durationErrors.nextPrayerDurationSeconds}
+            hint="How long the countdown to the next prayer stays up."
+          >
             <input
-              type="url"
-              inputMode="url"
-              value={config.socialUrl || ''}
-              onChange={(e) => setField('socialUrl', e.target.value)}
+              type="number"
+              min={SLIDE_DURATION_MIN_SECONDS}
+              max={SLIDE_DURATION_MAX_SECONDS}
+              step="1"
+              inputMode="numeric"
+              value={config.nextPrayerDurationSeconds ?? ''}
+              onChange={(e) => setDuration('nextPrayerDurationSeconds', e.target.value)}
               disabled={readOnly}
-              placeholder="https://instagram.com/utmmsa"
-              className={`w-full rounded-lg border px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500 ${
-                socialUrlError ? 'border-red-300' : 'border-gray-200'
-              }`}
+              placeholder="12"
+              className={inputClass(durationErrors.nextPrayerDurationSeconds)}
             />
           </Field>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  Calendar, Image, Play, BookOpen,
+  Calendar, Image, Play, BookOpen, Share2,
   Crown, ChevronLeft, RotateCcw, Monitor,
   Check, AlertCircle, ChevronRight, X, Wifi, WifiOff, ShieldCheck
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { useDeviceList } from '../hooks/useDeviceList';
 
 import EventsEditor from '../components/board/EventsEditor';
 import PostersEditor from '../components/board/PostersEditor';
+import SocialsEditor from '../components/board/SocialsEditor';
 import FramesEditor from '../components/board/FramesEditor';
 import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
 
@@ -32,6 +33,7 @@ import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
 const SECTIONS = [
   { id: 'events', label: 'Events', icon: Calendar, description: 'Calendar entries', permission: PERMISSIONS.BOARD_CONTENT_READ },
   { id: 'posters', label: 'Posters', icon: Image, description: 'Uploaded artwork', permission: PERMISSIONS.BOARD_CONTENT_READ },
+  { id: 'socials', label: 'Socials', icon: Share2, description: 'Promoted accounts', permission: PERMISSIONS.BOARD_CONTENT_READ },
   { id: 'content', label: 'Weekly', icon: BookOpen, description: 'Verse, hadith, Jummah', permission: PERMISSIONS.BOARD_CONTENT_READ },
   { id: 'frames', label: 'Slideshow', icon: Play, description: 'Live per-board preview', permission: PERMISSIONS.BOARD_CONFIG_READ }
 ];
@@ -54,7 +56,7 @@ function BoardManagement() {
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [content, setContent] = useState({ events: [], posters: [], weeklyContent: [] });
+  const [content, setContent] = useState({ events: [], posters: [], socials: [], weeklyContent: [] });
 
   const canReadContent = can(PERMISSIONS.BOARD_CONTENT_READ);
   const canReadDevices = can(PERMISSIONS.BOARD_DEVICE_READ);
@@ -94,9 +96,10 @@ function BoardManagement() {
     // blank the whole page, so failures resolve to an empty list and the
     // corresponding tab just shows its empty state.
     (async () => {
-      const [events, posters, weeklyContent] = await Promise.all([
+      const [events, posters, socials, weeklyContent] = await Promise.all([
         BoardService.getAllEvents().catch(() => null),
         BoardService.getAllPosters().catch(() => null),
+        BoardService.getAllSocials().catch(() => null),
         BoardService.getAllWeeklyContent().catch(() => null)
       ]);
 
@@ -105,9 +108,10 @@ function BoardManagement() {
       setContent({
         events: events ?? [],
         posters: posters ?? [],
+        socials: socials ?? [],
         weeklyContent: weeklyContent ?? []
       });
-      if (events === null || posters === null || weeklyContent === null) {
+      if (events === null || posters === null || socials === null || weeklyContent === null) {
         showToast('Some board data failed to load', 'error');
       }
       setLoading(false);
@@ -122,6 +126,10 @@ function BoardManagement() {
 
   const updatePosters = useCallback((posters) => {
     setContent(prev => ({ ...prev, posters }));
+  }, []);
+
+  const updateSocials = useCallback((socials) => {
+    setContent(prev => ({ ...prev, socials }));
   }, []);
 
   // Weekly content persists itself per-week via the editor
@@ -162,6 +170,8 @@ function BoardManagement() {
         return <EventsEditor events={content.events} onUpdate={updateEvents} showMessage={showToast} />;
       case 'posters':
         return <PostersEditor posters={content.posters} onUpdate={updatePosters} showMessage={showToast} />;
+      case 'socials':
+        return <SocialsEditor socials={content.socials} onUpdate={updateSocials} showMessage={showToast} />;
       case 'content':
         return <WeeklyContentEditor weeklyContent={content.weeklyContent} onUpdate={updateWeeklyContent} showMessage={showToast} />;
       case 'frames':
@@ -303,6 +313,10 @@ function BoardManagement() {
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Posters</span>
                         <span className="font-semibold">{content.posters.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Socials</span>
+                        <span className="font-semibold">{content.socials.length}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Weeks filled</span>

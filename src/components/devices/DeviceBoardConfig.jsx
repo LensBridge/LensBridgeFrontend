@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Settings, Save, RotateCcw, Loader2, Check, AlertCircle, MessageSquare } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import BoardConfigEditor, { TickerEditor } from '../board/BoardConfigEditor';
-import { DEFAULT_DEVICE_CONFIG, toDeviceConfigPatch, toTickerPatch } from '../../models/board';
+import { DEFAULT_DEVICE_CONFIG, slideDurationErrors, toDeviceConfigPatch, toTickerPatch } from '../../models/board';
 import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
 
@@ -82,6 +82,11 @@ function DeviceBoardConfig({ deviceId, disabled }) {
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const configDirty = draft !== null && !same(toDeviceConfigPatch(draft), toDeviceConfigPatch(saved));
   const tickerDirty = draft !== null && !same(toTickerPatch(draft), toTickerPatch(saved));
+
+  // A slide duration outside 5–120 is a guaranteed 400, so hold Save rather than
+  // spend a round trip on it. The ticker saves through its own endpoint and
+  // never carries these fields, so its button is unaffected.
+  const configInvalid = Object.keys(slideDurationErrors(draft)).length > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -174,7 +179,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
                 dirty={configDirty}
                 saving={configSaving}
                 saved={configSaved}
-                disabled={disabled}
+                disabled={disabled || configInvalid}
                 onSave={handleSaveConfig}
               />
             </div>
@@ -202,7 +207,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
               <h2 className="text-lg font-semibold text-gray-900">Ticker</h2>
               <p className="text-sm text-gray-500">
                 {canWriteTicker
-                  ? 'Saved on its own — a ticker edit never touches the config above.'
+                  ? 'Text cycled across the bottom of this board.'
                   : 'The copy scrolling along the bottom of this board. Read-only.'}
               </p>
             </div>
