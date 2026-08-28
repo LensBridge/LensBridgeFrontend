@@ -288,10 +288,44 @@ export interface paths {
         get: operations["getBoardEventById"];
         put?: never;
         post?: never;
-        delete: operations["deleteEvent"];
+        delete: operations["deleteEvent_1"];
         options?: never;
         head?: never;
-        patch: operations["updateEvent"];
+        patch: operations["updateEvent_1"];
+        trace?: never;
+    };
+    "/api/admin/board/events/{eventId}/ticket-event": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unlink the tCketManage event from a board event */
+        delete: operations["unlinkTicketEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/events/{eventId}/ticket-event/{tcketEventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Link a tCketManage event to a board event */
+        put: operations["linkTicketEvent"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/board/posters": {
@@ -422,6 +456,151 @@ export interface paths {
         patch: operations["updateSocial"];
         trace?: never;
     };
+    "/api/admin/board/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Page through every upload, any approval state */
+        get: operations["getAdminUploads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/approved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getApprovedUploads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getFeaturedUploads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getPendingUploads"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/{uploadId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["deleteUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/{uploadId}/approval": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["unapproveUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/{uploadId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approveUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/{uploadId}/feature": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["featureUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/uploads/{uploadId}/featured": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["unfeatureUpload"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/board/weekly-content": {
         parameters: {
             query?: never;
@@ -471,54 +650,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/admin/create-event": {
+    "/api/admin/minbar/prayer-spaces": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List every prayer space, regardless of audience */
+        get: operations["listAdminPrayerSpaces"];
         put?: never;
-        /** Create a media event */
-        post: operations["createMediaEvent"];
+        /** Create a prayer space */
+        post: operations["createPrayerSpace"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/admin/events": {
+    "/api/admin/minbar/prayer-spaces/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List every event, including unpublished ones */
-        get: operations["getAllEventsForAdmin"];
+        /** Fetch one prayer space as an administrator */
+        get: operations["getAdminPrayerSpace"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete a prayer space and its directions */
+        delete: operations["deletePrayerSpace"];
         options?: never;
         head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/feature-upload/{uploadId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["featureUpload"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
+        /** Update a prayer space; omitted fields are left unchanged */
+        patch: operations["updatePrayerSpace"];
         trace?: never;
     };
     "/api/admin/permissions": {
@@ -547,119 +713,6 @@ export interface paths {
         };
         /** List assignable roles with the permissions each one confers */
         get: operations["getAvailableRoles"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/upload/{uploadId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["approveUpload"];
-        delete: operations["deleteUpload"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/upload/{uploadId}/approval": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["unapproveUpload"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/upload/{uploadId}/featured": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["unfeatureUpload"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/uploads": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Page through every upload, any approval state */
-        get: operations["getAdminUploads"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/uploads/approved": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getApprovedUploads"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/uploads/featured": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getFeaturedUploads"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/uploads/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getPendingUploads"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1011,15 +1064,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/events": {
+    "/api/minbar/events": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** List publicly visible events */
-        get: operations["getPublicEvents"];
+        /** List events for a one-month window, enriched with ticket availability when tCketManage is enabled */
+        get: operations["getMinbarEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1028,15 +1081,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/events/{id}": {
+    "/api/minbar/prayer-spaces": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Fetch a single publicly visible event */
-        get: operations["getPublicEventById"];
+        /** List prayer spaces for an audience, with directions */
+        get: operations["getMinbarPrayerSpaces"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1045,31 +1098,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/gallery": {
+    "/api/minbar/prayer-spaces/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Page through approved gallery media */
-        get: operations["getGalleryUploads"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/gallery/event/{eventId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getGalleryByEvent"];
+        /** Fetch a single prayer space with directions */
+        get: operations["getMinbarPrayerSpaceById"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1176,6 +1213,486 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tcket/email-jobs/{jobId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllEvents"];
+        put?: never;
+        post: operations["createEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/full": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createFullEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getEventById"];
+        put: operations["updateEvent"];
+        post?: never;
+        delete: operations["deleteEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["importAttendees"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/ticket-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTicketTypesByEvent"];
+        put?: never;
+        post: operations["createTicketType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTicketsByEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/tickets/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resendAllTickets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/tickets/send-missing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["sendMissingTickets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/events/{id}/zones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getZonesByEvent"];
+        put?: never;
+        post: operations["addZoneToEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOrders"];
+        put?: never;
+        post: operations["createOrder_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOrder_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelOrder_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/orders/{id}/confirm-manual-payment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmManualPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/payments/mock/{orderId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completeMockPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/payments/{providerId}/webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/count/ticket/{ticketId}/zone/{zoneId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTicketZoneEntryCount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/event/{eventId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getScanHistoryForEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["scanTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/scan-qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["scanByQr"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/ticket/{ticketId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getScanHistoryForTicket"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["validateTicketForZone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/scans/zone/{zoneId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getScanHistoryForZone"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/ticket-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllTicketTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/ticket-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTicketTypeById"];
+        put: operations["updateTicketType"];
+        post?: never;
+        delete: operations["deleteTicketType"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/tickets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getTicketById"];
+        put: operations["updateTicket"];
+        post?: never;
+        delete: operations["deleteTicket"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/tickets/{id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resendTicket"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/zones": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAllZones"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tcket/zones/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getZoneById"];
+        put: operations["updateZone"];
+        post?: never;
+        delete: operations["deleteZone"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/upload/event/{eventId}": {
         parameters: {
             query?: never;
@@ -1256,6 +1773,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/user/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getUserOrders"];
+        put?: never;
+        post: operations["createOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/orders/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOrder"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/user/orders/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/user/profile": {
         parameters: {
             query?: never;
@@ -1272,14 +1837,14 @@ export interface paths {
         patch: operations["updateUserProfile"];
         trace?: never;
     };
-    "/api/user/stats": {
+    "/api/user/tickets": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["getUserStats"];
+        get: operations["getUserTickets"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1324,6 +1889,9 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddZoneRequest: {
+            zoneName: string;
+        };
         AdminUploadDto: {
             anon?: boolean;
             approved?: boolean;
@@ -1376,7 +1944,7 @@ export interface components {
         };
         AuditEventDto: {
             /** @enum {string} */
-            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+            action?: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "LINK_TICKET_EVENT" | "UNLINK_TICKET_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_PRAYER_SPACE" | "UPDATE_PRAYER_SPACE" | "DELETE_PRAYER_SPACE" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             adminEmail?: string;
             /** Format: uuid */
             adminId?: string;
@@ -1388,24 +1956,40 @@ export interface components {
             /** Format: uuid */
             targetEntityId?: string;
             /** @enum {string} */
-            targetEntityType?: "USER" | "UPLOAD" | "MUSALLAH_BOARD" | "DEVICE" | "EVENT";
+            targetEntityType?: "USER" | "UPLOAD" | "MUSALLAH_BOARD" | "DEVICE" | "PRAYER_SPACE" | "EVENT";
             /** Format: date-time */
             timestamp?: string;
             userAgent?: string;
         };
         BoardEvent: {
             allDay?: boolean;
+            allowUploads?: boolean;
             /** @enum {string} */
             audience?: "brothers" | "sisters" | "both";
             description?: string;
             /** Format: date-time */
             endTime?: string;
+            event?: components["schemas"]["Event"];
             /** Format: uuid */
             id?: string;
             location?: string;
             name?: string;
             /** Format: date-time */
             startTime?: string;
+        };
+        BoardingPassView: {
+            attendeeName?: string;
+            eventDate?: string;
+            /** Format: uuid */
+            eventId?: string;
+            eventTitle?: string;
+            location?: string;
+            qrPayload?: string;
+            startTime?: string;
+            status?: string;
+            /** Format: uuid */
+            ticketId?: string;
+            ticketType?: string;
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -1453,6 +2037,7 @@ export interface components {
         };
         CreateCalendarEventRequest: {
             allDay?: boolean;
+            allowUploads?: boolean;
             /** @enum {string} */
             audience: "brothers" | "sisters" | "both";
             description: string;
@@ -1462,6 +2047,30 @@ export interface components {
             name: string;
             /** Format: int64 */
             startEpochMs: number;
+        };
+        CreateEventRequest: {
+            description: string;
+            location: string;
+            name: string;
+            /** Format: date-time */
+            time: string;
+        };
+        CreateFullEventRequest: {
+            description: string;
+            location: string;
+            name: string;
+            ticketTypes?: components["schemas"]["WizardTicketTypeRequest"][];
+            /** Format: date-time */
+            time: string;
+            zones: components["schemas"]["WizardZoneRequest"][];
+        };
+        CreateOrderRequest: {
+            /** Format: email */
+            buyerEmail: string;
+            /** Format: uuid */
+            eventId: string;
+            items: components["schemas"]["OrderItemRequest"][];
+            providerId?: string;
         };
         CreatePosterRequest: {
             /** @enum {string} */
@@ -1477,6 +2086,35 @@ export interface components {
             startTime: string;
             title: string;
         };
+        CreatePrayerSpaceRequest: {
+            amenities?: string[];
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            building: string;
+            /** Format: int32 */
+            capacity?: number;
+            directions?: string;
+            entranceDescription?: string;
+            entranceName?: string;
+            floor?: string;
+            imageUrl?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            mapsUrl?: string;
+            name: string;
+            notes?: string;
+            roomInfo?: string;
+            startingPoint?: string;
+            steps?: components["schemas"]["DirectionStepRequest"][];
+            tag: string;
+            tips?: string[];
+            /** @enum {string} */
+            type: "brothers" | "sisters" | "multifaith" | "reflection";
+            /** Format: int32 */
+            walkTimeMinutes?: number;
+        };
         CreatePromotableSocialMediaRequest: {
             /** @enum {string} */
             audience: "brothers" | "sisters" | "both";
@@ -1491,14 +2129,36 @@ export interface components {
             type: "instagram" | "youtube" | "tiktok" | "whatsapp" | "other";
             url: string;
         };
+        CreateTicketRequest: {
+            /** Format: email */
+            email: string;
+            /** Format: uuid */
+            eventId: string;
+            firstName: string;
+            lastName: string;
+            sendEmail?: boolean;
+            /** Format: uuid */
+            ticketTypeId: string;
+        };
+        CreateTicketTypeRequest: {
+            entitlements?: components["schemas"]["ZoneEntitlementRequest"][];
+            isActive?: boolean;
+            name: string;
+            price: number;
+            /** Format: date-time */
+            salesEndAt?: string;
+            /** Format: date-time */
+            salesStartAt?: string;
+        };
         CreateUserRequest: {
+            /** @enum {string} */
+            audience: "brothers" | "sisters" | "both";
             /** Format: email */
             email: string;
             firstName: string;
             lastName: string;
             /** @description Optional. Omit it to create a disabled account and email the user a password reset link; supply it to create an account that can sign in right away. */
             password?: string;
-            studentNumber: string;
         };
         DayBucket: {
             /** Format: date */
@@ -1533,15 +2193,81 @@ export interface components {
             /** Format: date-time */
             revokedAt?: string;
         };
+        DirectionStepRequest: {
+            instruction: string;
+            subtext?: string;
+        };
+        DirectionStepView: {
+            /** Format: uuid */
+            id?: string;
+            instruction?: string;
+            /** Format: int32 */
+            order?: number;
+            subtext?: string;
+        };
+        EmailJobAccepted: {
+            /** Format: uuid */
+            jobId?: string;
+            /** Format: int32 */
+            total?: number;
+        };
+        EmailJobStatus: {
+            /** Format: int32 */
+            failed?: number;
+            /** Format: date-time */
+            finishedAt?: string;
+            /** Format: uuid */
+            jobId?: string;
+            lastEmail?: string;
+            lastSuccess?: boolean;
+            /** Format: int32 */
+            processed?: number;
+            /** Format: int32 */
+            sent?: number;
+            /** Format: date-time */
+            startedAt?: string;
+            /** @enum {string} */
+            state?: "RUNNING" | "COMPLETED";
+            /** Format: int32 */
+            total?: number;
+            type?: string;
+        };
+        Event: {
+            description: string;
+            /** Format: uuid */
+            id?: string;
+            location: string;
+            name: string;
+            /** Format: date-time */
+            time: string;
+        };
+        EventResponse: {
+            description?: string;
+            /** Format: uuid */
+            id?: string;
+            location?: string;
+            name?: string;
+            /** Format: date-time */
+            time?: string;
+            zones?: components["schemas"]["ZoneResponse"][];
+        };
         EventView: {
             allDay?: boolean;
+            allowUploads?: boolean;
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
             description?: string;
             /** Format: date-time */
             endTime?: string;
+            /** Format: uuid */
+            id?: string;
             location?: string;
             name?: string;
             /** Format: date-time */
             startTime?: string;
+            /** Format: uuid */
+            ticketEventId?: string;
+            ticketTypes?: components["schemas"]["MinbarTicketTypeView"][];
         };
         FrameConfig: {
             type: string;
@@ -1554,16 +2280,27 @@ export interface components {
             /** @enum {string} */
             frameType?: "poster" | "next_prayer" | "agenda" | "jummah" | "islamic_quote" | "socials";
         };
-        GalleryItemDto: {
-            author?: string;
-            date?: string;
-            event?: string;
-            featured?: boolean;
-            id?: string;
-            src?: string;
-            thumbnail?: string;
-            title?: string;
-            type?: string;
+        FullEventResponse: {
+            event?: components["schemas"]["EventResponse"];
+            ticketTypes?: components["schemas"]["TicketTypeResponse"][];
+        };
+        ImportConfig: {
+            /** Format: uuid */
+            defaultTicketTypeId?: string;
+            /** Format: int32 */
+            emailColumn: number;
+            /** Format: int32 */
+            firstNameColumn: number;
+            hasHeaderRow?: boolean;
+            /** Format: int32 */
+            lastNameColumn: number;
+            /** Format: int32 */
+            ticketTypeColumn?: number;
+        };
+        ImportResult: {
+            errors?: components["schemas"]["RowError"][];
+            /** Format: int32 */
+            imported?: number;
         };
         IslamicQuote: {
             arabic?: string;
@@ -1663,17 +2400,57 @@ export interface components {
             email: string;
             password: string;
         };
-        MediaEvent: {
+        MessageResponse: {
+            message?: string;
+        };
+        MinbarCreateOrderRequest: {
+            /** Format: uuid */
+            eventId: string;
+            items: components["schemas"]["OrderItemRequest"][];
+        };
+        MinbarOrderItemResponse: {
+            attendeeFirstName?: string;
+            attendeeLastName?: string;
+            /** Format: uuid */
+            eventId?: string;
+            ticketTypeName?: string;
+            unitPrice?: number;
+        };
+        MinbarOrderResponse: {
+            amountTotal?: number;
+            buyerEmail?: string;
             /** Format: date-time */
-            date?: string;
+            createdAt?: string;
+            currency?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: uuid */
+            id?: string;
+            items?: components["schemas"]["MinbarOrderItemResponse"][];
+            /** Format: date-time */
+            paidAt?: string;
+            payment?: components["schemas"]["MinbarPaymentResponse"];
+            referenceCode?: string;
+            status?: string;
+        };
+        MinbarPaymentResponse: {
+            details?: {
+                [key: string]: string;
+            };
+            instructions?: string;
+            redirectUrl?: string;
+            type?: string;
+        };
+        MinbarTicketTypeView: {
             /** Format: uuid */
             id?: string;
             name?: string;
-            /** @enum {string} */
-            status?: "UPCOMING" | "ONGOING" | "PAST";
-        };
-        MessageResponse: {
-            message?: string;
+            price?: number;
+            /** Format: date-time */
+            salesEndAt?: string;
+            /** Format: date-time */
+            salesStartAt?: string;
+            soldOut?: boolean;
         };
         MusallahBoardPayload: {
             deviceConfig?: components["schemas"]["DeviceConfig"];
@@ -1686,6 +2463,48 @@ export interface components {
              * @enum {string}
              */
             type: "next_prayer";
+        };
+        OrderItemRequest: {
+            /** Format: email */
+            attendeeEmail: string;
+            attendeeFirstName: string;
+            attendeeLastName: string;
+            /** Format: uuid */
+            ticketTypeId: string;
+        };
+        OrderItemResponse: {
+            attendeeEmail?: string;
+            attendeeFirstName?: string;
+            attendeeLastName?: string;
+            /** Format: uuid */
+            eventId?: string;
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            ticketTypeId?: string;
+            ticketTypeName?: string;
+            unitPrice?: number;
+        };
+        OrderResponse: {
+            amountTotal?: number;
+            buyerEmail?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            currency?: string;
+            /** Format: uuid */
+            eventId?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            externalRef?: string;
+            /** Format: uuid */
+            id?: string;
+            items?: components["schemas"]["OrderItemResponse"][];
+            /** Format: date-time */
+            paidAt?: string;
+            payment?: components["schemas"]["PaymentResponse"];
+            providerId?: string;
+            referenceCode?: string;
+            status?: string;
         };
         PageAdminUploadDto: {
             content?: components["schemas"]["AdminUploadDto"][];
@@ -1723,8 +2542,62 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
-        PageGalleryItemDto: {
-            content?: components["schemas"]["GalleryItemDto"][];
+        PageEventResponse: {
+            content?: components["schemas"]["EventResponse"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["Pageable"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageScanEventResponse: {
+            content?: components["schemas"]["ScanEventResponse"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["Pageable"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageTicketResponse: {
+            content?: components["schemas"]["TicketResponse"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["Pageable"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageTicketTypeResponse: {
+            content?: components["schemas"]["TicketTypeResponse"][];
             empty?: boolean;
             first?: boolean;
             last?: boolean;
@@ -1777,12 +2650,39 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        PageZoneResponse: {
+            content?: components["schemas"]["ZoneResponse"][];
+            empty?: boolean;
+            first?: boolean;
+            last?: boolean;
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            numberOfElements?: number;
+            pageable?: components["schemas"]["Pageable"];
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortObject"];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
         Pageable: {
             /** Format: int32 */
             page?: number;
             /** Format: int32 */
             size?: number;
             sort?: string[];
+        };
+        PaymentResponse: {
+            details?: {
+                [key: string]: string;
+            };
+            instructions?: string;
+            providerRef?: string;
+            redirectUrl?: string;
+            type?: string;
         };
         PermissionResponse: {
             authority?: string;
@@ -1814,6 +2714,37 @@ export interface components {
              * @enum {string}
              */
             type: "poster";
+        };
+        PrayerSpaceView: {
+            amenities?: string[];
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            building?: string;
+            /** Format: int32 */
+            capacity?: number;
+            directions?: string;
+            entranceDescription?: string;
+            entranceName?: string;
+            floor?: string;
+            /** Format: uuid */
+            id?: string;
+            imageUrl?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            mapsUrl?: string;
+            name?: string;
+            notes?: string;
+            roomInfo?: string;
+            startingPoint?: string;
+            steps?: components["schemas"]["DirectionStepView"][];
+            tag?: string;
+            tips?: string[];
+            /** @enum {string} */
+            type?: "brothers" | "sisters" | "multifaith" | "reflection";
+            /** Format: int32 */
+            walkTimeMinutes?: number;
         };
         PresignedUploadResponse: {
             contentType?: string;
@@ -1857,6 +2788,11 @@ export interface components {
              */
             type: "socials";
         };
+        QrScanRequest: {
+            qrPayload: string;
+            /** Format: uuid */
+            zoneId: string;
+        };
         QuoteEntry: {
             arabic?: string;
             /** Format: int32 */
@@ -1876,18 +2812,81 @@ export interface components {
             name?: string;
             permissions?: string[];
         };
+        RowError: {
+            reason?: string;
+            /** Format: int32 */
+            row?: number;
+        };
+        ScanEventResponse: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            ticketId?: string;
+            /** Format: date-time */
+            timestamp?: string;
+            /** Format: uuid */
+            zoneId?: string;
+            zoneName?: string;
+        };
+        ScanRequest: {
+            /** Format: uuid */
+            ticketId: string;
+            /** Format: uuid */
+            zoneId: string;
+        };
+        ScanResult: {
+            message?: string;
+            /** @enum {string} */
+            outcome?: "SUCCESS" | "INVALID_QR" | "NO_ZONE_ENTITLEMENT" | "ENTRY_LIMIT_REACHED";
+            scanEvent?: components["schemas"]["ScanEventResponse"];
+            success?: boolean;
+        };
         SignupRequest: {
+            /** @enum {string} */
+            audience: "brothers" | "sisters" | "both";
             /** Format: email */
             email: string;
             firstName: string;
             lastName: string;
             password: string;
-            studentNumber: string;
         };
         SortObject: {
             empty?: boolean;
             sorted?: boolean;
             unsorted?: boolean;
+        };
+        TicketResponse: {
+            email?: string;
+            /** Format: uuid */
+            eventId?: string;
+            firstName?: string;
+            holderRef?: string;
+            /** Format: uuid */
+            id?: string;
+            lastName?: string;
+            /** Format: date-time */
+            lastTicketSent?: string;
+            ticketType?: components["schemas"]["TicketTypeResponse"];
+        };
+        TicketTypeResponse: {
+            /** Format: int32 */
+            capacity?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            entitlements?: components["schemas"]["ZoneEntitlementResponse"][];
+            /** Format: uuid */
+            eventId?: string;
+            /** Format: uuid */
+            id?: string;
+            isActive?: boolean;
+            name?: string;
+            price?: number;
+            /** Format: int32 */
+            reservedCount?: number;
+            /** Format: date-time */
+            salesEndAt?: string;
+            /** Format: date-time */
+            salesStartAt?: string;
         };
         TokenRefreshRequest: {
             refreshToken: string;
@@ -1920,6 +2919,7 @@ export interface components {
         };
         UpdateCalendarEventRequest: {
             allDay?: boolean;
+            allowUploads?: boolean;
             /** @enum {string} */
             audience?: "brothers" | "sisters" | "both";
             description?: string;
@@ -1935,6 +2935,13 @@ export interface components {
             audience?: "brothers" | "sisters" | "both";
             displayName?: string;
         };
+        UpdateEventRequest: {
+            description: string;
+            location: string;
+            name: string;
+            /** Format: date-time */
+            time: string;
+        };
         UpdatePosterRequest: {
             /** @enum {string} */
             audience?: "brothers" | "sisters" | "both";
@@ -1947,10 +2954,39 @@ export interface components {
             startTime?: string;
             title?: string;
         };
+        UpdatePrayerSpaceRequest: {
+            amenities?: string[];
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
+            building?: string;
+            /** Format: int32 */
+            capacity?: number;
+            clearCoordinates?: boolean;
+            directions?: string;
+            entranceDescription?: string;
+            entranceName?: string;
+            floor?: string;
+            imageUrl?: string;
+            /** Format: double */
+            latitude?: number;
+            /** Format: double */
+            longitude?: number;
+            mapsUrl?: string;
+            name?: string;
+            notes?: string;
+            roomInfo?: string;
+            startingPoint?: string;
+            steps?: components["schemas"]["DirectionStepRequest"][];
+            tag?: string;
+            tips?: string[];
+            /** @enum {string} */
+            type?: "brothers" | "sisters" | "multifaith" | "reflection";
+            /** Format: int32 */
+            walkTimeMinutes?: number;
+        };
         UpdateProfileRequest: {
             firstName?: string;
             lastName?: string;
-            studentNumber?: string;
         };
         UpdatePromotableSocialMediaRequest: {
             /** @enum {string} */
@@ -1969,6 +3005,27 @@ export interface components {
         UpdateTickerRequest: {
             enableScrollingMessage?: boolean;
             scrollingMessages?: string[];
+        };
+        UpdateTicketRequest: {
+            email?: string;
+            firstName?: string;
+            lastName?: string;
+            /** Format: uuid */
+            ticketTypeId?: string;
+        };
+        UpdateTicketTypeRequest: {
+            entitlements?: components["schemas"]["ZoneEntitlementRequest"][];
+            isActive?: boolean;
+            name: string;
+            price: number;
+            /** Format: date-time */
+            salesEndAt?: string;
+            /** Format: date-time */
+            salesStartAt?: string;
+        };
+        UpdateZoneRequest: {
+            description: string;
+            name: string;
         };
         UploadCompletionResponse: {
             /** Format: uuid */
@@ -2018,6 +3075,8 @@ export interface components {
             videoMaxDurationSeconds?: number;
         };
         UserInfoResponse: {
+            /** @enum {string} */
+            audience?: "brothers" | "sisters" | "both";
             directPermissions?: string[];
             effectivePermissions?: string[];
             email?: string;
@@ -2025,22 +3084,21 @@ export interface components {
             /** Format: uuid */
             id?: string;
             lastName?: string;
-            roles?: ("USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT")[];
-            studentNumber?: string;
+            roles?: ("USER" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "TCKET_SCANNER" | "TCKET_MANAGER" | "TCKET_ADMIN" | "ROOT")[];
             verified?: boolean;
         };
-        UserStatsResponse: {
-            /** Format: int32 */
-            approvedUploads?: number;
-            /** Format: int32 */
-            featuredUploads?: number;
-            /** Format: int32 */
-            pendingUploads?: number;
-            /** Format: int32 */
-            totalUploads?: number;
+        ValidateRequest: {
+            /** Format: uuid */
+            ticketId: string;
+            /** Format: uuid */
+            zoneId: string;
         };
         ValidateResetTokenRequest: {
             token: string;
+        };
+        ValidationResult: {
+            message?: string;
+            valid?: boolean;
         };
         VerifyEmailRequest: {
             token: string;
@@ -2062,6 +3120,49 @@ export interface components {
         WeeklyContentRequest: {
             jummahPrayers?: components["schemas"]["JummahSlot"][];
             quotes?: components["schemas"]["QuoteEntry"][];
+        };
+        WizardEntitlementRequest: {
+            /** Format: int32 */
+            maxEntries?: number;
+            zoneKey: string;
+        };
+        WizardTicketTypeRequest: {
+            /** Format: int32 */
+            capacity?: number;
+            entitlements?: components["schemas"]["WizardEntitlementRequest"][];
+            isActive?: boolean;
+            name: string;
+            price: number;
+            /** Format: date-time */
+            salesEndAt?: string;
+            /** Format: date-time */
+            salesStartAt?: string;
+        };
+        WizardZoneRequest: {
+            description?: string;
+            key: string;
+            name: string;
+        };
+        ZoneEntitlementRequest: {
+            /** Format: int32 */
+            maxEntries?: number;
+            /** Format: uuid */
+            zoneId: string;
+        };
+        ZoneEntitlementResponse: {
+            /** Format: int32 */
+            maxEntries?: number;
+            /** Format: uuid */
+            zoneId?: string;
+            zoneName?: string;
+        };
+        ZoneResponse: {
+            description?: string;
+            /** Format: uuid */
+            eventId?: string;
+            /** Format: uuid */
+            id?: string;
+            name?: string;
         };
     };
     responses: never;
@@ -2120,7 +3221,7 @@ export interface operations {
             };
             header?: never;
             path: {
-                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
+                action: "APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "LINK_TICKET_EVENT" | "UNLINK_TICKET_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_PRAYER_SPACE" | "UPDATE_PRAYER_SPACE" | "DELETE_PRAYER_SPACE" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER";
             };
             cookie?: never;
         };
@@ -2161,7 +3262,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
+                    "application/json": ("APPROVE_UPLOAD" | "UNAPPROVE_UPLOAD" | "DELETE_UPLOAD" | "FEATURE_UPLOAD" | "UNFEATURE_UPLOAD" | "CREATE_EVENT" | "UPDATE_EVENT" | "DELETE_EVENT" | "CREATE_CALENDAR_EVENT" | "UPDATE_CALENDAR_EVENT" | "DELETE_CALENDAR_EVENT" | "LINK_TICKET_EVENT" | "UNLINK_TICKET_EVENT" | "CREATE_POSTER" | "UPDATE_POSTER" | "DELETE_POSTER" | "CREATE_PRAYER_SPACE" | "UPDATE_PRAYER_SPACE" | "DELETE_PRAYER_SPACE" | "CREATE_SOCIAL" | "UPDATE_SOCIAL" | "DELETE_SOCIAL" | "SAVE_WEEKLY_CONTENT" | "DELETE_WEEKLY_CONTENT" | "UPDATE_BOARD_CONFIG" | "UPDATE_BOARD_TICKER" | "REFRESH_BOARDS" | "ISSUE_ENROLLMENT_TOKEN" | "REVOKE_DEVICE" | "ISSUE_DEVICE_COMMAND" | "PROMOTE_USER" | "DEMOTE_USER" | "DISABLE_USER" | "ENABLE_USER" | "VIEW_AUDIT_LOGS" | "EXPORT_DATA" | "SYSTEM_MAINTENANCE" | "VERIFY_USER" | "UNVERIFY_USER" | "RESET_USER_PASSWORD" | "TRIGGER_PASSWORD_RESET_EMAIL" | "ADD_USER_ROLE" | "REMOVE_USER_ROLE" | "GRANT_PERMISSION" | "REVOKE_PERMISSION" | "ADD_USER" | "REMOVE_USER" | "UPDATE_USER")[];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2821,7 +3922,7 @@ export interface operations {
             };
         };
     };
-    deleteEvent: {
+    deleteEvent_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2852,7 +3953,7 @@ export interface operations {
             };
         };
     };
-    updateEvent: {
+    updateEvent_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2866,6 +3967,69 @@ export interface operations {
                 "application/json": components["schemas"]["UpdateCalendarEventRequest"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardEvent"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    unlinkTicketEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardEvent"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    linkTicketEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                eventId: string;
+                tcketEventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {
@@ -3334,6 +4498,305 @@ export interface operations {
             };
         };
     };
+    getAdminUploads: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageAdminUploadDto"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getApprovedUploads: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageAdminUploadDto"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getFeaturedUploads: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageAdminUploadDto"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getPendingUploads: {
+        parameters: {
+            query?: {
+                /** @description Zero-based page index (0..N) */
+                page?: number;
+                /** @description The size of the page to be returned */
+                size?: number;
+                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
+                sort?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageAdminUploadDto"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    unapproveUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    approveUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    featureUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    unfeatureUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                uploadId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     getAllWeeklyContent: {
         parameters: {
             query?: never;
@@ -3494,40 +4957,7 @@ export interface operations {
             };
         };
     };
-    createMediaEvent: {
-        parameters: {
-            query: {
-                eventName: string;
-                eventDate: string;
-                status?: "UPCOMING" | "ONGOING" | "PAST";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getAllEventsForAdmin: {
+    listAdminPrayerSpaces: {
         parameters: {
             query?: never;
             header?: never;
@@ -3542,7 +4972,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MediaEvent"][];
+                    "application/json": components["schemas"]["PrayerSpaceView"][];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3556,12 +4986,76 @@ export interface operations {
             };
         };
     };
-    featureUpload: {
+    createPrayerSpace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePrayerSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrayerSpaceView"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAdminPrayerSpace: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                uploadId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrayerSpaceView"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deletePrayerSpace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
             };
             cookie?: never;
         };
@@ -3574,6 +5068,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updatePrayerSpace: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePrayerSpaceRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrayerSpaceView"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3632,274 +5161,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RoleDefinitionResponse"][];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    approveUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uploadId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    deleteUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uploadId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    unapproveUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uploadId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    unfeatureUpload: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                uploadId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getAdminUploads: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageAdminUploadDto"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getApprovedUploads: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageAdminUploadDto"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getFeaturedUploads: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageAdminUploadDto"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getPendingUploads: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageAdminUploadDto"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -3990,7 +5251,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT";
+                "application/json": "USER" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "TCKET_SCANNER" | "TCKET_MANAGER" | "TCKET_ADMIN" | "ROOT";
             };
         };
         responses: {
@@ -4025,7 +5286,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_PRAYER_SPACE_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "TCKET_SCAN" | "TCKET_MANAGE" | "TCKET_ADMIN" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {
@@ -4060,7 +5321,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "USER" | "ADMIN" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "ROOT";
+                "application/json": "USER" | "BOARD_VIEWER" | "BOARD_EDITOR" | "BOARD_ADMIN" | "TCKET_SCANNER" | "TCKET_MANAGER" | "TCKET_ADMIN" | "ROOT";
             };
         };
         responses: {
@@ -4095,7 +5356,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "MEDIA_EVENT_WRITE" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
+                "application/json": "MEDIA_UPLOAD_SELF" | "MEDIA_UPLOAD_MODERATE" | "MEDIA_UPLOAD_READ" | "BOARD_CONTENT_READ" | "BOARD_POSTER_WRITE" | "BOARD_EVENT_WRITE" | "BOARD_SOCIAL_WRITE" | "BOARD_WEEKLY_WRITE" | "BOARD_TICKER_WRITE" | "BOARD_PRAYER_SPACE_WRITE" | "BOARD_CONFIG_READ" | "BOARD_CONFIG_WRITE" | "BOARD_REFRESH" | "BOARD_DEVICE_READ" | "BOARD_DEVICE_ENROLL" | "BOARD_DEVICE_REVOKE" | "BOARD_TELEMETRY_SUBSCRIBE" | "BOARD_COMMAND_BENIGN" | "BOARD_COMMAND_DISRUPTIVE" | "BOARD_COMMAND_INSPECT" | "TCKET_SCAN" | "TCKET_MANAGE" | "TCKET_ADMIN" | "IAM_USER_READ" | "IAM_USER_WRITE" | "IAM_ROLE_GRANT" | "AUDIT_READ";
             };
         };
         responses: {
@@ -4667,9 +5928,13 @@ export interface operations {
             };
         };
     };
-    getPublicEvents: {
+    getMinbarEvents: {
         parameters: {
-            query?: never;
+            query: {
+                audience: "brothers" | "sisters" | "both";
+                year: number;
+                month: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -4682,7 +5947,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MediaEvent"][];
+                    "application/json": components["schemas"]["EventView"][];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -4696,7 +5961,38 @@ export interface operations {
             };
         };
     };
-    getPublicEventById: {
+    getMinbarPrayerSpaces: {
+        parameters: {
+            query: {
+                audience: "brothers" | "sisters" | "both";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrayerSpaceView"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getMinbarPrayerSpaceById: {
         parameters: {
             query?: never;
             header?: never;
@@ -4713,81 +6009,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MediaEvent"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getGalleryUploads: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageGalleryItemDto"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getGalleryByEvent: {
-        parameters: {
-            query?: {
-                /** @description Zero-based page index (0..N) */
-                page?: number;
-                /** @description The size of the page to be returned */
-                size?: number;
-                /** @description Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported. */
-                sort?: string[];
-            };
-            header?: never;
-            path: {
-                eventId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageGalleryItemDto"];
+                    "application/json": components["schemas"]["PrayerSpaceView"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -4988,6 +6210,1358 @@ export interface operations {
             };
         };
     };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                jobId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailJobStatus"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAllEvents: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageEventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEventRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createFullEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFullEventRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FullEventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getEventById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateEventRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    importAttendees: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    config: components["schemas"]["ImportConfig"];
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getTicketTypesByEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketTypeResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createTicketType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTicketTypeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketTypeResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getTicketsByEvent: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageTicketResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    resendAllTickets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailJobAccepted"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    sendMissingTickets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailJobAccepted"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getZonesByEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoneResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    addZoneToEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddZoneRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoneResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getOrders: {
+        parameters: {
+            query?: {
+                eventId?: string;
+                externalRef?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createOrder_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getOrder_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    cancelOrder_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    confirmManualPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    completeMockPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orderId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    webhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                providerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": string;
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getTicketZoneEntryCount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+                zoneId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getScanHistoryForEvent: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path: {
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageScanEventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    scanTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanResult"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    scanByQr: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QrScanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanResult"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getScanHistoryForTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ticketId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanEventResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    validateTicketForZone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationResult"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getScanHistoryForZone: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path: {
+                zoneId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageScanEventResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAllTicketTypes: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageTicketTypeResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getTicketTypeById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketTypeResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateTicketType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTicketTypeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketTypeResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteTicketType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getTicketById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TicketResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    resendTicket: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailJobAccepted"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAllZones: {
+        parameters: {
+            query: {
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageZoneResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getZoneById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoneResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    updateZone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateZoneRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoneResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    deleteZone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     getUploadsByEvent: {
         parameters: {
             query?: {
@@ -5162,6 +7736,130 @@ export interface operations {
             };
         };
     };
+    getUserOrders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinbarOrderResponse"][];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    createOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MinbarCreateOrderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinbarOrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinbarOrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    cancelOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinbarOrderResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     getUserProfile: {
         parameters: {
             query?: never;
@@ -5224,7 +7922,7 @@ export interface operations {
             };
         };
     };
-    getUserStats: {
+    getUserTickets: {
         parameters: {
             query?: never;
             header?: never;
@@ -5239,7 +7937,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserStatsResponse"];
+                    "application/json": components["schemas"]["BoardingPassView"][];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -5275,7 +7973,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PageGalleryItemDto"];
+                    "application/json": components["schemas"]["PageUploadDto"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
