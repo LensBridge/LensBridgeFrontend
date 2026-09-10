@@ -1,493 +1,585 @@
-import { useState, useRef, memo } from 'react';
-import { 
-  Plus, Trash2, Edit2, Image, Users, Clock, Calendar,
-  Eye, Upload, X, Search, Loader2, CheckCircle
+import { useMemo, useRef, useState } from 'react';
+import {
+  CalendarClock,
+  ClipboardCheck,
+  Edit2,
+  FileText,
+  Image as ImageIcon,
+  Plus,
+  QrCode,
+  Trash2,
+  Upload,
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import AudienceBadge from './AudienceBadge';
 import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
+import { AUDIENCE_LABELS, AUDIENCE_OPTIONS } from '../../models/board';
+import useWizard from '../../hooks/useWizard';
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Input,
+  KeyValue,
+  Modal,
+  SearchInput,
+  SegmentedControl,
+  Select,
+  StepIntro,
+  WizardShell,
+  useToast,
+} from '../ui';
+
+const today = () => new Date().toISOString().slice(0, 10);
+const inDays = (n) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+
+const emptyPoster = () => ({
+  title: '',
+  duration: 10_000,
+  startDate: today(),
+  endDate: inDays(30),
+  audience: 'both',
+  // Optional. When set, the board pairs the poster with a QR code encoding the
+  // link instead of showing it full-bleed.
+  signupUrl: '',
+});
 
 /**
- * PostersEditor - Grid-based poster management with drag-drop upload.
- *
- * `board:content:read` gets the grid and the preview; everything that writes
- * needs `board:poster:write` on top of it.
+ * A QR encoding a malformed URL still renders — it just fails when scanned, on
+ * a wall, where nobody is watching it fail. Cheaper to catch here.
+ * @returns {string} error message, or '' when the link is fine or empty
  */
-function PostersEditor({ posters = [], onUpdate, showMessage }) {
+function signupUrlProblem(value) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) return '';
+  let parsed;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return 'Enter a complete URL, including https://';
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    return 'Only http:// and https:// links can be opened by a phone camera.';
+  }
+  return '';
+}
+
+function isLive(poster) {
+  const now = today();
+  return (!poster.startDate || poster.startDate <= now) && (!poster.endDate || poster.endDate >= now);
+}
+
+/**
+ * Everything the server would reject, keyed by the box it belongs under.
+ * `image` is the dropzone; `schedule` hangs the date-order message on the step.
+ */
+function problems(form, { needsImage }) {
+  const errors = {};
+  if (needsImage) errors.image = 'Pick an image to upload.';
+  if (!form.title.trim()) errors.title = 'Give the poster a title.';
+  const urlErr = signupUrlProblem(form.signupUrl);
+  if (urlErr) errors.signupUrl = urlErr;
+  if (form.endDate < form.startDate) errors.schedule = 'It cannot come down before it goes up.';
+  return errors;
+}
+
+const STEPS = [
+  { id: 'artwork', label: 'Artwork', icon: ImageIcon, fields: ['image'] },
+  { id: 'details', label: 'Details', icon: FileText, fields: ['title', 'signupUrl'] },
+  { id: 'schedule', label: 'Schedule', icon: CalendarClock, fields: ['schedule'] },
+  { id: 'review', label: 'Review', icon: ClipboardCheck, fields: [] },
+];
+
+/**
+ * Poster artwork and its scheduling window.
+ *
+ * A grid rather than a list: posters are pictures, and a row of titles tells
+ * you nothing about whether the one you are about to replace is the right one.
+ *
+ * The image is write-once at creation. Replacing it afterwards goes through a
+ * separate endpoint (`PUT .../image`) under the same permission, which is why
+ * the edit wizard offers a replace control rather than treating the file as
+ * just another field.
+ */
+export default function PostersEditor({ posters = [], onUpdate }) {
   const { can } = useAuth();
+  const toast = useToast();
   const canWrite = can(PERMISSIONS.BOARD_POSTER_WRITE);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterAudience, setFilterAudience] = useState('all');
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [isUploading, setIsUploading] = useState(false);
+
+  // Memoized because the fallback is a new array each render, which would
+  // otherwise invalidate the filter memo below on every keystroke.
+  const list = useMemo(() => (Array.isArray(posters) ? posters : []), [posters]);
+
+  const [editing, setEditing] = useState(null); // poster object, or 'new'
+  const [form, setForm] = useState(emptyPoster());
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [dragOver, setDragOver] = useState(false);
-  const [imageFile, setImageFile] = useState(null);
-  const fileInputRef = useRef(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [lightbox, setLightbox] = useState(null);
+  const fileInput = useRef(null);
 
-  // Ensure posters is always an array
-  const safePosters = Array.isArray(posters) ? posters : [];
+  const creating = editing === 'new';
+  const needsImage = creating && !file;
 
-  const [formData, setFormData] = useState({
-    title: '',
-    image: '',
-    duration: 10000,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    audience: 'both',
-    // Optional. When set, the board shows this poster beside a QR code encoding
-    // the link instead of full-bleed.
-    signupUrl: ''
-  });
+  const liveProblems = useMemo(
+    () => problems(form, { needsImage }),
+    [form, needsImage]
+  );
+  const wiz = useWizard(STEPS, liveProblems);
 
-  const audienceOptions = [
-    { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700' },
-    { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700' },
-    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700' }
-  ];
+  const [query, setQuery] = useState('');
+  const [audience, setAudience] = useState('all');
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      image: '',
-      duration: 10000,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      audience: 'both',
-      signupUrl: ''
-    });
-    setImageFile(null);
-  };
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return list
+      .filter((p) => !needle || p.title?.toLowerCase().includes(needle))
+      .filter((p) => audience === 'all' || p.audience === audience);
+  }, [list, query, audience]);
 
-  const filteredPosters = safePosters
-    .filter(p => p.title?.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(p => filterAudience === 'all' || p.audience === filterAudience);
+  const patch = (changes) => setForm((f) => ({ ...f, ...changes }));
 
-  const isPosterActive = (poster) => {
-    const now = new Date();
-    const start = poster.startDate ? new Date(poster.startDate) : null;
-    const end = poster.endDate ? new Date(poster.endDate) : null;
-    if (start && now < start) return false;
-    if (end && now > end) return false;
-    return true;
-  };
-
-  const handleFileUpload = (file) => {
-    if (!file) return;
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      showMessage('Invalid file type. Use JPEG, PNG, GIF, or WebP', 'error');
+  const takeFile = (candidate) => {
+    if (!candidate) return;
+    if (!candidate.type.startsWith('image/')) {
+      setFormError('That is not an image.');
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      showMessage('Image must be under 5MB', 'error');
+    setFile(candidate);
+    setPreview(URL.createObjectURL(candidate));
+    setFormError(null);
+  };
+
+  const openNew = () => {
+    setForm(emptyPoster());
+    setFile(null);
+    setPreview(null);
+    setFormError(null);
+    wiz.reset();
+    setEditing('new');
+  };
+
+  const openEdit = (poster) => {
+    setForm({ ...poster });
+    setFile(null);
+    setPreview(null);
+    setFormError(null);
+    wiz.reset();
+    setEditing(poster);
+  };
+
+  const save = async () => {
+    const found = problems(form, { needsImage });
+    if (Object.keys(found).length > 0) {
+      const bad = STEPS.findIndex((s) => s.fields.some((field) => found[field]));
+      wiz.revealThrough(bad === -1 ? wiz.last : bad);
+      if (bad !== -1) wiz.setIndex(bad);
+      setFormError('Fix the flagged fields — the step is open below.');
       return;
     }
-    
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setFormData(prev => ({ ...prev, image: e.target.result }));
-    reader.readAsDataURL(file);
-  };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setDragOver(false);
-    handleFileUpload(e.dataTransfer.files?.[0]);
-  };
-
-  /**
-   * A QR encoding a malformed URL still renders — it just fails when scanned,
-   * on a wall, where nobody is watching. Cheaper to catch it here.
-   * @returns {string} error message, or '' when the link is fine or empty
-   */
-  const validateSignupUrl = (value) => {
-    const trimmed = (value || '').trim();
-    if (!trimmed) return '';
-    let parsed;
+    setSaving(true);
+    setFormError(null);
     try {
-      parsed = new URL(trimmed);
-    } catch {
-      return 'Enter a complete URL, including https://';
-    }
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return 'Only http:// and https:// links can be opened by a phone camera.';
-    }
-    return '';
-  };
-
-  const signupUrlError = validateSignupUrl(formData.signupUrl);
-
-  const handleSave = async (isNew) => {
-    if (!canWrite) return;
-    if (!formData.title.trim()) {
-      showMessage('Title is required', 'error');
-      return;
-    }
-    if (isNew && !imageFile) {
-      showMessage('Image is required', 'error');
-      return;
-    }
-    if (signupUrlError) {
-      showMessage(signupUrlError, 'error');
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      if (isNew) {
-        const created = await BoardService.createPoster({ ...formData, imageFile });
-        onUpdate([...safePosters, created]);
-        showMessage('Poster created!');
-        setShowAddForm(false);
+      if (creating) {
+        const created = await BoardService.createPoster({ ...form, imageFile: file });
+        onUpdate([...list, created]);
+        toast.success('Poster created.');
       } else {
-        const updated = await BoardService.updatePoster(editingId, formData);
-        onUpdate(safePosters.map(p => p.id === editingId ? updated : p));
-        showMessage('Poster updated!');
-        setEditingId(null);
+        let updated = await BoardService.updatePoster(editing.id, form);
+        // The image lives behind its own endpoint and its own request; only send
+        // it when someone actually chose a replacement.
+        if (file) updated = await BoardService.updatePosterImage(editing.id, file);
+        onUpdate(list.map((p) => (p.id === editing.id ? updated : p)));
+        toast.success('Poster updated.');
       }
-      resetForm();
+      setEditing(null);
     } catch (err) {
-      showMessage('Failed: ' + err.message, 'error');
+      setFormError(err.message);
     } finally {
-      setIsUploading(false);
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!canWrite) return;
-    if (!confirm('Delete this poster?')) return;
-    try {
-      await BoardService.deletePoster(id);
-      onUpdate(safePosters.filter(p => p.id !== id));
-      showMessage('Poster deleted');
-    } catch (err) {
-      showMessage('Failed: ' + err.message, 'error');
-    }
+  const remove = async () => {
+    await BoardService.deletePoster(deleting.id);
+    onUpdate(list.filter((p) => p.id !== deleting.id));
+    toast.success('Poster deleted.');
   };
 
-  const startEdit = (poster) => {
-    setFormData({
-      title: poster.title,
-      duration: poster.duration || 10000,
-      startDate: poster.startDate || '',
-      endDate: poster.endDate || '',
-      audience: poster.audience || 'both',
-      signupUrl: poster.signupUrl || ''
-    });
-    setEditingId(poster.id);
-    setShowAddForm(false);
-  };
-
-  const getAudienceBadge = (audience) => {
-    const opt = audienceOptions.find(o => o.value === audience) || audienceOptions[0];
-    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${opt.color}`}>{opt.label}</span>;
+  const seconds = Math.round((form.duration || 0) / 1000);
+  const reviewPrimary = {
+    label: creating ? 'Create poster' : 'Save changes',
+    icon: creating ? Plus : ClipboardCheck,
+    busy: saving,
+    busyLabel: creating ? 'Creating…' : 'Saving…',
+    onClick: save,
   };
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search posters..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search posters"
+          className="w-full sm:w-64"
+        />
+        <SegmentedControl
+          size="sm"
+          value={audience}
+          onChange={setAudience}
+          options={[{ value: 'all', label: 'All' }, ...AUDIENCE_OPTIONS]}
+        />
         {canWrite && (
-          <button
-            onClick={() => { setShowAddForm(true); setEditingId(null); resetForm(); }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Poster
-          </button>
+          <Button variant="primary" icon={Plus} onClick={openNew} className="ml-auto">
+            New poster
+          </Button>
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => setFilterAudience('all')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-            filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          All ({safePosters.length})
-        </button>
-        {audienceOptions.map(opt => (
-          <button
-            key={opt.value}
-            onClick={() => setFilterAudience(opt.value)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {opt.label} ({safePosters.filter(p => p.audience === opt.value).length})
-          </button>
-        ))}
-        <span className="ml-auto text-sm text-gray-500 py-1.5">
-          {safePosters.filter(isPosterActive).length} active now
-        </span>
-      </div>
-
-      {/* Add/Edit Form */}
-      {(showAddForm || editingId) && (
-        <div className={`rounded-xl border-2 p-5 ${showAddForm ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold text-gray-900">{showAddForm ? 'New Poster' : 'Edit Poster'}</h4>
-            <button 
-              onClick={() => { setShowAddForm(false); setEditingId(null); resetForm(); }}
-              className="p-1 hover:bg-gray-200 rounded"
-            >
-              <X className="h-5 w-5 text-gray-500" />
-            </button>
-          </div>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Image Upload (only for new) */}
-            {showAddForm && (
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`aspect-video rounded-xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center transition-all ${
-                  dragOver ? 'border-indigo-500 bg-indigo-100' : formData.image ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-white hover:border-indigo-400'
+      {visible.length === 0 ? (
+        <EmptyState
+          icon={ImageIcon}
+          title={list.length === 0 ? 'No posters yet' : 'Nothing matches'}
+          body={
+            list.length === 0
+              ? 'Posters are the full-screen artwork in the rotation. Each one carries its own window and audience.'
+              : undefined
+          }
+          action={
+            canWrite && list.length === 0 ? (
+              <Button variant="primary" icon={Plus} onClick={openNew}>
+                New poster
+              </Button>
+            ) : null
+          }
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visible.map((poster, i) => {
+            const live = isLive(poster);
+            return (
+              <article
+                key={poster.id}
+                style={{ '--i': Math.min(i, 12) }}
+                className={`anim-stagger bg-surface border rounded-lg shadow-sm overflow-hidden flex flex-col ${
+                  live ? 'border-hair' : 'border-hair opacity-70'
                 }`}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e.target.files?.[0])}
-                  className="hidden"
-                />
-                {formData.image ? (
-                  <div className="relative w-full h-full">
-                    <img src={formData.image} alt="Preview" className="w-full h-full object-contain rounded-lg" />
-                    <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
-                      <CheckCircle className="h-4 w-4" />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 font-medium">Drop image or click to upload</p>
-                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
-                  </>
-                )}
-              </div>
-            )}
-            
-            {/* Form Fields */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-                  placeholder="Poster title"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                  <input
-                    type="date"
-                    value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (seconds)</label>
-                <input
-                  type="number"
-                  min="5"
-                  max="60"
-                  value={formData.duration / 1000}
-                  onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) * 1000 })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
-                <div className="flex gap-2">
-                  {audienceOptions.map(opt => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setFormData({ ...formData, audience: opt.value })}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
-                        formData.audience === opt.value ? opt.color + ' border-current' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sign-up link <span className="font-normal text-gray-400">(optional)</span>
-                </label>
-                <input
-                  type="url"
-                  inputMode="url"
-                  value={formData.signupUrl}
-                  onChange={(e) => setFormData({ ...formData, signupUrl: e.target.value })}
-                  placeholder="https://forms.gle/..."
-                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white ${
-                    signupUrlError ? 'border-red-300' : 'border-gray-200'
-                  }`}
-                />
-                {signupUrlError ? (
-                  <p className="mt-1 text-xs text-red-600">{signupUrlError}</p>
-                ) : (
-                  <p className="mt-1 text-xs text-gray-500">
-                    {formData.signupUrl?.trim()
-                      ? 'The board will show this poster beside a scannable QR code.'
-                      : 'Leave empty to display the poster full-screen with no QR code.'}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-5">
-            <button
-              onClick={() => { setShowAddForm(false); setEditingId(null); resetForm(); }}
-              className="px-4 py-2 text-gray-600 hover:bg-white rounded-lg"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSave(showAddForm)}
-              disabled={isUploading}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center gap-2"
-            >
-              {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" />Uploading...</> : showAddForm ? 'Create Poster' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Posters Grid */}
-      {filteredPosters.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
-          <Image className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 font-medium">No posters found</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredPosters.map(poster => (
-            <div
-              key={poster.id}
-              className={`bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-all ${
-                isPosterActive(poster) ? 'border-gray-200' : 'border-gray-100 opacity-60'
-              }`}
-            >
-              {/* Image */}
-              <div className="aspect-video bg-gray-100 relative">
-                {poster.imageUrl ? (
-                  <img src={poster.imageUrl} alt={poster.title} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image className="h-12 w-12 text-gray-300" />
-                  </div>
-                )}
-                
-                {/* Overlay Actions */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setPreviewUrl(poster.imageUrl)}
-                    className="p-2 bg-white rounded-lg hover:bg-gray-100"
-                  >
-                    <Eye className="h-5 w-5 text-gray-700" />
-                  </button>
-                  {canWrite && (
-                    <>
-                      <button
-                        onClick={() => startEdit(poster)}
-                        className="p-2 bg-white rounded-lg hover:bg-gray-100"
-                      >
-                        <Edit2 className="h-5 w-5 text-gray-700" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(poster.id)}
-                        className="p-2 bg-white rounded-lg hover:bg-red-50"
-                      >
-                        <Trash2 className="h-5 w-5 text-red-500" />
-                      </button>
-                    </>
-                  )}
-                </div>
-                
-                {/* Status Badge */}
-                {isPosterActive(poster) && (
-                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
-                    Active
-                  </div>
-                )}
-              </div>
-              
-              {/* Info */}
-              <div className="p-3">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="font-medium text-gray-900 line-clamp-1">{poster.title}</h4>
-                  {getAudienceBadge(poster.audience)}
-                </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {(poster.duration || 10000) / 1000}s
-                  </span>
-                  {poster.startDate && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {new Date(poster.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                <button
+                  onClick={() => setLightbox(poster)}
+                  className="relative block aspect-[3/4] bg-raised overflow-hidden group"
+                >
+                  {poster.imageUrl ? (
+                    <img
+                      src={poster.imageUrl}
+                      alt={poster.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    />
+                  ) : (
+                    <span className="absolute inset-0 grid place-items-center text-faint">
+                      <ImageIcon size={26} strokeWidth={1.3} />
                     </span>
                   )}
+                  <span className="absolute top-2 left-2 flex flex-wrap gap-1.5">
+                    <AudienceBadge audience={poster.audience} />
+                    {!live && (
+                      <Badge tone="quiet" size="sm">
+                        Not showing
+                      </Badge>
+                    )}
+                    {poster.signupUrl && (
+                      <Badge tone="ember" size="sm" icon={QrCode}>
+                        QR
+                      </Badge>
+                    )}
+                  </span>
+                </button>
+
+                <div className="p-3.5 flex-1 flex flex-col">
+                  <h4 className="text-[13px] text-ink leading-snug line-clamp-2">
+                    {poster.title}
+                  </h4>
+                  <p className="mt-1.5 text-[11px] text-muted tabular">
+                    {poster.startDate} → {poster.endDate}
+                  </p>
+                  <p className="text-[11px] text-faint tabular">
+                    {Math.round((poster.duration || 0) / 1000)}s on screen
+                  </p>
+
+                  {canWrite && (
+                    <div className="mt-3 pt-2.5 border-t border-hair flex items-center gap-1">
+                      <Button size="sm" variant="ghost" icon={Edit2} onClick={() => openEdit(poster)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={Trash2}
+                        aria-label="Delete"
+                        className="ml-auto text-faint hover:text-bad"
+                        onClick={() => setDeleting(poster)}
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
 
-      {/* Preview Modal */}
-      {previewUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
-          <img src={previewUrl} alt="Preview" className="max-w-full max-h-full rounded-lg" />
-          <button onClick={() => setPreviewUrl(null)} className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-      )}
+      <WizardShell
+        open={!!editing}
+        title={creating ? 'New poster' : 'Edit poster'}
+        steps={STEPS}
+        step={editing ? wiz.index : 0}
+        onStepChange={wiz.go}
+        onClose={() => setEditing(null)}
+        dismissable={!saving}
+        canContinue={wiz.canContinue}
+        onBlocked={() => wiz.reveal(wiz.index)}
+        primary={wiz.isLast ? reviewPrimary : undefined}
+        error={wiz.stepError}
+      >
+        {formError && (
+          <p className="mb-5 text-[13px] text-bad bg-bad-dim/50 border border-bad/30 rounded-md px-3.5 py-2.5">
+            {formError}
+          </p>
+        )}
+
+        {wiz.index === 0 && (
+          <div className="space-y-3">
+            <StepIntro title="Artwork">
+              {creating
+                ? 'The full-screen image. It is set once here — replacing it later is a separate step.'
+                : 'Drop a new file to replace the artwork, or leave it and move on.'}
+            </StepIntro>
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOver(false);
+                takeFile(e.dataTransfer.files?.[0]);
+              }}
+              onClick={() => fileInput.current?.click()}
+              className={`cursor-pointer rounded-lg border border-dashed px-4 py-8 text-center transition-colors ${
+                dragOver
+                  ? 'border-ember bg-ember-haze'
+                  : wiz.showErr('image')
+                    ? 'border-bad'
+                    : 'border-line hover:border-line-loud'
+              }`}
+            >
+              {preview || editing?.imageUrl ? (
+                <img
+                  src={preview || editing.imageUrl}
+                  alt=""
+                  className="max-h-52 mx-auto rounded-md object-contain"
+                />
+              ) : (
+                <Upload size={22} className="mx-auto text-faint mb-2" strokeWidth={1.5} />
+              )}
+              <p className="text-[12px] text-muted mt-3">
+                {file
+                  ? file.name
+                  : creating
+                    ? 'Drop an image here, or click to choose one'
+                    : 'Click to replace the artwork'}
+              </p>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => takeFile(e.target.files?.[0])}
+              />
+            </div>
+            {wiz.showErr('image') && (
+              <p className="text-[12px] text-bad">{wiz.showErr('image')}</p>
+            )}
+          </div>
+        )}
+
+        {wiz.index === 1 && (
+          <div className="space-y-4">
+            <StepIntro title="Details">
+              The title is for this list, not the screen. A sign-up link turns the slide into a
+              poster-plus-QR instead of full-bleed artwork.
+            </StepIntro>
+
+            <Field label="Title" htmlFor="po-title" required error={wiz.showErr('title')}>
+              <Input
+                id="po-title"
+                autoFocus
+                value={form.title}
+                error={wiz.showErr('title')}
+                onChange={(e) => patch({ title: e.target.value })}
+              />
+            </Field>
+
+            <Field label="Audience" htmlFor="po-audience">
+              <Select
+                id="po-audience"
+                value={form.audience}
+                onChange={(e) => patch({ audience: e.target.value })}
+              >
+                {AUDIENCE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field
+              label="Sign-up link"
+              htmlFor="po-signup"
+              error={wiz.showErr('signupUrl')}
+              hint={
+                wiz.showErr('signupUrl')
+                  ? undefined
+                  : 'Optional. With a link set, the board shows the poster beside a QR code instead of full-bleed.'
+              }
+            >
+              <Input
+                id="po-signup"
+                type="url"
+                placeholder="https://"
+                error={wiz.showErr('signupUrl')}
+                value={form.signupUrl}
+                onChange={(e) => patch({ signupUrl: e.target.value })}
+              />
+            </Field>
+          </div>
+        )}
+
+        {wiz.index === 2 && (
+          <div className="space-y-4">
+            <StepIntro title="Schedule">
+              The window the poster is in the rotation, and how long it holds the screen each pass.
+            </StepIntro>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Goes up" htmlFor="po-start">
+                <Input
+                  id="po-start"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => patch({ startDate: e.target.value })}
+                />
+              </Field>
+              <Field label="Comes down" htmlFor="po-end" error={wiz.showErr('schedule')}>
+                <Input
+                  id="po-end"
+                  type="date"
+                  error={wiz.showErr('schedule')}
+                  value={form.endDate}
+                  onChange={(e) => patch({ endDate: e.target.value })}
+                />
+              </Field>
+              <Field label="Seconds on screen" htmlFor="po-duration">
+                <Input
+                  id="po-duration"
+                  type="number"
+                  min="1"
+                  value={seconds}
+                  onChange={(e) => patch({ duration: Number(e.target.value) * 1000 })}
+                />
+              </Field>
+            </div>
+          </div>
+        )}
+
+        {wiz.isLast && (
+          <div>
+            <StepIntro title="Review">
+              Check it over, then {creating ? 'create it' : 'save your changes'}.
+            </StepIntro>
+
+            <div className="flex gap-5">
+              {(preview || editing?.imageUrl) && (
+                <img
+                  src={preview || editing.imageUrl}
+                  alt=""
+                  className="w-28 shrink-0 rounded-md object-cover bg-raised"
+                />
+              )}
+              <div className="min-w-0 flex-1 grid gap-x-8 sm:grid-cols-2">
+                <KeyValue label="Title" prose>
+                  {form.title || null}
+                </KeyValue>
+                <KeyValue label="Audience" prose>
+                  {AUDIENCE_LABELS[form.audience] ?? form.audience}
+                </KeyValue>
+                <KeyValue label="Window">
+                  {form.startDate} → {form.endDate}
+                </KeyValue>
+                <KeyValue label="On screen">{seconds}s</KeyValue>
+                <KeyValue label="Sign-up" prose>
+                  {form.signupUrl ? 'QR code' : null}
+                </KeyValue>
+              </div>
+            </div>
+          </div>
+        )}
+      </WizardShell>
+
+      <Modal
+        open={!!lightbox}
+        onClose={() => setLightbox(null)}
+        size="lg"
+        caption={lightbox ? `${lightbox.startDate} → ${lightbox.endDate}` : ''}
+        title={lightbox?.title}
+      >
+        {lightbox?.imageUrl && (
+          <img
+            src={lightbox.imageUrl}
+            alt={lightbox.title}
+            className="w-full max-h-[68vh] object-contain rounded-md bg-raised"
+          />
+        )}
+        {lightbox?.signupUrl && (
+          <p className="mt-4 text-[12px] text-muted break-all">
+            QR encodes{' '}
+            <a
+              href={lightbox.signupUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ember hover:underline underline-offset-4"
+            >
+              {lightbox.signupUrl}
+            </a>
+          </p>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        onConfirm={remove}
+        title="Delete this poster?"
+        confirmLabel="Delete"
+        body={
+          <>
+            <span className="text-ink">{deleting?.title}</span> and its artwork are removed. If
+            you only want it off the screens for now, set the end date to yesterday instead.
+          </>
+        }
+      />
     </div>
   );
 }
-
-export default memo(PostersEditor);

@@ -1,4 +1,6 @@
 import { Download } from 'lucide-react';
+import Button from '../ui/Button';
+import { Well } from '../ui/Bits';
 
 function downloadBase64Png(base64, filename) {
   const link = document.createElement('a');
@@ -7,14 +9,24 @@ function downloadBase64Png(base64, filename) {
   link.click();
 }
 
-function CommandOutput({ command }) {
+/**
+ * Renders whatever the agent sent back, by command kind.
+ *
+ * A screenshot is an image, a log tail is a terminal, and anything else is JSON.
+ * Falling back to pretty-printed JSON rather than nothing means a command kind
+ * added on the agent side is still readable here before the console knows
+ * about it.
+ */
+export default function CommandOutput({ command }) {
   const output = command.output;
 
   if (!output) {
     return command.errorMessage ? (
-      <pre className="whitespace-pre-wrap rounded-lg bg-red-50 p-3 text-sm text-red-700">{command.errorMessage}</pre>
+      <pre className="whitespace-pre-wrap rounded-md bg-bad-dim/50 border border-bad/30 px-3.5 py-3 text-[12px] font-mono text-ink">
+        {command.errorMessage}
+      </pre>
     ) : (
-      <div className="text-sm text-gray-500">No output yet.</div>
+      <p className="text-[12px] text-muted">No output yet.</p>
     );
   }
 
@@ -23,34 +35,29 @@ function CommandOutput({ command }) {
       <div className="space-y-3">
         <img
           src={`data:image/png;base64,${output.base64}`}
-          alt="Device screenshot"
-          className="max-h-[520px] w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
+          alt="Screenshot of the display"
+          className="max-h-[520px] w-full rounded-md border border-hair object-contain bg-raised"
         />
-        <button
-          type="button"
-          onClick={() => downloadBase64Png(output.base64, `${command.deviceId || 'device'}-${command.id}.png`)}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        <Button
+          size="sm"
+          icon={Download}
+          onClick={() =>
+            downloadBase64Png(output.base64, `${command.deviceId || 'device'}-${command.id}.png`)
+          }
         >
-          <Download className="h-4 w-4" />
-          Download
-        </button>
+          Download PNG
+        </Button>
       </div>
     );
   }
 
   if (command.kind === 'logs.tail' && Array.isArray(output.lines)) {
     return (
-      <pre className="max-h-[420px] overflow-auto rounded-lg bg-gray-950 p-4 text-xs leading-5 text-gray-100">
+      <Well className="max-h-[420px] overflow-auto whitespace-pre">
         {output.lines.slice(-500).join('\n')}
-      </pre>
+      </Well>
     );
   }
 
-  return (
-    <pre className="max-h-[360px] overflow-auto rounded-lg bg-gray-50 p-4 text-xs text-gray-700">
-      {JSON.stringify(output, null, 2)}
-    </pre>
-  );
+  return <Well className="max-h-[360px] overflow-auto">{JSON.stringify(output, null, 2)}</Well>;
 }
-
-export default CommandOutput;

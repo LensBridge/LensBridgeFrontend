@@ -118,6 +118,57 @@ export const AUDIENCE_LABELS = {
   both: 'Both'
 };
 
+/**
+ * The three values shaped for a `<Select>` or `<SegmentedControl>`, with `both`
+ * first: it is the default for new content, and the option someone picks when
+ * they have not thought about audience yet should be the safe one.
+ */
+export const AUDIENCE_OPTIONS = [
+  { value: 'both', label: AUDIENCE_LABELS.both },
+  { value: 'brothers', label: AUDIENCE_LABELS.brothers },
+  { value: 'sisters', label: AUDIENCE_LABELS.sisters }
+];
+
+// ============================================================================
+// PRAYER SPACES
+// ============================================================================
+
+/**
+ * What kind of room a prayer space is: the label on its card, and the chip the
+ * app's map filters by.
+ *
+ * Deliberately not the same field as `audience`. Type answers "what is it";
+ * audience answers "who is it listed to". The two agree for a gendered musallah
+ * and diverge for everything else — a multifaith room and a reflection bay are
+ * both shown to everyone, and are not the same place.
+ *
+ * `audience` here is only the *default*: `POST /api/admin/minbar/prayer-spaces`
+ * derives it from the type when a request omits it, so the create form prefills
+ * the same value the server would have chosen rather than letting it be decided
+ * invisibly. PATCH never re-derives, which is why the edit form leaves audience
+ * alone when the type changes.
+ *
+ * Backend source: model/minbar/PrayerSpaceType.java
+ *
+ * @typedef {'brothers'|'sisters'|'multifaith'|'reflection'} PrayerSpaceType
+ */
+export const PRAYER_SPACE_TYPES = [
+  { value: 'brothers', label: "Brothers' musallah", audience: 'brothers' },
+  { value: 'sisters', label: "Sisters' musallah", audience: 'sisters' },
+  { value: 'multifaith', label: 'Multi-faith room', audience: 'both' },
+  { value: 'reflection', label: 'Reflection bay', audience: 'both' }
+];
+
+/** Human label for a space type, tolerating a value this file has not caught up to. */
+export function prayerSpaceTypeLabel(type) {
+  return PRAYER_SPACE_TYPES.find(t => t.value === type)?.label ?? titleCase(type) ?? 'Prayer space';
+}
+
+/** The audience the server would derive for this type if a create request omitted one. */
+export function defaultAudienceForSpaceType(type) {
+  return PRAYER_SPACE_TYPES.find(t => t.value === type)?.audience ?? 'both';
+}
+
 // ============================================================================
 // PROMOTED SOCIALS
 // ============================================================================

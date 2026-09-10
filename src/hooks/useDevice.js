@@ -77,11 +77,13 @@ export function useDevice(deviceId) {
     if (!device) return null;
     return {
       ...device,
-      // Without a live feed the only telemetry is whatever the last GET carried.
-      telemetry: lifecycle.telemetry || (live ? null : device.telemetry) || null,
+      // Live frames win, but until one arrives the snapshot the GET returned is
+      // better than nothing — otherwise the panel reads as dashes for a whole
+      // heartbeat interval after every page load.
+      telemetry: lifecycle.telemetry || device.telemetry || null,
       status: getDeviceStatus(device, lifecycle)
     };
-  }, [device, lifecycle, live]);
+  }, [device, lifecycle]);
 
   return { device: mergedDevice, telemetrySamples, loading, error, live, refetch: loadDevice };
 }

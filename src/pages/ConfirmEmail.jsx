@@ -1,229 +1,67 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { CheckCircle, XCircle, Camera, Loader2, ArrowRight } from 'lucide-react';
-import { api, BASE_URL } from '../api/client';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { CheckCircle2, ShieldX } from 'lucide-react';
+import AuthLayout from '../components/shell/AuthLayout';
+import { Spinner } from '../components/ui';
+import { api } from '../api/client';
 
-function ConfirmEmail() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error', 'expired'
-  const [message, setMessage] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-
-  const token = searchParams.get('token');
+/**
+ * Lands here from the verification email.
+ *
+ * The call is fired once per token and guarded by a ref rather than by state:
+ * StrictMode double-invokes effects in development, and the second POST would
+ * consume an already-spent token and report failure for a verification that
+ * actually succeeded.
+ */
+export default function ConfirmEmail() {
+  const [params] = useSearchParams();
+  const token = params.get('token');
+  const [state, setState] = useState(token ? 'working' : 'failed');
+  const [message, setMessage] = useState(null);
+  const fired = useRef(false);
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('Invalid confirmation link. No token provided.');
-      return;
-    }
-
-    confirmEmail(token);
+    if (!token || fired.current) return;
+    fired.current = true;
+    (async () => {
+      const { data, error } = await api.POST('/api/auth/verify-email', { body: { token } });
+      if (error) {
+        setMessage(error.message || 'This verification link is no longer valid.');
+        setState('failed');
+      } else {
+        setMessage(data?.message ?? null);
+        setState('done');
+      }
+    })();
   }, [token]);
 
-  const confirmEmail = async (confirmationToken) => {
-    try {
-      
-      const { data, error, response } = await api.POST('/api/auth/verify-email', {
-        body: { token: confirmationToken }
-      });
-
-      if (!error) {
-        setStatus('success');
-        setMessage('Your email has been successfully confirmed! You can now sign in to your account.');
-        // This endpoint returns a MessageResponse; it has never carried an email.
-        setUserEmail('');
-
-        // Redirect to login after 3 seconds
-        setTimeout(() => {
-          navigate('/login', { 
-            state: { 
-              message: 'Email confirmed successfully! Please sign in.',
-              confirmed: true 
-            }
-          });
-        }, 3000);
-      } else {
-        const errorMessage = error.message || 'Failed to confirm email. Please try again later.';
-
-        if (response.status === 400 && errorMessage.toLowerCase().includes('expired')) {
-          setStatus('expired');
-          setMessage('This confirmation link has expired. Please request a new confirmation email.');
-        } else if (response.status === 400 && errorMessage.toLowerCase().includes('already confirmed')) {
-          setStatus('success');
-          setMessage('Your email is already confirmed! You can sign in to your account.');
-          setTimeout(() => {
-            navigate('/login');
-          }, 2000);
-        } else {
-          setStatus('error');
-          setMessage(errorMessage);
-        }
-      }
-    } catch (error) {
-      console.error('Email confirmation error:', error);
-      setStatus('error');
-      setMessage('Network error. Please check your connection and try again.');
-    }
-  };
-
-  const resendConfirmation = async () => {
-    try {
-      setStatus('loading');
-      // NOTE: /api/auth/resend-confirmation does not exist on the backend -- there is
-      // no such mapping in AuthController and it is absent from openapi.yaml, so this
-      // call 404s and the button has never worked. Left calling the intended path
-      // (rather than deleted) because restoring it is a backend change; it cannot move
-      // to the typed client until the endpoint exists.
-      const response = await fetch(`${BASE_URL}/api/auth/resend-confirmation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        },
-        body: JSON.stringify({ email: userEmail })
-      });
-
-      if (response.ok) {
-        setStatus('success');
-        setMessage('A new confirmation email has been sent. Please check your inbox.');
-      } else {
-        setStatus('error');
-        setMessage('Failed to resend confirmation email. Please try again later.');
-      }
-    } catch (error) {
-      setStatus('error');
-      setMessage('Network error. Please try again later.');
-    }
-  };
-
-  const renderStatusIcon = () => {
-    switch (status) {
-      case 'loading':
-        return <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />;
-      case 'success':
-        return <CheckCircle className="h-16 w-16 text-green-600" />;
-      case 'error':
-      case 'expired':
-        return <XCircle className="h-16 w-16 text-red-600" />;
-      default:
-        return <Camera className="h-16 w-16 text-gray-400" />;
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (status) {
-      case 'success':
-        return 'from-green-600 to-blue-600';
-      case 'error':
-      case 'expired':
-        return 'from-red-600 to-orange-600';
-      default:
-        return 'from-blue-600 to-green-600';
-    }
-  };
-
   return (
-    <div className="flex-1 flex items-center justify-center py-8 px-4">
-      <div className="max-w-md w-full text-center">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <div className={`absolute inset-0 bg-gradient-to-r ${getStatusColor()} rounded-2xl blur-sm opacity-20`}></div>
-              <div className={`relative bg-gradient-to-r ${getStatusColor()} p-4 rounded-2xl`}>
-                <Camera className="h-8 w-8 text-white" />
-              </div>
-            </div>
-          </div>
-          <h1 className={`text-3xl font-bold text-transparent bg-gradient-to-r ${getStatusColor()} bg-clip-text`}>
-            LensBridge
-          </h1>
-          <p className="text-gray-600 text-sm mt-2">Email Confirmation</p>
-        </div>
-
-        {/* Status Content */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
-          <div className="flex justify-center mb-6">
-            {renderStatusIcon()}
-          </div>
-
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            {status === 'loading' && 'Confirming Your Email...'}
-            {status === 'success' && 'Email Confirmed!'}
-            {status === 'error' && 'Confirmation Failed'}
-            {status === 'expired' && 'Link Expired'}
-          </h2>
-
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
-            {message}
-          </p>
-
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            {status === 'success' && (
-              <Link
-                to="/login"
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <span>Continue to Sign In</span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            )}
-
-            {status === 'expired' && (
-              <button
-                onClick={resendConfirmation}
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <span>Resend Confirmation Email</span>
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
-            )}
-
-            {status === 'error' && (
-              <div className="space-y-2">
-                <Link
-                  to="/signup"
-                  className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-                >
-                  <span>Try Signing Up Again</span>
-                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  to="/login"
-                  className="block text-blue-600 hover:text-blue-500 font-medium text-sm"
-                >
-                  Or go to Sign In
-                </Link>
-              </div>
-            )}
-
-            <Link
-              to="/"
-              className="block text-gray-500 hover:text-gray-600 font-medium text-sm mt-4"
-            >
-              ← Back to Home
+    <AuthLayout caption="Email verification" title={state === 'done' ? 'Verified' : 'Verifying'}>
+      <div className="flex flex-col items-center text-center py-2">
+        {state === 'working' && <Spinner size={22} className="text-muted" />}
+        {state === 'done' && (
+          <>
+            <CheckCircle2 size={28} className="text-good mb-4" strokeWidth={1.6} />
+            <p className="text-[13px] text-soft leading-relaxed">
+              {message ?? 'Your email address is confirmed.'}
+            </p>
+            <Link to="/login" className="mt-6 text-[13px] text-ember hover:underline underline-offset-4">
+              Sign in
             </Link>
-          </div>
-        </div>
-
-        {/* Support Info */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Need help?{' '}
-            <a 
-              href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'support@lensbridge.tech'}`}
-              className="text-blue-600 hover:text-blue-500 font-medium"
-            >
-              Contact Support
-            </a>
-          </p>
-        </div>
+          </>
+        )}
+        {state === 'failed' && (
+          <>
+            <ShieldX size={28} className="text-bad mb-4" strokeWidth={1.6} />
+            <p className="text-[13px] text-soft leading-relaxed">
+              {message ?? 'This verification link is missing or no longer valid.'}
+            </p>
+            <Link to="/login" className="mt-6 text-[13px] text-ember hover:underline underline-offset-4">
+              Back to sign in
+            </Link>
+          </>
+        )}
       </div>
-    </div>
+    </AuthLayout>
   );
 }
-
-export default ConfirmEmail;

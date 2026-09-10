@@ -1,5 +1,5 @@
 {
-  "name": "lensbridgefrontend",
+  "name": "minbar-console",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -15,13 +15,19 @@
   },
   "dependencies": {
     "@stomp/stompjs": "^7.3.0",
-    "heic2any": "^0.0.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "lucide-react": "^0.525.0",
+    "next-themes": "^0.4.6",
     "openapi-fetch": "^0.17.0",
     "qrcode.react": "^4.2.0",
+    "radix-ui": "^1.6.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.3"
+    "react-router-dom": "^7.6.3",
+    "sonner": "^2.0.8",
+    "tailwind-merge": "^3.6.0",
+    "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

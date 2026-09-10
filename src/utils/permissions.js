@@ -25,7 +25,6 @@ export const PERMISSIONS = {
   MEDIA_UPLOAD_SELF: 'media:upload:self',
   MEDIA_UPLOAD_MODERATE: 'media:upload:moderate',
   MEDIA_UPLOAD_READ: 'media:upload:read',
-  MEDIA_EVENT_WRITE: 'media:event:write',
 
   // Board content
   BOARD_CONTENT_READ: 'board:content:read',
@@ -34,6 +33,11 @@ export const PERMISSIONS = {
   BOARD_WEEKLY_WRITE: 'board:weekly:write',
   BOARD_TICKER_WRITE: 'board:ticker:write',
   BOARD_SOCIAL_WRITE: 'board:social:write',
+  // Its own permission rather than a corner of the poster or content grants: a
+  // prayer space is a set of walking instructions somebody follows through a
+  // building. A stale poster is embarrassing; a wrong entrance sends a student
+  // to the wrong floor five minutes before Jummah, which is a different failure.
+  BOARD_PRAYER_SPACE_WRITE: 'board:prayerspace:write',
 
   // Board configuration
   BOARD_CONFIG_READ: 'board:config:read',
@@ -50,6 +54,13 @@ export const PERMISSIONS = {
   BOARD_COMMAND_BENIGN: 'board:command:benign',
   BOARD_COMMAND_DISRUPTIVE: 'board:command:disruptive',
   BOARD_COMMAND_INSPECT: 'board:command:inspect',
+
+  // Ticketing (tcketmanage-core). Deliberately its own namespace: a board event
+  // is a calendar entry, not a ticketed event, so `board:event:write` must not
+  // carry ticket issuance or payment settlement with it.
+  TCKET_SCAN: 'tcket:scan',
+  TCKET_MANAGE: 'tcket:manage',
+  TCKET_ADMIN: 'tcket:admin',
 
   // Identity and audit
   IAM_USER_READ: 'iam:user:read',
@@ -95,7 +106,9 @@ export const ROLE_TONE = {
   BOARD_ADMIN: 'elevated',
   BOARD_EDITOR: 'standard',
   BOARD_VIEWER: 'readonly',
-  ADMIN: 'elevated',
+  TCKET_ADMIN: 'elevated',
+  TCKET_MANAGER: 'standard',
+  TCKET_SCANNER: 'readonly',
   USER: 'standard',
 };
 
@@ -103,6 +116,7 @@ export const ROLE_TONE = {
 export const DOMAIN_LABELS = {
   board: 'MusallahBoard',
   media: 'Media sharing',
+  tcket: 'Ticketing',
   iam: 'Identity & access',
   audit: 'Audit log',
 };
@@ -115,8 +129,7 @@ export const DOMAIN_LABELS = {
 export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.MEDIA_UPLOAD_SELF]: 'Upload and manage your own media submissions',
   [PERMISSIONS.MEDIA_UPLOAD_MODERATE]: 'Approve, feature, and delete submissions',
-  [PERMISSIONS.MEDIA_UPLOAD_READ]: 'Read the moderation queue and media events',
-  [PERMISSIONS.MEDIA_EVENT_WRITE]: 'Create media events',
+  [PERMISSIONS.MEDIA_UPLOAD_READ]: 'Read the moderation queue',
 
   [PERMISSIONS.BOARD_CONTENT_READ]: 'View posters, events, and weekly content',
   [PERMISSIONS.BOARD_POSTER_WRITE]: 'Create, edit, and delete posters',
@@ -124,6 +137,7 @@ export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.BOARD_WEEKLY_WRITE]: 'Edit weekly quotes and Jummah times',
   [PERMISSIONS.BOARD_TICKER_WRITE]: 'Edit the scrolling ticker copy',
   [PERMISSIONS.BOARD_SOCIAL_WRITE]: 'Promote social accounts to the boards',
+  [PERMISSIONS.BOARD_PRAYER_SPACE_WRITE]: 'Edit prayer spaces and their walking directions',
 
   [PERMISSIONS.BOARD_CONFIG_READ]: 'View board configuration',
   [PERMISSIONS.BOARD_CONFIG_WRITE]: 'Change location, dark mode, and layout',
@@ -137,6 +151,10 @@ export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.BOARD_COMMAND_BENIGN]: 'Reload Chrome, refresh config',
   [PERMISSIONS.BOARD_COMMAND_DISRUPTIVE]: 'Restart the kiosk, reboot hardware',
   [PERMISSIONS.BOARD_COMMAND_INSPECT]: 'Screenshot a display, tail device logs',
+
+  [PERMISSIONS.TCKET_SCAN]: 'Scan and validate tickets at the door',
+  [PERMISSIONS.TCKET_MANAGE]: 'Run ticketed events: setup, issuance, roster, order book',
+  [PERMISSIONS.TCKET_ADMIN]: 'Delete ticketing records and settle payments by hand',
 
   [PERMISSIONS.IAM_USER_READ]: 'List users and their grants',
   [PERMISSIONS.IAM_USER_WRITE]: 'Create and verify users',
@@ -154,28 +172,13 @@ export const SENSITIVE_PERMISSIONS = new Set([
   PERMISSIONS.BOARD_DEVICE_ENROLL,
   PERMISSIONS.BOARD_COMMAND_INSPECT,
   PERMISSIONS.BOARD_COMMAND_DISRUPTIVE,
+  // Settles payments by hand and deletes sold tickets: money and irreversibility.
+  PERMISSIONS.TCKET_ADMIN,
 ]);
 
-/** Any permission that should let someone through the board section at all. */
-export const BOARD_SECTION_PERMISSIONS = [
-  PERMISSIONS.BOARD_CONTENT_READ,
-  PERMISSIONS.BOARD_CONFIG_READ,
-  PERMISSIONS.BOARD_DEVICE_READ,
-];
-
 /**
- * Any permission that puts at least one tab on the admin console.
- *
- * Board permissions are deliberately absent: the console's tabs are uploads,
- * media events, audit, and users. A BOARD_VIEWER belongs at /admin/board, and
- * letting them past this gate would land them on a page with nothing on it.
- * A BOARD_ADMIN does get in — it carries `audit:read`, and the audit log now
- * covers the device actions it is responsible for.
+ * Section gates now live with the navigation model, in
+ * `src/components/shell/nav.js`, so the sidebar and the route guards read the
+ * same list. `BOARD_SECTION_PERMISSIONS` and `ADMIN_SECTION_PERMISSIONS` used
+ * to live here and were duplicated by hand into three places; they drifted.
  */
-export const ADMIN_SECTION_PERMISSIONS = [
-  PERMISSIONS.MEDIA_UPLOAD_READ,
-  PERMISSIONS.MEDIA_UPLOAD_MODERATE,
-  PERMISSIONS.MEDIA_EVENT_WRITE,
-  PERMISSIONS.AUDIT_READ,
-  PERMISSIONS.IAM_USER_READ,
-];

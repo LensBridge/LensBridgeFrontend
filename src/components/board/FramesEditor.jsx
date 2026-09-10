@@ -1,84 +1,95 @@
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Calendar, Image, Quote, Clock, Monitor, Users, Info,
-  Play, RefreshCw, AlertCircle, ExternalLink, Layers
+  Calendar,
+  Clock,
+  Image as ImageIcon,
+  Layers,
+  MonitorSmartphone,
+  Quote,
+  RefreshCw,
+  Users,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import BoardService from '../../services/BoardService';
-import Can from '../Can';
 import { audienceLabel } from '../../utils/deviceStatus';
-import { PERMISSIONS } from '../../utils/permissions';
 import {
-  FRAME_TYPES, frameTypeLabel, frameDurationLabel, normalizeFrameType
+  FRAME_TYPES,
+  frameDurationLabel,
+  frameTypeLabel,
+  normalizeFrameType,
 } from '../../models/board';
+import { Badge, Button, EmptyState, ErrorNote, Select, Skeleton } from '../ui';
+import RotationStrip, { RotationLegend } from './RotationStrip';
 
 /**
- * FramesEditor — read-only preview of what a board is actually showing.
+ * A read-only preview of what one board is actually showing.
  *
- * Frames are assembled server-side per device (BoardPayloadAssembler), so this
+ * Frames are assembled server-side per device (`BoardPayloadAssembler`), so this
  * fetches the real payload rather than reconstructing the slideshow from
- * posters. Nothing here is editable: a frame's content is owned by the tab it
- * came from (Posters, Events, Weekly) and its ordering by the assembler.
+ * posters and events. Nothing here is editable: a frame's content belongs to
+ * the tab it came from, and its ordering to the assembler. What this answers is
+ * the question none of the other tabs can — "given everything we have set up,
+ * what does the screen in the brothers' musallah look like right now".
  */
 
 // Keyed on the enum name Jackson actually sends — see FRAME_TYPES in
 // models/board.js for why that is not what openapi.yaml documents.
 const FRAME_ICONS = {
-  POSTER: Image,
+  POSTER: ImageIcon,
   EVENT_LIST: Calendar,
   DAILY_SCHEDULE: Calendar,
   NEXT_PRAYER: Clock,
   JUMMAH: Users,
-  ISLAMIC_QUOTE: Quote
+  ISLAMIC_QUOTE: Quote,
 };
-
-const FRAME_COLORS = {
-  POSTER: 'bg-purple-500',
-  EVENT_LIST: 'bg-blue-500',
-  DAILY_SCHEDULE: 'bg-green-500',
-  NEXT_PRAYER: 'bg-amber-500',
-  JUMMAH: 'bg-teal-500',
-  ISLAMIC_QUOTE: 'bg-emerald-500'
-};
-
 
 function formatTime(iso, timezone) {
   if (!iso) return '';
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('en-CA', {
-    hour: 'numeric', minute: '2-digit', timeZone: timezone || undefined
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: timezone || undefined,
   });
 }
 
-/** One-line gist of a frame's payload, per frame type. */
+/** One line on what this particular frame is carrying. */
 function FrameSummary({ frame, timezone }) {
   const type = normalizeFrameType(frame.frameType);
   const config = frame.frameConfig;
+
   if (!config) {
-    return <p className="text-xs text-gray-500">{FRAME_TYPES[type]?.description}</p>;
+    return <p className="text-[12px] text-muted">{FRAME_TYPES[type]?.description}</p>;
   }
 
   switch (type) {
     case 'POSTER':
       return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {config.posterUrl && (
-            <img src={config.posterUrl} alt="" className="h-8 w-12 rounded object-cover bg-gray-100" />
+            <img
+              src={config.posterUrl}
+              alt=""
+              className="h-9 w-12 rounded-sm object-cover bg-raised shrink-0"
+            />
           )}
-          <span className="text-xs text-gray-500 truncate">{config.title || 'Untitled poster'}</span>
+          <span className="text-[12px] text-muted truncate">
+            {config.title || 'Untitled poster'}
+          </span>
         </div>
       );
 
     case 'EVENT_LIST':
     case 'DAILY_SCHEDULE': {
       const events = config.events || [];
-      if (events.length === 0) return <p className="text-xs text-gray-400">No events</p>;
+      if (events.length === 0) return <p className="text-[12px] text-faint">No events</p>;
       return (
-        <p className="text-xs text-gray-500 truncate">
-          {events.length} event{events.length === 1 ? '' : 's'}
-          {' — '}
-          {events.slice(0, 2).map(e => `${e.name}${e.allDay ? '' : ` ${formatTime(e.startTime, timezone)}`}`).join(', ')}
+        <p className="text-[12px] text-muted truncate">
+          {events.length} event{events.length === 1 ? '' : 's'} —{' '}
+          {events
+            .slice(0, 2)
+            .map((e) => `${e.name}${e.allDay ? '' : ` ${formatTime(e.startTime, timezone)}`}`)
+            .join(', ')}
           {events.length > 2 && ` +${events.length - 2} more`}
         </p>
       );
@@ -86,238 +97,178 @@ function FrameSummary({ frame, timezone }) {
 
     case 'JUMMAH': {
       const prayers = config.prayers || [];
-      if (prayers.length === 0) return <p className="text-xs text-gray-400">No slots set for this week</p>;
+      if (prayers.length === 0)
+        return <p className="text-[12px] text-faint">No slots set for this week</p>;
       return (
-        <p className="text-xs text-gray-500 truncate">
-          {prayers.map(p => `${p.prayerTime}${p.room ? ` · ${p.room}` : ''}`).join('  ')}
+        <p className="text-[12px] text-muted truncate">
+          {prayers.map((p) => `${p.prayerTime}${p.room ? ` · ${p.room}` : ''}`).join('   ')}
         </p>
       );
     }
 
     case 'ISLAMIC_QUOTE':
       return (
-        <p className="text-xs text-gray-500 truncate">
-          <span className="font-medium capitalize">{(config.kind || '').toLowerCase()}</span>
+        <p className="text-[12px] text-muted truncate">
+          <span className="capitalize text-soft">{(config.kind || '').toLowerCase()}</span>
           {config.reference ? ` — ${config.reference}` : ''}
-          {config.translation && (
-            <span className="text-gray-400"> — &ldquo;{config.translation}&rdquo;</span>
-          )}
+          {config.translation && <span className="text-faint"> — “{config.translation}”</span>}
         </p>
       );
 
     default:
-      return <p className="text-xs text-gray-500">{FRAME_TYPES[type]?.description}</p>;
+      return <p className="text-[12px] text-muted">{FRAME_TYPES[type]?.description}</p>;
   }
 }
 
 /**
- * `devices` and `devicesLoading` come from the parent's useDeviceList — calling
- * the hook here too would open a second STOMP subscription and refetch the
- * whole fleet on every reconnect.
+ * `devices` and `devicesLoading` come from the parent's `useDeviceList` —
+ * calling the hook here too would open a second STOMP subscription and refetch
+ * the whole fleet on every reconnect.
  */
-function FramesEditor({ devices = [], devicesLoading = false, showMessage }) {
+export default function FramesEditor({ devices = [], devicesLoading = false }) {
   const [deviceId, setDeviceId] = useState('');
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Memoized so the default-selection effect below doesn't re-run every render.
-  const activeDevices = useMemo(() => devices.filter(d => !d.revokedAt), [devices]);
+  // Memoized so the default-selection effect below does not re-run every render.
+  const active = useMemo(() => devices.filter((d) => !d.revokedAt), [devices]);
 
-  // Default to the first live device once the fleet loads.
   useEffect(() => {
-    if (!deviceId && activeDevices.length > 0) setDeviceId(activeDevices[0].id);
-  }, [activeDevices, deviceId]);
+    if (!deviceId && active.length > 0) setDeviceId(active[0].id);
+  }, [active, deviceId]);
 
-  const loadPayload = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!deviceId) return;
     setLoading(true);
     setError('');
     try {
       setPayload(await BoardService.getDevicePayload(deviceId));
     } catch (err) {
-      setError(err.message || 'Failed to load board payload');
+      setError(err.message || 'Failed to load the board payload.');
       setPayload(null);
     } finally {
       setLoading(false);
     }
   }, [deviceId]);
 
-  useEffect(() => { loadPayload(); }, [loadPayload]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  const handleRefresh = () => {
-    loadPayload();
-    showMessage?.('Preview reloaded');
-  };
-
-  const frames = payload?.frames || [];
+  const frames = payload?.frames ?? [];
   const timezone = payload?.deviceConfig?.location?.timezone;
-
-  // `durationInSeconds: null` means the board decides, so a cycle total is only
-  // meaningful as a floor — say so rather than inventing a number for it.
-  const fixedSeconds = frames.reduce((acc, f) => acc + (f.durationInSeconds || 0), 0);
-  const autoCount = frames.filter(f => f.durationInSeconds == null).length;
 
   if (devicesLoading) {
     return (
-      <div className="py-12 text-center text-gray-500">
-        <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin" />
-        Loading devices...
+      <div className="space-y-3">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        ))}
       </div>
     );
   }
 
-  if (activeDevices.length === 0) {
+  if (active.length === 0) {
     return (
-      <div className="rounded-xl border border-amber-100 bg-amber-50 p-8 text-center">
-        <Monitor className="mx-auto mb-3 h-10 w-10 text-amber-400" />
-        <p className="font-medium text-amber-800">No enrolled boards</p>
-        <p className="mb-4 text-sm text-amber-600">
-          Frames are assembled per device, so there is nothing to preview yet.
-        </p>
-        <Can permission={PERMISSIONS.BOARD_DEVICE_ENROLL}>
-          <Link
-            to="/admin/devices/enroll"
-            className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700"
-          >
-            Enroll a board
-            <ExternalLink className="h-4 w-4" />
-          </Link>
-        </Can>
-      </div>
+      <EmptyState
+        icon={MonitorSmartphone}
+        title="No boards enrolled"
+        body="Frames are assembled per device, so there is nothing to preview until at least one screen has joined the fleet."
+      />
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Device selector + summary */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <div className="flex items-center gap-2">
-            <Play className="h-5 w-5 text-indigo-600" />
-            <span className="font-semibold text-gray-900">Live Slideshow</span>
-          </div>
-          <p className="mt-1 text-sm text-gray-500">
-            {loading ? 'Fetching...' : (
-              <>
-                {frames.length} frame{frames.length === 1 ? '' : 's'}
-                {fixedSeconds > 0 && ` · ${fixedSeconds}s fixed`}
-                {autoCount > 0 && ` · ${autoCount} auto-timed`}
-              </>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={deviceId}
-            onChange={(e) => setDeviceId(e.target.value)}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500"
-          >
-            {activeDevices.map(device => (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:w-72">
+          <label htmlFor="frames-device" className="block mb-1.5 text-[12px] text-soft">
+            Preview which board
+          </label>
+          <Select id="frames-device" value={deviceId} onChange={(e) => setDeviceId(e.target.value)}>
+            {active.map((device) => (
               <option key={device.id} value={device.id}>
-                {device.displayName || device.id.slice(0, 8)}
-                {device.audience ? ` (${audienceLabel(device.audience)})` : ''}
+                {device.displayName || 'Unnamed'} · {audienceLabel(device.audience)}
               </option>
             ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 disabled:opacity-50"
-            title="Reload preview"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </Select>
         </div>
+        <Button icon={RefreshCw} onClick={load} loading={loading} className="ml-auto">
+          Reload preview
+        </Button>
       </div>
 
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
+      {error && <ErrorNote onRetry={load}>{error}</ErrorNote>}
 
-      {/* Timeline */}
-      {frames.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <div className="mb-3 flex items-center gap-2 text-sm text-gray-600">
-            <Monitor className="h-4 w-4" />
-            <span>Timeline</span>
-          </div>
-          <div className="flex gap-1 overflow-x-auto pb-2">
-            {frames.map((frame, i) => {
-              const type = normalizeFrameType(frame.frameType);
-              const Icon = FRAME_ICONS[type] || Layers;
-              return (
-                <div
-                  key={`${type}-${i}`}
-                  className={`flex h-10 flex-shrink-0 items-center justify-center rounded-lg ${FRAME_COLORS[type] || 'bg-gray-400'}`}
-                  style={{ width: Math.max(40, (frame.durationInSeconds || 10) * 4) }}
-                  title={`${frameTypeLabel(frame.frameType)} — ${frameDurationLabel(frame.durationInSeconds)}`}
-                >
-                  <Icon className="h-4 w-4 text-white" />
-                </div>
-              );
-            })}
+      {/* The loop, drawn to scale. Three summary tiles used to sit here saying
+          "6 frames / 92s / America/Toronto", which is the same information with
+          the shape taken out of it. */}
+      {frames.length > 0 && !loading && (
+        <div>
+          <RotationStrip frames={frames} />
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-4">
+            <RotationLegend />
+            <span className="val text-[11px] text-muted">{timezone}</span>
           </div>
         </div>
       )}
 
-      {/* Frame list */}
       {loading ? (
-        <div className="py-10 text-center text-gray-500">
-          <RefreshCw className="mx-auto mb-2 h-6 w-6 animate-spin" />
-          Loading payload...
-        </div>
-      ) : frames.length === 0 && !error ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 py-10 text-center">
-          <Layers className="mx-auto mb-2 h-10 w-10 text-gray-300" />
-          <p className="font-medium text-gray-600">This board has nothing to show</p>
-          <p className="text-sm text-gray-400">Add posters, events, or weekly content.</p>
-        </div>
-      ) : (
         <div className="space-y-2">
-          {frames.map((frame, i) => {
+          {Array.from({ length: 5 }, (_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : frames.length === 0 ? (
+        <EmptyState
+          icon={Layers}
+          title="This board has nothing to show"
+          body="The assembler produced no frames. Usually that means no poster, event or weekly content matches this board's audience and today's date."
+        />
+      ) : (
+        <ol className="space-y-2">
+          {frames.map((frame, index) => {
             const type = normalizeFrameType(frame.frameType);
-            const Icon = FRAME_ICONS[type] || Layers;
-            const meta = FRAME_TYPES[type];
+            const Icon = FRAME_ICONS[type] ?? Layers;
             return (
-              <div
-                key={`${type}-${i}`}
-                className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-3"
+              <li
+                key={frame.key ?? `${type}-${index}`}
+                className="bg-surface border border-hair rounded-lg shadow-sm px-4 py-3 flex items-start gap-3.5"
               >
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold text-gray-500">
-                  {i + 1}
-                </div>
-                <div className={`flex-shrink-0 rounded-lg p-2 ${FRAME_COLORS[type] || 'bg-gray-400'}`}>
-                  <Icon className="h-4 w-4 text-white" />
-                </div>
+                <span className="shrink-0 w-7 h-7 rounded-md bg-raised border border-hair grid place-items-center text-[11px] font-mono text-muted tabular">
+                  {index + 1}
+                </span>
+                <span className="shrink-0 mt-1 text-ember">
+                  <Icon size={15} strokeWidth={1.9} />
+                </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-gray-900">{frameTypeLabel(frame.frameType)}</p>
-                    {meta?.source && (
-                      <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-500">
-                        {meta.source}
-                      </span>
+                    <span className="text-[13px] text-ink">{frameTypeLabel(frame.frameType)}</span>
+                    {frame.slot && (
+                      <Badge tone="quiet" size="sm">
+                        {frame.slot}
+                      </Badge>
                     )}
                   </div>
-                  <FrameSummary frame={frame} timezone={timezone} />
+                  <div className="mt-1">
+                    <FrameSummary frame={frame} timezone={timezone} />
+                  </div>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-3">
-                  <span className="w-12 text-right text-sm tabular-nums text-gray-500">
-                    {frameDurationLabel(frame.durationInSeconds)}
-                  </span>
-                </div>
-              </div>
+                <span className="shrink-0 text-[12px] text-muted tabular">
+                  {frameDurationLabel(frame.durationInSeconds)}
+                </span>
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
+
+      <p className="text-[12px] text-muted leading-relaxed">
+        Assembled by the server for this device, not reconstructed here — this is what the screen
+        is being sent. Nothing on this tab is editable: a frame's content belongs to the tab it came
+        from, and its position to the assembler.
+      </p>
     </div>
   );
 }
-
-export default memo(FramesEditor);

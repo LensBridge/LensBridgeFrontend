@@ -1,30 +1,32 @@
 import { decodeThrottle } from '../../utils/throttle';
+import Badge from '../ui/Badge';
 
-function ThrottleChips({ value }) {
+/**
+ * Raspberry Pi throttle flags.
+ *
+ * A flag that is *currently* asserted is a live fault; one that is only latched
+ * happened at some point since boot and may be long over. Those are different
+ * problems, so they get different tones — red for now, amber for once.
+ */
+export default function ThrottleChips({ value }) {
+  if (value == null) return <span className="text-[12px] text-faint">No throttle data</span>;
+
   const flags = decodeThrottle(value);
-
-  if (!value) {
-    return <span className="text-sm text-gray-500">No throttle data</span>;
-  }
-
   if (flags.length === 0) {
-    return <span className="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Clear</span>;
+    return (
+      <Badge tone="good" size="sm">
+        Clear
+      </Badge>
+    );
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-1.5">
       {flags.map((flag) => (
-        <span
-          key={flag.bit}
-          className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-            flag.current ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-800'
-          }`}
-        >
+        <Badge key={flag.bit} tone={flag.current ? 'bad' : 'warn'} size="sm">
           {flag.label}
-        </span>
+        </Badge>
       ))}
     </div>
   );
 }
-
-export default ThrottleChips;
