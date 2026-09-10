@@ -1,14 +1,14 @@
 /**
- * The single HTTP entry point for the app.
+ * The single HTTP entry point for the console.
  *
  * Paths, parameters, request bodies and response shapes all come from
  * src/api/schema.d.ts, which is generated from LensBridgeBackend/openapi.yaml.
  * Regenerate with `npm run api:generate` -- never edit the schema by hand.
  *
  * Everything routes through `authFetch` below, which owns access-token refresh.
- * Previously only AuthService.makeRequest did this; BoardService, DirectUploadService
- * and a handful of pages used bare fetch and so simply failed once the access token
- * expired, instead of refreshing and retrying.
+ * Every service in src/services goes through the generated `api` client, so an
+ * expired access token refreshes and the request replays rather than surfacing
+ * as a bare 401 halfway through a page load.
  */
 import createClient from "openapi-fetch";
 import type { paths } from "./schema";
@@ -148,12 +148,10 @@ export const api = createClient<paths>({
 export { BASE_URL };
 
 /**
- * Authenticated fetch for call sites not yet moved onto the typed client.
- *
- * Shares `authFetch`, so these get the same credentials and the same
- * single-flight refresh -- they are simply not type-checked against the schema.
- * Prefer `api` for anything new; this exists so the remaining pages behave
- * correctly during the migration rather than after it.
+ * Authenticated fetch for the one call site not on the typed client:
+ * `AuthService.makeRequest`. Shares `authFetch`, so it gets the same
+ * credentials and the same single-flight refresh -- it is simply not
+ * type-checked against the schema. Use `api` for anything new.
  */
 export function authenticatedFetch(url: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
@@ -164,11 +162,3 @@ export function authenticatedFetch(url: string, init: RequestInit = {}): Promise
   return authFetch(new Request(url, { ...init, headers }));
 }
 
-/**
- * Escape hatch for the few transfers OpenAPI does not describe: presigned R2
- * uploads to a third-party origin, and blob downloads of already-signed URLs.
- * Deliberately does not attach LensBridge credentials.
- */
-export function rawFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  return fetch(input, init);
-}

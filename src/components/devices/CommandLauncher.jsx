@@ -1,49 +1,51 @@
-import { createElement, useMemo, useState } from 'react';
-import { Camera, FileText, Loader2, MoreHorizontal, Power, RefreshCcw, RotateCw, ServerCog } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Camera, FileText, Power, RefreshCcw, RotateCw, ServerCog } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import { useAuth } from '../../context/AuthContext';
 import { COMMAND_PERMISSIONS, COMMAND_RISK, PERMISSIONS } from '../../utils/permissions';
+import { Button, Badge, Modal, Field, Input, ErrorNote, ConfirmDialog } from '../ui';
 
 const QUICK_COMMANDS = [
-  { kind: 'chrome.reload', label: 'Reload Chrome', icon: RotateCw, confirm: false },
-  { kind: 'config.refresh', label: 'Refresh Config', icon: RefreshCcw, confirm: false },
-  { kind: 'chrome.screenshot', label: 'Screenshot', icon: Camera, confirm: false },
-  { kind: 'kiosk.restart', label: 'Restart Kiosk', icon: ServerCog, confirm: true },
-  { kind: 'system.reboot', label: 'Reboot Device', icon: Power, confirm: true }
+  { kind: 'chrome.reload', label: 'Reload Chrome', icon: RotateCw },
+  { kind: 'config.refresh', label: 'Refresh config', icon: RefreshCcw },
+  { kind: 'chrome.screenshot', label: 'Screenshot', icon: Camera },
+  { kind: 'kiosk.restart', label: 'Restart kiosk', icon: ServerCog, confirm: true },
+  { kind: 'system.reboot', label: 'Reboot device', icon: Power, confirm: true },
 ];
 
 /**
  * The three command permissions are separately grantable, so the buttons have to
- * carry their risk class on their face. `inspect` in particular is a surveillance
- * primitive — a screenshot of a display in a prayer space, or the device's logs —
- * and it should not look like a page reload.
+ * carry their risk class on their face.
+ *
+ * `inspect` in particular is a surveillance primitive — a screenshot of a
+ * display in a prayer space, or the device's system logs — and it should not
+ * look like a page reload. It gets the warning tone that `disruptive` does,
+ * because pointing a camera at a room and rebooting the hardware are both
+ * things you should have to mean.
  */
-const RISK_CHIP = {
-  benign: 'bg-gray-100 text-gray-600',
-  disruptive: 'bg-amber-100 text-amber-700',
-  inspect: 'bg-purple-100 text-purple-700'
-};
+const RISK_TONE = { benign: 'quiet', disruptive: 'warn', inspect: 'warn' };
 
 function RiskChip({ permission }) {
   const risk = COMMAND_RISK[permission];
-  if (!risk) return null;
+  if (!risk || risk === 'benign') return null;
   return (
-    <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${RISK_CHIP[risk]}`}>
+    <Badge tone={RISK_TONE[risk]} size="sm">
       {risk}
-    </span>
+    </Badge>
   );
 }
 
-function CommandLauncher({ deviceId, onIssued, disabled }) {
+export default function CommandLauncher({ deviceId, onIssued, disabled }) {
   const { can, canAny } = useAuth();
   const [submitting, setSubmitting] = useState('');
   const [showLogs, setShowLogs] = useState(false);
+  const [confirming, setConfirming] = useState(null);
   const [lines, setLines] = useState(100);
   const [error, setError] = useState('');
 
   // The endpoint resolves its @PreAuthorize from the request body, so there is
   // no single permission that gates the row — each kind is checked on its own.
-  const allowedCommands = useMemo(
+  const allowed = useMemo(
     () => QUICK_COMMANDS.filter((command) => can(COMMAND_PERMISSIONS[command.kind])),
     [can]
   );
@@ -51,24 +53,24 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
   const canIssueAny = canAny([
     PERMISSIONS.BOARD_COMMAND_BENIGN,
     PERMISSIONS.BOARD_COMMAND_DISRUPTIVE,
-    PERMISSIONS.BOARD_COMMAND_INSPECT
+    PERMISSIONS.BOARD_COMMAND_INSPECT,
   ]);
 
-  const issue = async (kind, payload = {}, confirmCommand = false) => {
-    if (confirmCommand && !confirm(`Issue ${kind} to this device?`)) return;
-
+  const issue = async (kind, payload = {}) => {
+    setError('');
+    setSubmitting(kind);
     try {
-      setError('');
-      setSubmitting(kind);
       const issued = await DeviceService.issueCommand(deviceId, {
         kind,
         payload,
-        deadlineMs: kind === 'logs.tail' ? 45000 : 30000
+        // A log tail waits on the agent reading journalctl; 30s is not enough.
+        deadlineMs: kind === 'logs.tail' ? 45000 : 30000,
       });
       onIssued?.(issued);
       setShowLogs(false);
     } catch (err) {
-      setError(err.message || 'Failed to issue command');
+      setError(err.message || 'Failed to issue the command.');
+      throw err;
     } finally {
       setSubmitting('');
     }
@@ -77,78 +79,93 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
   if (!canIssueAny) return null;
 
   return (
-    <div className="space-y-4">
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+    <div className="space-y-3">
+      {error && <ErrorNote>{error}</ErrorNote>}
 
       <div className="flex flex-wrap gap-2">
-        {allowedCommands.map((command) => (
-          <button
+        {allowed.map((command) => (
+          <Button
             key={command.kind}
-            type="button"
-            disabled={disabled || Boolean(submitting)}
-            onClick={() => issue(command.kind, {}, command.confirm)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            size="sm"
+            icon={command.icon}
+            disabled={disabled || !!submitting}
+            loading={submitting === command.kind}
+            onClick={() =>
+              command.confirm ? setConfirming(command) : issue(command.kind).catch(() => {})
+            }
           >
-            {submitting === command.kind ? <Loader2 className="h-4 w-4 animate-spin" /> : createElement(command.icon, { className: 'h-4 w-4' })}
             {command.label}
             <RiskChip permission={COMMAND_PERMISSIONS[command.kind]} />
-          </button>
+          </Button>
         ))}
 
         {canTailLogs && (
-          <button
-            type="button"
-            disabled={disabled || Boolean(submitting)}
+          <Button
+            size="sm"
+            icon={FileText}
+            disabled={disabled || !!submitting}
             onClick={() => setShowLogs(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <FileText className="h-4 w-4" />
-            Tail Logs
+            Tail logs
             <RiskChip permission={PERMISSIONS.BOARD_COMMAND_INSPECT} />
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
 
-      {showLogs && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900">Tail device logs</h3>
-            <p className="mt-1 text-sm text-gray-500">Request the latest journal lines from the agent. The backend clamps this between 1 and 500.</p>
-            <label className="mt-5 block text-sm font-medium text-gray-700">
-              Lines
-              <input
-                type="number"
-                min="1"
-                max="500"
-                value={lines}
-                onChange={(event) => setLines(Number(event.target.value))}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              />
-            </label>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowLogs(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => issue('logs.tail', { lines: Math.min(500, Math.max(1, lines || 100)) })}
-                disabled={Boolean(submitting)}
-                className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-              >
-                {submitting === 'logs.tail' && <Loader2 className="h-4 w-4 animate-spin" />}
-                Issue Command
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Modal
+        open={showLogs}
+        onClose={() => setShowLogs(false)}
+        caption="Inspect"
+        title="Tail device logs"
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setShowLogs(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              loading={submitting === 'logs.tail'}
+              onClick={() =>
+                issue('logs.tail', { lines: Math.min(500, Math.max(1, lines || 100)) }).catch(
+                  () => {}
+                )
+              }
+            >
+              Request logs
+            </Button>
+          </>
+        }
+      >
+        <Field
+          label="Lines"
+          htmlFor="log-lines"
+          hint="The server clamps this between 1 and 500. Reading a device's logs is recorded in the audit log."
+        >
+          <Input
+            id="log-lines"
+            type="number"
+            min="1"
+            max="500"
+            value={lines}
+            onChange={(e) => setLines(Number(e.target.value))}
+          />
+        </Field>
+      </Modal>
+
+      <ConfirmDialog
+        open={!!confirming}
+        onClose={() => setConfirming(null)}
+        onConfirm={() => issue(confirming.kind)}
+        title={`${confirming?.label}?`}
+        confirmLabel={confirming?.label ?? 'Issue'}
+        tone="danger"
+        body={
+          confirming?.kind === 'system.reboot'
+            ? 'The display goes dark until the Pi finishes booting — usually under a minute, longer if the filesystem needs checking. Do not do this during Jummah.'
+            : 'The kiosk browser restarts and the screen blanks for a few seconds. Anything mid-animation restarts from the top of the rotation.'
+        }
+      />
     </div>
   );
 }
-
-export default CommandLauncher;

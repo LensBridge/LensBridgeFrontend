@@ -1,156 +1,135 @@
-# LensBridge Frontend
+# Minbar Management Console
 
-A React frontend application for LensBridge - a media upload platform designed for UTM MSA students to share event photos and videos for potential featuring on social media.
+The admin console for everything Minbar runs: MusallahBoard content, the display
+fleet, media submissions, and who is allowed to touch any of it.
 
-> See Also: [LensBridge Backend](https://github.com/IbraTech/LensBridgeBackend) - The backend API for this application.
+This is a **management console and nothing else**. There is no gallery, no
+upload form, and no signup — accounts are created by an administrator. The
+public-facing app this repository used to be (LensBridge) is gone; what survived
+is the moderation queue for the media people still submit.
 
-## Features
+Ticketing is not here either. tCketManage has its own console on its own
+subdomain; the only thing this app owns is the link between a board event and a
+ticketed event, which is one picker inside the events editor.
 
-- 📸 **Media Upload**: Drag-and-drop or click to upload photos and videos
-- 🖼️ **Gallery**: Browse and search through community-submitted media
-- 📱 **Mobile Responsive**: Optimized for all device sizes
-- 🎨 **Modern UI**: Clean, intuitive interface with MSA branding
-- ✅ **Form Validation**: Comprehensive form validation and error handling
-- 🔒 **Consent Management**: User consent for media usage
-
-## Tech Stack
-
-- **React 18** - Modern React with hooks
-- **Vite** - Fast build tool and development server
-- **Tailwind CSS** - Utility-first CSS framework
-- **React Router** - Client-side routing
-- **Lucide React** - Beautiful icons
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Installation
-
-1. Clone the repository
-
-```bash
-git clone https://github.com/Ibratech04/LensBridgeFrontend.git
-cd LensBridgeFrontend
-```
-
-2. Install dependencies
+## Running it
 
 ```bash
 npm install
+cp .env.example .env      # point VITE_API_BASE_URL at your backend
+npm run dev               # http://localhost:5175
 ```
 
-3. Start the development server
+The backend is [LensBridgeBackend](https://github.com/LensBridge/LensBridgeBackend),
+checked out beside this repo.
 
 ```bash
-npm run dev
+npm run build             # typecheck, then vite build
+npm run lint
+npm test                  # token-refresh + model unit tests
+npm run api:generate      # regenerate src/api/schema.d.ts from the backend spec
+npm run api:check         # fail if the committed client is stale
 ```
 
-4. Open your browser to the correct URL
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-
-## Project Structure
+## Layout
 
 ```
 src/
-├── components/          # Reusable UI components
-│   └── Header.jsx      # Navigation header
-├── pages/              # Page components
-│   ├── Home.jsx        # Landing page
-│   ├── Upload.jsx      # Media upload page
-│   └── Gallery.jsx     # Media gallery page
-├── App.jsx             # Main app component
-├── main.jsx            # Entry point
-└── index.css           # Global styles
+  api/          generated OpenAPI client + token storage. Never edit schema.d.ts.
+  services/     one class per backend area; the only place fetch shapes live
+  models/       backend contract constants (frame types, audiences, durations)
+  utils/        permissions catalog, authorization helpers, formatting
+  hooks/        device list / device detail / command stream (STOMP + polling)
+  components/
+    ui/         the design system — Button, Panel, DataTable, Modal, Toast, …
+    shell/      the authenticated frame: sidebar, top bar, nav model
+    brand/      the Minbar mark
+    board/      content editors (events, posters, socials, weekly, slideshow)
+    devices/    telemetry, command launcher, enrollment
+    admin/      access editor, user creation, audit display maps
+  pages/        one file per route
 ```
 
-## Key Features
+Two frames and nothing else: `AuthLayout` for the four screens you can reach
+signed out, `ConsoleLayout` for everything else.
 
-### Media Upload
+## Authorization
 
-- Drag-and-drop interface for easy file selection
-- Support for images (JPG, PNG, GIF) and videos (MP4, MOV, AVI)
-- File size limit: 100MB per file
-- Real-time file preview
-- Form validation with user consent
+The server checks **permissions**, never role names — every `@PreAuthorize` is
+`hasAuthority('domain:resource:verb')`. The console mirrors that exactly:
 
-### Gallery
+- `src/utils/permissions.js` is the catalog, mirrored from the backend enum.
+- `<Can permission={…}>` hides a control the user cannot use.
+- `<PermissionRoute anyOf={…}>` gates a route, and names the missing permission
+  on the denial screen so people know what to ask for.
+- `src/components/shell/nav.js` decides which sidebar entries exist.
 
-- Grid layout for media display
-- Search and filter functionality
-- Featured content highlighting
-- Media statistics
+Hiding a control is presentation, not security. The route gates repeat the nav's
+permission lists on purpose — a bookmark reaches the route without touching the
+sidebar.
 
-### Responsive Design
+Roles are named bundles and are display-only in this app. Gate on the permission
+a control actually needs, so a BOARD_EDITOR gets the poster editor without also
+being handed the reboot button.
 
-- Mobile-first approach
-- Optimized for tablets and desktops
-- Touch-friendly interactions
+## Design
 
-## Environment Variables
+The palette, type and mark are the **Ember** scheme from the Minbar brand project
+(Claude Design `019e31dd`, `Minbar Logo Final.html` and `assets/README.txt`).
 
-The application uses OS environment variables to configure the API endpoints.
+- **Ember (`#F26430`) is the only accent.** One per screen, on the primary
+  action. A selected filter gets the tinted version (`bg-ember-dim`), an active
+  nav item gets a tinted lozenge, and status uses its own narrow ramp. If you
+  find yourself reaching for a second ember button, one of them is a
+  `secondary`.
+- Syne for display type and the wordmark, Montserrat for UI, IBM Plex Mono for
+  the eyebrow labels and any data you might read back to someone.
 
-### Setting Environment Variables
+### Two themes
 
-#### Windows (PowerShell)
+The console ships light and dark, and the ramp is written so that adding the
+second one meant redefining colour and nothing else.
 
-```powershell
-# Set environment variable for current session
-$env:VITE_API_BASE_URL = "http://localhost:8080"
+- **Light** is the default and takes its structure from tCketManage: a white
+  nav column, a 54px title bar, cards on a light neutral ground. Its surfaces
+  are deliberately neutral — a warm tint at 96% lightness turns muddy and
+  fights ember.
+- **Dark** keeps those surfaces neutral and goes to near-black (`#0C0C0E`).
+  The brand sheet does have a dark-first scheme built on the warm `#1C1210`,
+  and it is what the kiosk runs on — but a hue that reads as "warm black"
+  behind a photograph reads as orange across a full console page. Ember stays
+  the only thing on screen carrying chroma.
 
-# Set environment variable permanently (requires restart)
-[System.Environment]::SetEnvironmentVariable("VITE_API_BASE_URL", "http://localhost:8080", [System.EnvironmentVariableTarget]::User)
-```
+Token names are semantic, not literal, which is what lets both themes share
+them: `ground` is the app background and `raised` is one step toward the viewer
+in either. Light values live in `@theme` in `src/index.css`; dark values are a
+`.dark` block that redefines the same names. **Type, radii, motion and the shell
+metrics are not part of a theme** — a dark mode that also moves things is two
+changes wearing one name.
 
-#### Windows (Command Prompt)
+Two things in that file are worth knowing before you edit it:
 
-```cmd
-# Set environment variable for current session
-set VITE_API_BASE_URL=http://localhost:8080
+- The `dark` variant is repointed at a class (`@custom-variant`), not
+  `prefers-color-scheme`, because "System" has to be a choice among three
+  rather than the absence of a choice. `next-themes` owns the class, a blocking
+  script in `index.html` applies it before first paint, and the storage key is
+  spelled in both places.
+- `--shadow-*` values reference `--sh-*` variables instead of literal rgba.
+  Tailwind compiles a resolved colour into the shadow utility, so a literal
+  would not follow the theme; a nested `var()` survives compilation and does.
 
-# Set environment variable permanently
-setx VITE_API_BASE_URL "http://localhost:8080"
-```
+A handful of values must **not** flip — the app-icon shell is near-black
+artwork, and a QR code needs a light field under it whichever way the console
+is running. Those use the `--color-deep` / `--color-cream` brand constants.
 
-#### Linux/macOS
+Tokens live in `@theme` in `src/index.css`. The mark's geometry — a 7.5-unit
+stroke, r24 arc across a 26–74 span, detached platform bar at y84 — is in
+`src/components/brand/MinbarMark.jsx`, which also enforces the two brand rules
+worth enforcing in code: stroke thickens as the mark shrinks, and below 24px it
+switches to the rounded icon shell.
 
-```bash
-# Set environment variable for current session
-export VITE_API_BASE_URL=http://localhost:8080
+## Backend gaps
 
-# Add to ~/.bashrc or ~/.zshrc for permanent setting
-echo 'export VITE_API_BASE_URL=http://localhost:8080' >> ~/.bashrc
-```
-
-### Available Environment Variables
-
-- `VITE_API_BASE_URL` - Base URL for the backend API (default: `http://localhost:8080`)
-
-### Examples
-
-```bash
-# Development
-VITE_API_BASE_URL=http://localhost:8080
-
-# Production
-VITE_API_BASE_URL=https://your-production-api.com
-
-# Staging
-VITE_API_BASE_URL=https://staging-api.your-domain.com
-```
-
-**Note**: Vite requires environment variables to be prefixed with `VITE_` to be accessible in the browser.
-
-## License
-
-This project is licensed under the MIT License.
+See [NOTES-FOR-BACKEND.md](./NOTES-FOR-BACKEND.md) — the places where the
+console cannot do something an operator will ask for, and the contract
+workarounds it currently carries.

@@ -1,19 +1,28 @@
-import { createElement } from 'react';
 import { Cpu, HardDrive, MemoryStick, Network, Radio, Thermometer, Wifi } from 'lucide-react';
 import ThrottleChips from './ThrottleChips';
 import { formatRelativeTime } from '../../utils/deviceStatus';
+import { KeyValue } from '../ui/Bits';
 
-function MiniSparkline({ samples, field, suffix = '', live = true }) {
+/**
+ * A small line chart with no axes.
+ *
+ * Ember, because a sparkline is the one place in the console where the accent
+ * carries data rather than decoration — and there is only ever one series in
+ * it, so there is nothing for a second colour to distinguish.
+ *
+ * Samples accumulate from heartbeat frames only. Without
+ * `board:telemetry:subscribe` no frames arrive, so the empty state says that
+ * rather than sitting on "Waiting for data" indefinitely.
+ */
+function Sparkline({ samples, field, suffix = '', live = true }) {
   const values = samples
     .map((sample) => Number(sample[field]))
     .filter((value) => Number.isFinite(value));
 
   if (values.length < 2) {
-    // Samples only accumulate from heartbeat frames, so without the telemetry
-    // grant this never fills in — say so rather than spinning on "Waiting".
     return (
-      <div className="h-12 rounded bg-gray-50 text-xs text-gray-400 flex items-center justify-center">
-        {live ? 'Waiting for data' : 'Needs live telemetry'}
+      <div className="h-14 rounded-md bg-raised border border-hair grid place-items-center text-[11px] text-faint">
+        {live ? 'Waiting for heartbeats' : 'Needs live telemetry'}
       </div>
     );
   }
@@ -21,92 +30,148 @@ function MiniSparkline({ samples, field, suffix = '', live = true }) {
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
-  const points = values.map((value, index) => {
-    const x = (index / (values.length - 1)) * 100;
-    const y = 34 - ((value - min) / range) * 30;
-    return `${x},${y}`;
-  }).join(' ');
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * 100;
+      const y = 34 - ((value - min) / range) * 30;
+      return `${x},${y}`;
+    })
+    .join(' ');
 
   return (
-    <div className="h-12">
-      <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="h-full w-full">
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-500" />
+    <div>
+      <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="h-11 w-full">
+        <polyline
+          points={points}
+          fill="none"
+          stroke="var(--color-ember)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
       </svg>
-      <div className="text-[11px] text-gray-500">{values.at(-1)}{suffix}</div>
+      <div className="flex items-baseline justify-between text-[11px] text-muted tabular mt-1">
+        <span className="text-faint">
+          {min}
+          {suffix}
+        </span>
+        <span className="text-ink">
+          {values.at(-1)}
+          {suffix}
+        </span>
+        <span className="text-faint">
+          {max}
+          {suffix}
+        </span>
+      </div>
     </div>
   );
 }
 
-function Metric({ icon, label, value }) {
+// Spelled out rather than interpolated: Tailwind scans source text for class
+// names, and `text-${tone}` produces nothing at build time.
+const METRIC_TONE = { ink: 'text-ink', warn: 'text-warn', bad: 'text-bad' };
+
+function Metric({ icon: Icon, label, value, tone = 'ink' }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        {createElement(icon, { className: 'h-4 w-4' })}
+    <div className="bg-raised border border-hair rounded-md px-4 py-3">
+      <div className="flex items-center gap-2 cap">
+        <Icon size={12} strokeWidth={1.9} />
         {label}
       </div>
-      <div className="mt-2 text-xl font-semibold text-gray-900">{value}</div>
+      <div className={`mt-2 font-display text-lg tabular ${METRIC_TONE[tone]}`}>{value}</div>
     </div>
   );
 }
 
-function TelemetryPanel({ device, samples, live = true }) {
+export default function TelemetryPanel({ device, samples, live = true }) {
   const telemetry = device?.telemetry || {};
-  const memValue = telemetry.memUsedMb && telemetry.memTotalMb
-    ? `${telemetry.memUsedMb} / ${telemetry.memTotalMb} MB`
-    : 'Unknown';
+
+  const memory =
+    telemetry.memUsedMb && telemetry.memTotalMb
+      ? `${telemetry.memUsedMb} / ${telemetry.memTotalMb} MB`
+      : '—';
+
+  // A Pi under a fan idles in the fifties; sustained eighties is where it starts
+  // throttling, so that is where the number should start looking wrong.
+  const tempTone =
+    telemetry.cpuTempC == null ? 'ink' : telemetry.cpuTempC >= 80 ? 'bad' : telemetry.cpuTempC >= 70 ? 'warn' : 'ink';
+  const diskTone =
+    telemetry.diskUsedPct == null ? 'ink' : telemetry.diskUsedPct >= 90 ? 'bad' : telemetry.diskUsedPct >= 75 ? 'warn' : 'ink';
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric icon={Thermometer} label="CPU Temp" value={telemetry.cpuTempC ? `${telemetry.cpuTempC} C` : 'Unknown'} />
-        <Metric icon={MemoryStick} label="Memory" value={memValue} />
-        <Metric icon={HardDrive} label="Disk Used" value={telemetry.diskUsedPct != null ? `${telemetry.diskUsedPct}%` : 'Unknown'} />
-        <Metric icon={Cpu} label="Uptime" value={telemetry.uptimeSec ? `${Math.floor(telemetry.uptimeSec / 3600)}h` : 'Unknown'} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Metric
+          icon={Thermometer}
+          label="CPU temp"
+          tone={tempTone}
+          value={telemetry.cpuTempC != null ? `${telemetry.cpuTempC}°C` : '—'}
+        />
+        <Metric icon={MemoryStick} label="Memory" value={memory} />
+        <Metric
+          icon={HardDrive}
+          label="Disk used"
+          tone={diskTone}
+          value={telemetry.diskUsedPct != null ? `${telemetry.diskUsedPct}%` : '—'}
+        />
+        <Metric
+          icon={Cpu}
+          label="Uptime"
+          value={telemetry.uptimeSec ? `${Math.floor(telemetry.uptimeSec / 3600)}h` : '—'}
+        />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">CPU temperature</div>
-          <MiniSparkline samples={samples} field="cpuTempC" suffix=" C" live={live} />
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">Memory used</div>
-          <MiniSparkline samples={samples} field="memUsedMb" suffix=" MB" live={live} />
-        </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">Disk used</div>
-          <MiniSparkline samples={samples} field="diskUsedPct" suffix="%" live={live} />
-        </div>
+      <div className="grid gap-3 lg:grid-cols-3">
+        {[
+          { label: 'CPU temperature', field: 'cpuTempC', suffix: '°' },
+          { label: 'Memory used', field: 'memUsedMb', suffix: 'MB' },
+          { label: 'Disk used', field: 'diskUsedPct', suffix: '%' },
+        ].map((chart) => (
+          <div key={chart.field} className="bg-raised border border-hair rounded-md px-4 py-3">
+            <div className="cap mb-2.5">{chart.label}</div>
+            <Sparkline samples={samples} field={chart.field} suffix={chart.suffix} live={live} />
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <Network className="h-4 w-4 text-indigo-500" />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="bg-raised border border-hair rounded-md px-4 py-3">
+          <div className="flex items-center gap-2 cap mb-1">
+            <Network size={12} strokeWidth={1.9} />
             Network
           </div>
-          <div className="text-sm text-gray-600">Last heartbeat: {formatRelativeTime(device?.lastHeartbeat)}</div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Wifi className="h-4 w-4" />
-            {telemetry.wifiSsid || 'Unknown SSID'}
-          </div>
-          <div className="text-sm text-gray-600">IP: {(telemetry.ipv4 || [device?.lastSeenIp]).filter(Boolean).join(', ') || 'Unknown'}</div>
+          <KeyValue label="Last heartbeat">{formatRelativeTime(device?.lastHeartbeat)}</KeyValue>
+          <KeyValue label="SSID">
+            <span className="inline-flex items-center gap-1.5">
+              {telemetry.wifiSsid && <Wifi size={11} className="text-faint" />}
+              {telemetry.wifiSsid}
+            </span>
+          </KeyValue>
+          <KeyValue label="Addresses" mono>
+            {(telemetry.ipv4 || [device?.lastSeenIp]).filter(Boolean).join(', ') || null}
+          </KeyValue>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-            <Radio className="h-4 w-4 text-indigo-500" />
+        <div className="bg-raised border border-hair rounded-md px-4 py-3">
+          <div className="flex items-center gap-2 cap mb-1">
+            <Radio size={12} strokeWidth={1.9} />
             Runtime
           </div>
-          <div className="text-sm text-gray-600">Kiosk alive: {telemetry.kioskAlive == null ? 'Unknown' : telemetry.kioskAlive ? 'Yes' : 'No'}</div>
+          <KeyValue label="Kiosk alive">
+            {telemetry.kioskAlive == null ? null : telemetry.kioskAlive ? 'Yes' : 'No'}
+          </KeyValue>
           {/* Agents report displayedFrameKey. displayedFrameId is the pre-rename
               name, kept only for agents that predate the change. */}
-          <div className="text-sm text-gray-600">Displayed frame: {telemetry.displayedFrameKey || telemetry.displayedFrameId || 'Unknown'}</div>
-          <ThrottleChips value={telemetry.throttleFlags} />
+          <KeyValue label="Displayed frame" mono>
+            {telemetry.displayedFrameKey || telemetry.displayedFrameId}
+          </KeyValue>
+          <KeyValue label="Throttle">
+            <ThrottleChips value={telemetry.throttleFlags} />
+          </KeyValue>
         </div>
       </div>
     </div>
   );
 }
-
-export default TelemetryPanel;

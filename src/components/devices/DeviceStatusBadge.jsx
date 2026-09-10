@@ -1,24 +1,13 @@
-import { Circle, Wifi, WifiOff, Ban } from 'lucide-react';
+import { Ban, Circle, Wifi, WifiOff } from 'lucide-react';
+import Badge from '../ui/Badge';
 
-function DeviceStatusBadge({ status }) {
-  const styles = {
-    online: 'bg-green-100 text-green-700 border-green-200',
-    offline: 'bg-gray-100 text-gray-700 border-gray-200',
-    revoked: 'bg-red-100 text-red-700 border-red-200'
-  };
-  const icons = {
-    online: Wifi,
-    offline: WifiOff,
-    revoked: Ban
-  };
-  const Icon = icons[status] || Circle;
+const TONES = { online: 'good', offline: 'quiet', revoked: 'bad' };
+const ICONS = { online: Wifi, offline: WifiOff, revoked: Ban };
 
+export default function DeviceStatusBadge({ status, size }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${styles[status] || styles.offline}`}>
-      <Icon className="h-3.5 w-3.5" />
+    <Badge tone={TONES[status] ?? 'quiet'} size={size} icon={ICONS[status] ?? Circle}>
       {status || 'offline'}
-    </span>
+    </Badge>
   );
 }
-
-export default DeviceStatusBadge;

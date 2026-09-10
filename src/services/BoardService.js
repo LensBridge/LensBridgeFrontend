@@ -457,10 +457,16 @@ class BoardService {
   }
 
   // ============================================================================
-  // EVENTS  (BoardEvent: { id, name, description, location,
-  //          startTime, endTime, allDay, audience })
+  // EVENTS  (BoardEvent: { id, name, description, location, startTime, endTime,
+  //          allDay, allowUploads, audience, event })
   // ============================================================================
 
+  /**
+   * `event` on the wire is the linked tCketManage event, not the board event
+   * itself — a genuinely confusing name to carry into the UI, so it lands here
+   * as `ticketEvent`. Null means the board event sells no tickets, which is the
+   * normal case; see linkTicketEvent below.
+   */
   static fromBackendEvent(event) {
     return {
       id: event.id,
@@ -470,7 +476,17 @@ class BoardService {
       startEpochMs: this.toEpochMs(event.startTime),
       endEpochMs: this.toEpochMs(event.endTime),
       allDay: !!event.allDay,
-      audience: this.fromApiAudience(event.audience)
+      allowUploads: !!event.allowUploads,
+      audience: this.fromApiAudience(event.audience),
+      ticketEvent: event.event
+        ? {
+            id: event.event.id,
+            name: event.event.name || '',
+            location: event.event.location || '',
+            description: event.event.description || '',
+            timeEpochMs: this.toEpochMs(event.event.time)
+          }
+        : null
     };
   }
 
@@ -508,6 +524,7 @@ class BoardService {
       startEpochMs: this.toEpochMs(eventData.startEpochMs),
       endEpochMs: this.toEpochMs(eventData.endEpochMs),
       allDay: !!eventData.allDay,
+      allowUploads: !!eventData.allowUploads,
       audience: this.toApiAudience(eventData.audience)
     };
 
@@ -526,6 +543,7 @@ class BoardService {
     if (updates.startEpochMs !== undefined) body.startTime = this.toIso(updates.startEpochMs);
     if (updates.endEpochMs !== undefined) body.endTime = this.toIso(updates.endEpochMs);
     if (updates.allDay !== undefined) body.allDay = !!updates.allDay;
+    if (updates.allowUploads !== undefined) body.allowUploads = !!updates.allowUploads;
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
 
     return this.fromBackendEvent(this.unwrap(
@@ -542,6 +560,36 @@ class BoardService {
       await api.DELETE('/api/admin/board/events/{eventId}', { params: { path: { eventId } } }),
       'Failed to delete event'
     );
+  }
+
+  /**
+   * Point a board event at a tCketManage event, so the board can advertise that
+   * tickets exist and /api/minbar/events can serve their availability.
+   *
+   * The link is a property of the board event and lives behind `board:event:write`,
+   * but choosing which ticketed event to attach means reading the tCket event list,
+   * which needs `tcket:manage` — see TicketingService. Both are checked at the call
+   * site; the server enforces each on its own endpoint.
+   *
+   * Returns the updated BoardEvent, so the caller can replace its row rather than refetch.
+   */
+  static async linkTicketEvent(eventId, tcketEventId) {
+    return this.fromBackendEvent(this.unwrap(
+      await api.PUT('/api/admin/board/events/{eventId}/ticket-event/{tcketEventId}', {
+        params: { path: { eventId, tcketEventId } }
+      }),
+      'Failed to link ticketed event'
+    ));
+  }
+
+  /** Detach the tCketManage event. The ticketed event itself is untouched. */
+  static async unlinkTicketEvent(eventId) {
+    return this.fromBackendEvent(this.unwrap(
+      await api.DELETE('/api/admin/board/events/{eventId}/ticket-event', {
+        params: { path: { eventId } }
+      }),
+      'Failed to unlink ticketed event'
+    ));
   }
 
   // ============================================================================

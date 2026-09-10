@@ -9,6 +9,13 @@
     "moduleResolution": "bundler",
     "types": ["vite/client"],
 
+    // Mirrors the alias in vite.config.js. Nothing under `include` uses `@/`
+    // today, but the shadcn CLI reads its alias target from here rather than
+    // from jsconfig.json -- without it, `shadcn add` writes into a literal
+    // `@/` directory at the repo root instead of into src/.
+    "baseUrl": ".",
+    "paths": { "@/*": ["./src/*"] },
+
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,

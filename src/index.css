@@ -1,111 +1,714 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* ==================================================================== *
+ * Dark mode is a class on <html>, not a media query.
+ *
+ * Tailwind v4 aims `dark:` at `prefers-color-scheme` by default, and that
+ * cannot express "this operator wants the light console on a laptop set to
+ * dark". Repointing the variant at a class hands the choice to the person.
+ * Choosing "System" does not give the media query back its authority — it
+ * asks next-themes to read the OS preference and write the same class — so
+ * there is exactly one thing on the page that decides the theme.
+ *
+ * `:where()` holds the variant at zero specificity, so `dark:bg-x` still
+ * loses to a later plain `bg-y` the way every other variant does.
+ * ==================================================================== */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ==================================================================== *
+ * Minbar Console — light theme.
+ *
+ * The console used to be a dark drafting sheet: ember on near-black, structure
+ * carried by rules and a fixed gutter, nothing boxed. It now borrows its
+ * structure from tCketManage — the sibling console operators keep open in the
+ * next tab — so moving between the two does not mean relearning where things
+ * are: a white nav column, a 54px title bar, and content in bordered cards on
+ * a light neutral ground.
+ *
+ * What did NOT come across is tCketManage's identity. The accent is still
+ * ember, the wordmark is still Syne, UI text is still Montserrat and data is
+ * still Plex Mono. Two consoles built by one team should share a skeleton and
+ * keep their own faces.
+ *
+ * Token names survived the flip because the ramp is semantic, not literal:
+ * `ground` is still the app background and `raised` is still one step toward
+ * the viewer — they simply run light-to-dark now instead of dark-to-light.
+ * The one exception was the type ramp, where `cream` had stopped describing
+ * anything; primary type is `ink`, and the colour that sits on top of ember
+ * is `on-ember`.
+ * ==================================================================== */
+
+@theme {
+  /* Ground and surfaces — a neutral gray ramp, warmed by nothing. Ember is
+     saturated enough that a warm-tinted ground fights it; tCketManage keeps
+     its surfaces dead neutral for the same reason. */
+  --color-ground:     #f6f6f7;   /* app background */
+  --color-surface:    #ffffff;   /* cards, panels, the nav column */
+  --color-surface-2:  #fbfbfc;   /* row hover — a half-step, deliberately */
+  --color-raised:     #f2f2f4;   /* inputs, wells, chip fills, table stripes */
+  --color-overlay:    #ffffff;   /* menus, popovers — separated by shadow, not fill */
+
+  /* The one dark value left, and it is not a surface: scrims and shadow
+     colour. Named for what it does now rather than where it sits. */
+  --color-abyss:      #18181b;
+
+  /* Rules. `hair` is the default divider; `line` is the border on something
+     you can manipulate. That distinction is inherited from the dark theme and
+     is the reason a bordered thing still reads as a control.
+
+     The dark ramp had a fourth weight, `line-soft`, below `hair`. It does not
+     survive the flip: against #f6f6f7 it is invisible, and against a white
+     card it is `hair` with extra steps. Three weights, and each is a
+     different thing rather than a different amount. */
+  --color-hair:       #e9e9ec;
+  --color-line:       #dedee0;
+  --color-line-loud:  #c9c9ce;
+
+  /* Type. */
+  --color-ink:        #18181b;   /* primary */
+  --color-soft:       #3f3f46;   /* secondary — body copy in a dense table */
+  --color-muted:      #65656e;   /* tertiary, captions */
+  --color-faint:      #9a9aa3;   /* placeholders, disabled, dotted leaders */
+
+  /* The accent. Ember, and nothing else — the brand's own orange, not
+     tCketManage's. They are close enough to be cousins and far enough apart
+     that a screenshot tells you which console you are looking at. */
+  --color-ember:      #F26430;
+  --color-ember-deep: #D94E20;
+  --color-ember-dim:  #FDEDE7;   /* tinted fill behind ember type */
+  --color-ember-haze: #FEF6F3;   /* barely-there wash */
+  --color-on-ember:   #ffffff;   /* type on an ember fill */
+
+  /* Status. Still deliberately narrow. `-dim` is now a tint rather than a
+     shade, so the same `bg-bad-dim text-bad` pairing keeps working. */
+  --color-good:       #16a34a;
+  --color-good-dim:   #e8f6ed;
+  --color-warn:       #b45309;
+  --color-warn-dim:   #fdf1e3;
+  --color-bad:        #dc2626;
+  --color-bad-dim:    #fdeced;
+  --color-cool:       #0284c7;
+  --color-cool-dim:   #e6f4fd;
+
+  /* Type on a saturated `bad` fill — the confirm button's hover, and nothing
+     else so far. It is its own token for the same reason `on-ember` is: `bad`
+     is read 26 times as type and 11 as a fill, so it is pinned by what it must
+     do against the ground, and whatever sits on top of it has to move
+     separately. On the dark theme it moves the other way, to near-black. */
+  --color-on-bad:     #ffffff;
+
+  /* Brand constants — the two values from the brand sheet's `assets/README.txt`
+     that mean a fixed ink rather than a position on the ramp. They do NOT flip
+     with the theme, and that is the whole reason they exist: the app-icon shell
+     is near-black in both themes because that is what the icon is, and a QR
+     code needs a light field under it in both themes because that is what a
+     scanner expects. Reach for these only when a value must survive the flip. */
+  --color-deep:       #1C1210;   /* brand Deep — icon shell, ground of the dark theme */
+  --color-cream:      #F5E9DC;   /* brand Cream — type on dark, the QR field */
+
+  /* The tooltip's own surface. It cannot be `abyss`: on the dark theme a
+     near-black chip on a near-black page is not a tooltip, it is a hole. Light
+     inverts (dark chip on a light page); dark lifts (a warmer step up from the
+     ground, with a hairline to close it). Both read as "this floats above". */
+  --color-tip:        #18181b;
+  --color-on-tip:     #ffffff;
+
+  /* Type stacks, one job each and no overlap:
+       Syne          -- display. Page titles, readout numerals, the wordmark.
+       Montserrat    -- UI. Prose, labels, controls. The face MusallahBoard
+                        itself sets body copy in, so the console shares a voice
+                        with the screens it manages.
+       IBM Plex Mono -- data. Emails, ids, times, temperatures, versions,
+                        counts, durations, IPs, permission strings. If you
+                        would spell it out over the phone, it is mono. */
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Syne", "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Radii, on tCketManage's scale. The dark theme rounded almost nothing (3px)
+     because square corners belong on a drafting sheet. Cards need corners, so
+     the scale opens up: `md` is the control radius, `lg` the card radius. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 13px;
+  --radius-xl: 18px;
+
+  /* Elevation. On a dark ground, depth came from the surface ramp; on a light
+     one it has to come from shadow, or every card floats at the same height.
+     Four steps, and `pop` is reserved for things that cover the page.
+
+     The tint of each stop is a variable rather than a literal, and that is
+     load-bearing rather than tidy: Tailwind compiles `--shadow-*` into the
+     utility as a resolved colour, so `.shadow-lg` would keep its light-theme
+     rgba no matter what `.dark` said. What it does not resolve is a nested
+     `var()` — that survives into the compiled rule and is read on the element
+     it lands on. Geometry is shared, colour flips. See `--sh-*` below. */
+  --shadow-xs:  0 1px 2px var(--sh-contact);
+  --shadow-sm:  0 1px 2px var(--sh-contact);
+  --shadow-md:  0 1px 3px var(--sh-edge), 0 1px 2px var(--sh-lift);
+  --shadow-lg:  0 12px 32px -8px var(--sh-drop), 0 4px 12px -4px var(--sh-cast);
+  --shadow-xl:  0 16px 48px -12px var(--sh-pop);
+
+  /* ------------------------------------------------------------------ *
+   * Motion. Unchanged from the dark theme — four durations, two curves.
+   * A console is a tool people open thirty times a day: motion is for saying
+   * "this arrived", "this changed", or "this is live", never for showing that
+   * the page can move.
+   * ------------------------------------------------------------------ */
+  --ease-out: cubic-bezier(0.2, 0, 0.1, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --dur-instant: 90ms;   /* hover, press -- must not lag the pointer */
+  --dur-fast: 160ms;     /* menus, tooltips, small state flips */
+  --dur-base: 260ms;     /* content arriving, section reveals */
+  --dur-slow: 480ms;     /* the rotation strip plotting itself in */
+
+  /* Shell metrics, so the sidebar, the bottom nav and the content padding
+     cannot drift apart the way they did when each hard-coded its own. */
+  --nav-w: 216px;
+  --bar-h: 54px;
+}
+
+/* ------------------------------------------------------------------ *
+ * shadcn/ui token bridge.
+ *
+ * Everything vendored under components/shadcn is written against a fixed set
+ * of semantic names -- `bg-primary`, `text-muted-foreground`, `border-input`.
+ * Mapping the ramp onto those names once, here, is what makes a shadcn Dialog
+ * or DropdownMenu come out looking like Minbar without a single per-component
+ * override.
+ *
+ * Nothing below introduces a colour. Every value points at a token defined in
+ * the block above, so the palette keeps exactly one source of truth.
+ * ------------------------------------------------------------------ */
+@theme {
+  --color-background: var(--color-ground);
+  --color-foreground: var(--color-ink);
+
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-ink);
+
+  --color-popover: var(--color-overlay);
+  --color-popover-foreground: var(--color-ink);
+
+  /* The one accent. White on top of it: ember at this chroma carries white
+     comfortably and carries ink not at all. */
+  --color-primary: var(--color-ember);
+  --color-primary-foreground: var(--color-on-ember);
+
+  --color-secondary: var(--color-raised);
+  --color-secondary-foreground: var(--color-ink);
+
+  /* NOT `--color-muted`. This palette already owns that name and means the
+     opposite by it: here `muted` is tertiary *text*, where shadcn means a
+     muted *surface* with `muted-foreground` as the text on top. shadcn's
+     surface sense lives under its own name and its handful of `bg-muted` call
+     sites are patched to use it. */
+  --color-surface-muted: var(--color-raised);
+  --color-muted-foreground: var(--color-muted);
+
+  /* shadcn spends `accent` on hover and highlight states inside menus and
+     toggles, not on the brand accent. Pointing it at ember would light up
+     every hovered menu row. */
+  --color-accent: var(--color-raised);
+  --color-accent-foreground: var(--color-ink);
+
+  --color-destructive: var(--color-bad);
+  --color-destructive-foreground: var(--color-on-bad);
+
+  --color-border: var(--color-line);
+  --color-input: var(--color-line);
+  --color-ring: var(--color-ember);
+}
+
+/* The few places shadcn reads a bare custom property through `var()` rather
+   than a Tailwind utility. `--radius` is theirs, and it has to agree with the
+   radius scale above or dialogs round differently from everything else. */
+:root {
+  --border: var(--color-line);
+  --popover: var(--color-overlay);
+  --popover-foreground: var(--color-ink);
+  --radius: 0.5625rem; /* 9px — matches --radius-md */
+
+  /* Shadow tints, referenced by the `--shadow-*` scale above. Kept out of
+     `@theme` on purpose: these are the values Tailwind must NOT compile away. */
+  --sh-contact: rgba(24,24,27,0.05);   /* the 1px of contact under a card */
+  --sh-lift:    rgba(24,24,27,0.04);   /* the near stop of a two-stop shadow */
+  --sh-edge:    rgba(24,24,27,0.06);
+  --sh-cast:    rgba(24,24,27,0.08);
+  --sh-drop:    rgba(24,24,27,0.16);   /* menus, dialogs, the auth card */
+  --sh-pop:     rgba(24,24,27,0.28);   /* things that cover the page */
+
+  /* The light travelling across a loading skeleton. */
+  --sweep: rgba(255,255,255,0.85);
+
+  /* Scrollbars. Not on the colour ramp: a thumb has to sit a fixed distance
+     from whatever surface it is over, and every surface here is a different
+     step, so it is its own value rather than `line-loud` pressed into service. */
+  --scroll-thumb: #d4d4d8;
+  --scroll-thumb-hover: #b4b4bb;
+}
+
+/* ==================================================================== *
+ * Minbar Console — dark theme.
+ *
+ * Neutral, not warm. The brand sheet has a dark-first Ember scheme built on
+ * #1C1210, and the obvious move was to lift it wholesale — it is the palette
+ * the kiosk itself runs on. It does not survive the change of scale. On a
+ * kiosk that ground is a frame around a photograph; on a console it is nine
+ * hundred pixels of empty page beside a nav rail, and a hue that reads as
+ * "warm black" at 200px reads as orange at full width. The console looked
+ * tinted, not dark.
+ *
+ * So the surfaces stay dead neutral, for exactly the reason the light theme
+ * gives above: ember is saturated enough that a warm ground fights it. That
+ * argument does not stop being true at 8% lightness. Ember is the only thing
+ * in this file carrying chroma, which is the whole point of having one accent
+ * — and it is what keeps this recognisably the same console rather than a
+ * generic grey one, because the accent was never the ground.
+ *
+ * The warm values are not gone. `--color-deep` and `--color-cream` are still
+ * the brand constants, and the icon shell and the QR field still use them.
+ *
+ * Only colour is redefined below. Type, radii, motion and the shell metrics do
+ * not belong to a theme, and a dark mode that also moves things is two changes
+ * wearing one name.
+ *
+ * The class lands on <html>, the same element `:root` matches, and that matters
+ * more than it looks. The shadcn bridge above is built from aliases like
+ * `--color-card: var(--color-surface)`, and a custom property that references
+ * another is substituted on the element where it is declared. Both live on
+ * <html>, so those aliases resolve against the dark ramp and every vendored
+ * shadcn component follows with no override. Move the class to <body> and the
+ * bridge goes on quietly serving light values.
+ * ==================================================================== */
+.dark {
+  /* Ground and surfaces. Five steps up out of the dark, each one a real step:
+     the gap between `ground` and `surface` has to survive a dimmed laptop in a
+     bright room, which is exactly where a 2%-apart dark ramp collapses into
+     one flat sheet. */
+  --color-ground:     #0C0C0E;   /* app background */
+  --color-surface:    #151517;   /* cards, panels, the nav column */
+  --color-surface-2:  #1A1A1D;   /* row hover — the same half-step, upward */
+  --color-raised:     #202024;   /* inputs, wells, chip fills, table stripes */
+  --color-overlay:    #1C1C20;   /* menus, popovers — fill as well as shadow here */
+
+  /* Scrims and shadow. On the light theme this was the darkest thing in the
+     file; here it has to go under the ground to still read as a scrim. */
+  --color-abyss:      #000000;
+
+  /* Rules. The same three weights doing the same three jobs, and they carry
+     more of the layout than they do on white — a dark card is separated from a
+     dark page by its border first and its fill second. */
+  --color-hair:       #26262A;
+  --color-line:       #303036;
+  --color-line-loud:  #45454D;
+
+  /* Type. */
+  --color-ink:        #F4F4F5;   /* primary */
+  --color-soft:       #D4D4D8;   /* secondary — body copy in a dense table */
+  --color-muted:      #A1A1AA;   /* tertiary, captions */
+  --color-faint:      #71717A;   /* placeholders, disabled, dotted leaders */
+
+  /* The accent. Ember itself does not move: it is the brand, and against this
+     ground it is at 7:1 without help. What moves is the pair around it.
+     `deep` was the darker press state on white and has to become the lighter
+     one here, or a pressed button recedes into the page. The two tints stop
+     being pale washes and become ember over near-black — still the only
+     chroma on the page, and still small: a nav lozenge and a selected chip. */
+  --color-ember-deep: #F5825A;   /* hover and press — lighter here, not darker */
+  --color-ember-dim:  #2E1A12;   /* tinted fill behind ember type */
+  --color-ember-haze: #1C1411;   /* barely-there wash */
+
+  /* Status. The light ramp is picked to survive on white and none of it does
+     here — #16a34a on #0C0C0E is 3.6:1 and reads as olive. Each hue lifts to
+     about the weight `ink` carries, and every `-dim` becomes a wash of its own
+     hue over the ground instead of a pale tint. */
+  --color-good:       #4ADE80;
+  --color-good-dim:   #10281C;
+  --color-warn:       #FBBF24;
+  --color-warn-dim:   #2C2109;
+  --color-bad:        #F87171;
+  --color-bad-dim:    #331919;
+  --color-cool:       #38BDF8;
+  --color-cool-dim:   #0C2434;
+
+  /* White on a #F87171 fill is 2.3:1 — the label all but vanishes at the one
+     moment it matters, which is the pointer sitting on a destructive button.
+     Near-black on the same fill is 6.4:1. */
+  --color-on-bad:     #18181B;
+
+  /* The tooltip lifts instead of inverting — see the token's own note above. */
+  --color-tip:        #26262B;
+  --color-on-tip:     #F4F4F5;
+
+  /* Shadow. A 5%-black shadow under a card on a #0C0C0E page is nothing at
+     all, so every stop deepens and goes pure black rather than ink-tinted.
+     They still do less work than they do on white: down here the border says
+     "edge" and the shadow only says "and it is above you". */
+  --sh-contact: rgba(0,0,0,0.40);
+  --sh-lift:    rgba(0,0,0,0.32);
+  --sh-edge:    rgba(0,0,0,0.46);
+  --sh-cast:    rgba(0,0,0,0.42);
+  --sh-drop:    rgba(0,0,0,0.62);
+  --sh-pop:     rgba(0,0,0,0.78);
+
+  /* The skeleton sweep is white at 6%, not 85%. A bright sweep across a dark
+     card is a strobe, and the thing being said is "still loading", not "look
+     here". */
+  --sweep: rgba(255,255,255,0.06);
+
+  --scroll-thumb: #34343A;
+  --scroll-thumb-hover: #4A4A53;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  /* Tells the browser which way its own chrome should go: native form
+     controls, the caret, the scrollbar gutter. next-themes also sets this
+     inline on <html>, so this is not what makes it work at runtime — it is
+     what keeps the theme coherent in the moment before that runs, and what
+     answers "where do the native bits get told" for anyone reading this file. */
+  .dark {
+    color-scheme: dark;
+  }
+
+  html {
+    background: var(--color-ground);
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Syne is the wordmark's voice and it is used sparingly: page titles, and
+     the readout numerals. Section headings are Montserrat — three faces doing
+     three jobs beats one face doing everything at four weights. */
+  h1, h2, h3 {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    /* Syne is drawn for display sizes and looks cramped set solid. */
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+  }
+
+  h2, h3 {
+    font-family: var(--font-sans);
+    font-size: 0.84375rem; /* 13.5px — the card-header size */
+    letter-spacing: 0;
+  }
+
+  /* Numbers in tables must line up. Montserrat's default figures do not. */
+  table, .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::placeholder {
+    color: var(--color-faint);
+  }
+
+  /* Chrome paints autofilled inputs pale blue and ignores `background`. The
+     inset shadow is the only way to recolour them, and the absurd transition
+     delay stops Chrome animating back to its own colour on focus. */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-ink);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-surface) inset;
+    caret-color: var(--color-ink);
+    transition: background-color 9999s ease-out 0s;
+  }
+
+  /* One focus treatment everywhere. On a dark ground a 2px ember outline was
+     enough; on white it needs the soft halo underneath it or it reads as a
+     hairline someone forgot to remove. */
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  /* Scrollbars, sized to sit inside a card without crowding its padding. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+  }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb-hover);
+    background-clip: content-box;
+  }
+}
+
 @layer utilities {
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-  
-  .font-arabic {
-    font-family: 'Amiri', 'Scheherazade New', 'Times New Roman', serif;
+  /* The eyebrow from the brand sheets. It earns its place in exactly two
+     positions — a card header's overline and a table header — and nowhere
+     else. Put it on every block and it stops being a signal. */
+  .cap {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    line-height: 1.4;
   }
 
-  /* New animated gradient utility */
-  @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-  .animate-gradient { background-size: 200% 200%; animation: gradient-shift 12s ease-in-out infinite; }
-
-  /* Orb float variants */
-  @keyframes orb-float-1 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-40px) translateX(25px); } }
-  @keyframes orb-float-2 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-30px) translateX(-30px); } }
-  @keyframes orb-float-3 { 0%,100% { transform: translateY(0) translateX(0); } 50% { transform: translateY(-50px) translateX(10px); } }
-  .animate-orb-1 { animation: orb-float-1 10s ease-in-out infinite; }
-  .animate-orb-2 { animation: orb-float-2 14s ease-in-out infinite; }
-  .animate-orb-3 { animation: orb-float-3 18s ease-in-out infinite; }
-
-  /* Fade / slide in reveal */
-  .fade-in-up { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(.4,0,.2,1), transform 0.8s cubic-bezier(.4,0,.2,1); }
-  .fade-in-up-active { opacity: 1; transform: translateY(0); }
-  .scale-in { opacity: 0; transform: scale(.95); transition: opacity .8s cubic-bezier(.4,0,.2,1), transform .8s cubic-bezier(.4,0,.2,1); }
-  .scale-in-active { opacity: 1; transform: scale(1); }
-
-  /* Stagger helpers */
-  .delay-100 { transition-delay: 100ms; }
-  .delay-200 { transition-delay: 200ms; }
-  .delay-300 { transition-delay: 300ms; }
-  .delay-400 { transition-delay: 400ms; }
-  .delay-500 { transition-delay: 500ms; }
-
-  /* Cookie Meme Popup Animations */
-  @keyframes bounce-in {
-    0% { transform: scale(0.3) translateY(-100px); opacity: 0; }
-    50% { transform: scale(1.1) translateY(0); opacity: 1; }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); }
+  /* A measured value: mono, tabular, tight. Anything with a unit gets this. */
+  .val {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
-  .animate-bounce-in { animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
 
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
+  /* Readout numerals — the one or two numbers per screen that matter. Syne at
+     a size nothing else on the page comes near. The dark theme let these sit
+     bare on the ground; on a light ground they sit in a card like everything
+     else, so the size does the work the contrast used to. */
+  .readout {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 0.9;
+    font-variant-numeric: tabular-nums;
   }
-  .animate-shake { animation: shake 0.5s ease-in-out; }
 
-  @keyframes wiggle {
-    0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-3deg); }
-    75% { transform: rotate(3deg); }
+  /* Diagonal hatching, for a span whose length is not knowable — an
+     auto-timed slide, an open-ended window. Lifted from the drafting
+     convention where hatch means "not to scale". */
+  .hatch {
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--color-line-loud) 0 1px,
+      transparent 1px 5px
+    );
   }
-  .animate-wiggle { animation: wiggle 0.3s ease-in-out infinite; }
 
-  /* Board Management Animations */
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  .wm {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-indent: 0.16em;
+    line-height: 1;
   }
-  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
 
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to { opacity: 1; transform: translateY(0); }
+  /* ---------------------------------------------------------------- *
+   * The card.
+   *
+   * One class, because a card that is assembled from six utilities at every
+   * call site is a card that will be assembled from five at one of them.
+   * ---------------------------------------------------------------- */
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-hair);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
   }
-  .animate-slideDown { animation: slideDown 0.3s ease-out; }
 
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  .animate-fadeInUp { animation: fadeInUp 0.4s ease-out both; }
-
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  .animate-scaleIn { animation: scaleIn 0.3s ease-out; }
-
-  @keyframes slideInRight {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  .animate-slideInRight { animation: slideInRight 0.3s ease-out; }
-
-  @keyframes pulse-soft {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
-  }
-  .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
-
-  /* Horizontal tab strips scroll on mobile; the bar itself is visual noise. */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* iOS home-indicator clearance for the mobile bottom bar. */
+  .safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pad-safe-b { padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ---------------------------------------------------------------- *
+   * Entrances.
+   *
+   * Content arrives from slightly below and settles. 6px, not 20px: the job
+   * is to say "this just landed", and a longer travel turns a page load into
+   * a performance you have to sit through.
+   * ---------------------------------------------------------------- */
+  @keyframes minbar-fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  /* `backwards`, not `both`: a forwards-filling transform animation leaves the
+     element as a containing block for `position: fixed` descendants, which
+     traps any dialog rendered inside an animated wrapper. */
+  .anim-in { animation: minbar-fade-up var(--dur-base) var(--ease-out) backwards; }
+
+  @keyframes minbar-pop {
+    from { opacity: 0; transform: scale(0.97); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .anim-pop { animation: minbar-pop var(--dur-fast) var(--ease-out) both; }
+
+  /**
+   * Staggered reveal.
+   *
+   * Set `--i` on each child and they arrive in sequence. Capped at 10 steps by
+   * the call sites rather than here: a fortieth row that waits 1.2s to appear
+   * reads as a slow page, not a considered one.
+   */
+  .anim-stagger {
+    animation: minbar-fade-up var(--dur-base) var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+
+  /**
+   * A rule drawing itself, left to right. Kept from the dark theme, where the
+   * layout was a drafting sheet and drawn rules were the whole idiom. It now
+   * survives on the one divider that still separates rather than encloses:
+   * the line under a page header.
+   */
+  @keyframes minbar-draw {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
+  .anim-draw {
+    transform-origin: left;
+    animation: minbar-draw var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 40ms);
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Live state.
+   * ---------------------------------------------------------------- */
+
+  /* Loading skeleton: a light sweep travelling across a raised bar. On the
+     dark theme this was an ember glint; on white, ember at any opacity reads
+     as a progress bar that means something. */
+  @keyframes minbar-sweep {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+  }
+  .shimmer { position: relative; overflow: hidden; }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, var(--sweep), transparent);
+    animation: minbar-sweep 1.4s ease-in-out infinite;
+  }
+
+  @keyframes minbar-breathe {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
+  }
+  .breathe { animation: minbar-breathe 2s ease-in-out infinite; }
+
+  /**
+   * Heartbeat.
+   *
+   * A ring expanding out of an online device's status dot, once every three
+   * seconds. It is not decoration and it is not arbitrary timing: an agent
+   * that has not been heard from for 90 seconds is counted offline, so a dot
+   * that is visibly still beating is the fastest way to read "this screen is
+   * alive right now" from across the page. Offline and revoked dots are
+   * static, which is the whole point of the contrast.
+   */
+  @keyframes minbar-ping {
+    0%        { transform: scale(1);   opacity: 0.5; }
+    70%, 100% { transform: scale(3.2); opacity: 0; }
+  }
+  .heartbeat { position: relative; }
+  .heartbeat::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    animation: minbar-ping 3s var(--ease-out) infinite;
+  }
+
+  /**
+   * A value that just changed.
+   *
+   * Applied on the key of a number so React remounts it, which restarts the
+   * animation. Used on the review-queue readout: moderating a submission
+   * should visibly move the count, or you cannot tell the write landed.
+   */
+  @keyframes minbar-tick {
+    from { opacity: 0; transform: translateY(-0.18em); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .anim-tick { animation: minbar-tick var(--dur-base) var(--ease-spring) both; }
+
+  /* ---------------------------------------------------------------- *
+   * Direct manipulation. Short enough not to sit between the pointer and
+   * the result.
+   * ---------------------------------------------------------------- */
+  .press { transition: transform var(--dur-instant) var(--ease-out); }
+  .press:active:not(:disabled) { transform: scale(0.97); }
+
+  /* ---------------------------------------------------------------- *
+   * Wizard.
+   *
+   * The step-based editor borrows its motion from tCketManage's wizard, the
+   * sibling console operators keep open in the next tab: each screen slides in
+   * from the side it advances toward, and a primary action that cannot fire
+   * yet shakes and points at the reason rather than sitting there greyed out
+   * with nothing said. 16px of travel, not 40 — "this is the next screen",
+   * not a transition you sit through.
+   * ---------------------------------------------------------------- */
+  @keyframes minbar-wiz-step {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes minbar-wiz-step-back {
+    from { opacity: 0; transform: translateX(-16px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .wiz-step { animation: minbar-wiz-step var(--dur-base) var(--ease-out) backwards; }
+  .wiz-step-back { animation-name: minbar-wiz-step-back; }
+
+  @keyframes minbar-shake {
+    10%, 90%      { transform: translateX(-1px); }
+    20%, 80%      { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60%      { transform: translateX(4px); }
+  }
+  .shake { animation: minbar-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+  /* A primary action held back rather than disabled — still in the tab order,
+     still takes a click so it can shake, but reads as not-yet. */
+  .btn-blocked { opacity: 0.55; cursor: not-allowed; }
+  .btn-blocked:hover { background: var(--color-ember); }
+
+  /* ---------------------------------------------------------------- *
+   * One switch for the whole vocabulary.
+   *
+   * Reduced motion is a stated preference, not a hint, so this kills
+   * animation and transition outright rather than shortening them -- and it
+   * covers the vendored Radix components, which bring their own
+   * `animate-in` classes and would otherwise keep moving.
+   * ---------------------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    .heartbeat::after, .shimmer::after { display: none; }
+  }
 }

@@ -8,13 +8,19 @@
  * one of them is an escalation event.
  */
 
-/** Badge classes per tone. */
-export const AUDIT_TONE_CLASSES = {
-  content: 'bg-blue-100 text-blue-800',
-  destructive: 'bg-red-100 text-red-800',
-  fleet: 'bg-indigo-100 text-indigo-800',
-  access: 'bg-amber-100 text-amber-800',
-  neutral: 'bg-gray-100 text-gray-700',
+/**
+ * Tone -> the `<Badge>` tone that renders it.
+ *
+ * Four categories, not four decorations. `destructive` is the only one that
+ * gets a red, and it covers every action that removed something — an upload, a
+ * role, a device. Scanning the log for red is how you find what went away.
+ */
+export const AUDIT_TONE_BADGE = {
+  content: 'cool',
+  destructive: 'bad',
+  fleet: 'ember',
+  access: 'warn',
+  neutral: 'quiet',
 };
 
 const AUDIT_ACTION_TONES = {
@@ -76,3 +82,17 @@ export const AUDIT_ENTITY_LABELS = {
   DEVICE: 'Device',
   EVENT: 'Event',
 };
+
+/**
+ * `ADD_USER_ROLE` -> `Add user role`.
+ *
+ * The enum name is what the server filters on and what an operator will quote
+ * in a ticket, so the raw value stays available; this is only for the places
+ * where a row of SHOUTING_CONSTANTS would be the whole visual texture of the
+ * page.
+ */
+export function describeAction(action) {
+  if (!action) return 'Unknown';
+  const words = String(action).toLowerCase().split('_');
+  return words[0].charAt(0).toUpperCase() + words[0].slice(1) + (words.length > 1 ? ' ' + words.slice(1).join(' ') : '');
+}

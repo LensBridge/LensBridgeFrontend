@@ -1,22 +1,50 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  ClipboardCheck,
+  Footprints,
+  Image as ImageIcon,
+  LocateFixed,
+  MapPin,
+  MapPinOff,
+  Plus,
+  Tag,
+  Trash2,
+} from 'lucide-react';
 import PrayerSpaceService from '../../services/PrayerSpaceService';
 import {
+  AUDIENCE_LABELS,
   AUDIENCE_OPTIONS,
   PRAYER_SPACE_TYPES,
   defaultAudienceForSpaceType,
+  prayerSpaceTypeLabel,
 } from '../../models/board';
-import { Button, Field, Input, Modal, Select, Textarea, useToast } from '../ui';
+import {
+  Button,
+  Field,
+  Input,
+  KeyValue,
+  Select,
+  StepIntro,
+  Textarea,
+  WizardShell,
+  useToast,
+} from '../ui';
+import useGeolocation from '../../hooks/useGeolocation';
+import useWizard from '../../hooks/useWizard';
 
 /**
- * Create or edit one prayer space.
+ * Create or edit one prayer space, as a wizard.
  *
- * The form is long — twenty fields and three lists — so it is grouped by the
- * question each group answers: what is it, where is it, how does it look on a
- * phone, and how do you walk there. That last group is the one people actually
- * come here to fix.
+ * The form is long — twenty fields and three lists — so it is walked one
+ * question at a time, in the order someone finding a room actually asks them:
+ * what is it, where is it, how does it look on a phone, how do you walk there,
+ * and finally a page to check before it is written. The frame, the step rail
+ * and the blocked-primary shake are `WizardShell`'s, shared with the events
+ * wizard in the sibling console.
  *
- * Two things about it are contract, not taste:
+ * Three things about it are contract, not taste:
  *
  *   - There is no "summary" field. The app composes "2 min walk from the CCT
  *     main entrance" out of `walkTimeMinutes` and `startingPoint`, so those are
@@ -24,6 +52,8 @@ import { Button, Field, Input, Modal, Select, Textarea, useToast } from '../ui';
  *   - A save sends only what changed (`PrayerSpaceService.changes`). Fixing a
  *     typo in step 3 must not re-send nineteen untouched fields over whatever
  *     somebody else edited in the meantime.
+ *   - Coordinates go in as a pair or not at all. The "Use my location" button
+ *     fills both from the browser; a partial pair is a point in the ocean.
  */
 
 /** Server messages, mapped to the box they belong under. Most specific first. */
@@ -149,16 +179,37 @@ function problems(form, before) {
   return errors;
 }
 
-/** A titled run of fields, ruled off from the one above it. */
-function FormSection({ title, note, children }) {
-  return (
-    <section className="pt-5 first:pt-0 border-t first:border-t-0 border-hair">
-      <p className="cap">{title}</p>
-      {note && <p className="mt-1.5 text-[12px] text-muted leading-relaxed max-w-[62ch]">{note}</p>}
-      <div className="mt-3.5 space-y-4">{children}</div>
-    </section>
-  );
-}
+/**
+ * The wizard's steps, and — for `fields` — which boxes each one owns. A step
+ * cannot be left while one of its fields has a problem, and a field's error is
+ * only shown once its step has been attempted, so the first screen is not red
+ * before anything has been typed.
+ */
+const STEPS = [
+  { id: 'identity', label: 'Identity', icon: Tag, fields: ['name', 'tag'] },
+  {
+    id: 'where',
+    label: 'Where',
+    icon: MapPin,
+    fields: ['building', 'floor', 'roomInfo', 'capacity', 'latitude', 'longitude', 'mapsUrl'],
+  },
+  { id: 'presentation', label: 'Presentation', icon: ImageIcon, fields: ['imageUrl'] },
+  {
+    id: 'directions',
+    label: 'Directions',
+    icon: Footprints,
+    fields: ['startingPoint', 'walkTimeMinutes', 'entranceName', 'entranceDescription', 'steps'],
+  },
+  { id: 'review', label: 'Review', icon: ClipboardCheck, fields: [] },
+];
+
+const LAST_STEP = STEPS.length - 1;
+
+/** field name → the step index that owns it, so an error can find its screen. */
+const STEP_OF_FIELD = STEPS.reduce((map, step, index) => {
+  for (const field of step.fields) map[field] = index;
+  return map;
+}, {});
 
 /**
  * An unordered list of short strings — amenities, tips.
@@ -206,9 +257,24 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
   const [form, setForm] = useState(() => PrayerSpaceService.emptyForm());
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState(null);
-  const [fieldErrors, setFieldErrors] = useState({});
+  // Errors the server sent back, keyed by field. Cleared on every save attempt.
+  const [serverErrors, setServerErrors] = useState({});
   // Once somebody picks an audience by hand, the room type stops overriding it.
   const [audiencePicked, setAudiencePicked] = useState(false);
+
+  const liveProblems = useMemo(() => problems(form, space), [form, space]);
+  const wiz = useWizard(STEPS, liveProblems, serverErrors);
+  const { reset: resetWizard } = wiz;
+  const stepIndex = wiz.index;
+  const showErr = wiz.showErr;
+
+  const {
+    locating,
+    error: geoError,
+    accuracy: geoAccuracy,
+    locate,
+    reset: resetGeo,
+  } = useGeolocation();
 
   // Reseed whenever the dialog opens, so a cancelled edit cannot leak into the
   // next one and so the baseline a save diffs against is the record just loaded.
@@ -216,9 +282,11 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
     if (!open) return;
     setForm(space ? PrayerSpaceService.toForm(space) : PrayerSpaceService.emptyForm());
     setFormError(null);
-    setFieldErrors({});
+    setServerErrors({});
     setAudiencePicked(false);
-  }, [open, space]);
+    resetWizard();
+    resetGeo();
+  }, [open, space, resetWizard, resetGeo]);
 
   const patch = (changes) => setForm((f) => ({ ...f, ...changes }));
 
@@ -272,17 +340,25 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
       return { ...f, steps: next };
     });
 
+  const fillFromLocation = () =>
+    locate(({ latitude, longitude }) => {
+      patch({ latitude: latitude.toFixed(6), longitude: longitude.toFixed(6) });
+      setServerErrors((e) => ({ ...e, latitude: undefined, longitude: undefined }));
+    });
+
   const save = async () => {
     const found = problems(form, space);
     if (Object.keys(found).length > 0) {
-      setFieldErrors(found);
-      setFormError('Some of this will not save as it stands — see the fields below.');
+      const bad = STEPS.findIndex((s) => s.fields.some((field) => found[field]));
+      wiz.revealThrough(bad === -1 ? LAST_STEP : bad);
+      if (bad !== -1) wiz.setIndex(bad);
+      setFormError('Some of this will not save yet — the step with the problem is open below.');
       return;
     }
 
     setSaving(true);
     setFormError(null);
-    setFieldErrors({});
+    setServerErrors({});
     try {
       if (creating) {
         const created = await PrayerSpaceService.create(form);
@@ -299,49 +375,70 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
       }
     } catch (err) {
       // The API answers with a MessageResponse carrying a sentence a person
-      // wrote. Show it whole, and put it under the box it names when it names one.
+      // wrote. Show it whole, and put it under the box it names when it names
+      // one — opening that box's step on the way.
       setFormError(err.message);
       const field = fieldForServerMessage(err.message);
-      if (field) setFieldErrors({ [field]: err.message });
+      if (field) {
+        setServerErrors({ [field]: err.message });
+        const owningStep = STEP_OF_FIELD[field];
+        if (owningStep != null) {
+          wiz.setIndex(owningStep);
+          wiz.reveal(owningStep);
+        }
+      }
     } finally {
       setSaving(false);
     }
   };
 
+  const reviewPrimary = {
+    label: creating ? 'Create space' : dirty ? 'Save changes' : 'Close',
+    icon: creating ? Plus : dirty ? ClipboardCheck : undefined,
+    busy: saving,
+    busyLabel: creating ? 'Creating…' : 'Saving…',
+    onClick: dirty ? save : onClose,
+  };
+
+  const cleanCount = (list) => list.filter((v) => v.trim()).length;
+  const realSteps = form.steps.filter((s) => s.instruction.trim()).length;
+
   return (
-    <Modal
+    <WizardShell
       open={open}
+      title={creating ? 'New prayer space' : space.name}
+      steps={STEPS}
+      step={open ? stepIndex : 0}
+      onStepChange={wiz.go}
       onClose={onClose}
       dismissable={!saving}
-      size="lg"
-      caption={creating ? 'Prayer spaces' : space.tag || 'Prayer space'}
-      title={creating ? 'New prayer space' : `Edit ${space.name}`}
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={save} loading={saving} disabled={!dirty}>
-            {creating ? 'Create space' : 'Save changes'}
-          </Button>
-        </>
-      }
+      canContinue={wiz.canContinue}
+      onBlocked={() => wiz.reveal(wiz.index)}
+      primary={wiz.isLast ? reviewPrimary : undefined}
+      error={wiz.stepError}
     >
-      <div className="space-y-5">
-        {formError && (
-          <p className="text-[13px] text-bad bg-bad-dim/50 border border-bad/30 rounded-md px-3.5 py-2.5">
-            {formError}
-          </p>
-        )}
+      {formError && (
+        <p className="mb-5 text-[13px] text-bad bg-bad-dim/50 border border-bad/30 rounded-md px-3.5 py-2.5">
+          {formError}
+        </p>
+      )}
 
-        <FormSection title="Identity">
+      {stepIndex === 0 && (
+        <div className="space-y-4">
+          <StepIntro title="Identity">
+            The name and tag are what the card shows before anyone taps it. The room type sets
+            the label and the map filter; who it is listed to follows from the type until you
+            say otherwise.
+          </StepIntro>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" htmlFor="ps-name" required error={fieldErrors.name}>
+            <Field label="Name" htmlFor="ps-name" required error={showErr('name')}>
               <Input
                 id="ps-name"
                 value={form.name}
-                error={fieldErrors.name}
+                error={showErr('name')}
                 placeholder="CCT Prayer Room"
+                autoFocus
                 onChange={(e) => patch({ name: e.target.value })}
               />
             </Field>
@@ -349,13 +446,13 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
               label="Tag"
               htmlFor="ps-tag"
               required
-              error={fieldErrors.tag}
-              hint={fieldErrors.tag ? undefined : 'The short line under the name on the card.'}
+              error={showErr('tag')}
+              hint={showErr('tag') ? undefined : 'The short line under the name on the card.'}
             >
               <Input
                 id="ps-tag"
                 value={form.tag}
-                error={fieldErrors.tag}
+                error={showErr('tag')}
                 placeholder="Brothers · CCT"
                 onChange={(e) => patch({ tag: e.target.value })}
               />
@@ -390,24 +487,31 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
               </Select>
             </Field>
           </div>
-        </FormSection>
+        </div>
+      )}
 
-        <FormSection title="Where">
+      {stepIndex === 1 && (
+        <div className="space-y-4">
+          <StepIntro title="Where">
+            The building is what a student searches. The pin is what lets the app draw a dot and
+            offer to navigate — drop it from where you are standing, or type it in.
+          </StepIntro>
+
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Building" htmlFor="ps-building" required error={fieldErrors.building}>
+            <Field label="Building" htmlFor="ps-building" required error={showErr('building')}>
               <Input
                 id="ps-building"
                 value={form.building}
-                error={fieldErrors.building}
+                error={showErr('building')}
                 placeholder="Communication, Culture & Technology"
                 onChange={(e) => patch({ building: e.target.value })}
               />
             </Field>
-            <Field label="Floor" htmlFor="ps-floor" error={fieldErrors.floor}>
+            <Field label="Floor" htmlFor="ps-floor" error={showErr('floor')}>
               <Input
                 id="ps-floor"
                 value={form.floor}
-                error={fieldErrors.floor}
+                error={showErr('floor')}
                 placeholder="Level 1"
                 onChange={(e) => patch({ floor: e.target.value })}
               />
@@ -415,13 +519,13 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             <Field
               label="Room"
               htmlFor="ps-room"
-              error={fieldErrors.roomInfo}
-              hint={fieldErrors.roomInfo ? undefined : 'Room number, or how the door is signed.'}
+              error={showErr('roomInfo')}
+              hint={showErr('roomInfo') ? undefined : 'Room number, or how the door is signed.'}
             >
               <Input
                 id="ps-room"
                 value={form.roomInfo}
-                error={fieldErrors.roomInfo}
+                error={showErr('roomInfo')}
                 placeholder="CC 1140"
                 onChange={(e) => patch({ roomInfo: e.target.value })}
               />
@@ -432,78 +536,108 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             <Field
               label="Capacity"
               htmlFor="ps-capacity"
-              error={fieldErrors.capacity}
-              hint={fieldErrors.capacity ? undefined : 'Roughly how many can pray at once.'}
+              error={showErr('capacity')}
+              hint={showErr('capacity') ? undefined : 'Roughly how many can pray at once.'}
             >
               <Input
                 id="ps-capacity"
                 type="number"
                 min="1"
                 value={form.capacity}
-                error={fieldErrors.capacity}
+                error={showErr('capacity')}
                 onChange={(e) => patch({ capacity: e.target.value })}
               />
             </Field>
-            <Field label="Latitude" htmlFor="ps-lat" error={fieldErrors.latitude}>
-              <Input
-                id="ps-lat"
-                inputMode="decimal"
-                value={form.latitude}
-                error={fieldErrors.latitude}
-                placeholder="43.5489"
-                onChange={(e) => patch({ latitude: e.target.value })}
-              />
-            </Field>
             <Field
-              label="Longitude"
-              htmlFor="ps-lon"
-              error={fieldErrors.longitude}
+              className="sm:col-span-2"
+              label="Maps link"
+              htmlFor="ps-maps"
+              error={showErr('mapsUrl')}
               hint={
-                fieldErrors.longitude
+                showErr('mapsUrl')
                   ? undefined
-                  : 'Both or neither. Empty them both to un-pin the space; without a pin the app cannot offer to navigate to it.'
+                  : 'Optional. Opens in whatever maps app the phone uses.'
               }
             >
               <Input
-                id="ps-lon"
-                inputMode="decimal"
-                value={form.longitude}
-                error={fieldErrors.longitude}
-                placeholder="-79.6625"
-                onChange={(e) => patch({ longitude: e.target.value })}
+                id="ps-maps"
+                type="url"
+                placeholder="https://"
+                value={form.mapsUrl}
+                error={showErr('mapsUrl')}
+                onChange={(e) => patch({ mapsUrl: e.target.value })}
               />
             </Field>
           </div>
 
-          <Field
-            label="Maps link"
-            htmlFor="ps-maps"
-            error={fieldErrors.mapsUrl}
-            hint={
-              fieldErrors.mapsUrl
-                ? undefined
-                : 'Optional. Opens in whatever maps app the phone uses.'
-            }
-          >
-            <Input
-              id="ps-maps"
-              type="url"
-              placeholder="https://"
-              value={form.mapsUrl}
-              error={fieldErrors.mapsUrl}
-              onChange={(e) => patch({ mapsUrl: e.target.value })}
-            />
-          </Field>
-        </FormSection>
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <p className="text-[12px] font-medium text-muted tracking-wide">Coordinates</p>
+              <Button
+                size="xs"
+                variant="secondary"
+                icon={LocateFixed}
+                loading={locating}
+                onClick={fillFromLocation}
+              >
+                {locating ? 'Locating…' : 'Use my location'}
+              </Button>
+              {geoAccuracy != null && !geoError && (
+                <span className="text-[12px] text-muted">
+                  Filled from this device · accurate to about {Math.round(geoAccuracy)} m
+                </span>
+              )}
+              {geoError && <span className="text-[12px] text-bad">{geoError}</span>}
+            </div>
 
-        <FormSection title="Presentation" note="What the space looks like in the app before anyone walks to it.">
-          <Field label="Photo URL" htmlFor="ps-image" error={fieldErrors.imageUrl}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Latitude" htmlFor="ps-lat" error={showErr('latitude')}>
+                <Input
+                  id="ps-lat"
+                  inputMode="decimal"
+                  value={form.latitude}
+                  error={showErr('latitude')}
+                  placeholder="43.5489"
+                  onChange={(e) => patch({ latitude: e.target.value })}
+                />
+              </Field>
+              <Field
+                label="Longitude"
+                htmlFor="ps-lon"
+                error={showErr('longitude')}
+                hint={
+                  showErr('longitude')
+                    ? undefined
+                    : 'Both or neither. Empty them both to un-pin the space; without a pin the app cannot offer to navigate to it.'
+                }
+              >
+                <Input
+                  id="ps-lon"
+                  inputMode="decimal"
+                  value={form.longitude}
+                  error={showErr('longitude')}
+                  placeholder="-79.6625"
+                  onChange={(e) => patch({ longitude: e.target.value })}
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {stepIndex === 2 && (
+        <div className="space-y-4">
+          <StepIntro title="Presentation">
+            What the space looks like in the app before anyone walks to it.
+          </StepIntro>
+
+          <Field label="Photo URL" htmlFor="ps-image" error={showErr('imageUrl')}>
             <Input
               id="ps-image"
               type="url"
               placeholder="https://"
               value={form.imageUrl}
-              error={fieldErrors.imageUrl}
+              error={showErr('imageUrl')}
               onChange={(e) => patch({ imageUrl: e.target.value })}
             />
           </Field>
@@ -529,23 +663,27 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             placeholder="Wudu area"
             addLabel="Add amenity"
           />
-        </FormSection>
+        </div>
+      )}
 
-        <FormSection
-          title="Directions"
-          note="The app writes its own summary line out of the walk time and the starting point — there is no sentence to type. The steps below are what somebody reads while walking."
-        >
+      {stepIndex === 3 && (
+        <div className="space-y-4">
+          <StepIntro title="Directions">
+            The app writes its own summary line out of the walk time and the starting point —
+            there is no sentence to type. The steps below are what somebody reads while walking.
+          </StepIntro>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Starting point"
               htmlFor="ps-start"
-              error={fieldErrors.startingPoint}
-              hint={fieldErrors.startingPoint ? undefined : 'Where the directions begin.'}
+              error={showErr('startingPoint')}
+              hint={showErr('startingPoint') ? undefined : 'Where the directions begin.'}
             >
               <Input
                 id="ps-start"
                 value={form.startingPoint}
-                error={fieldErrors.startingPoint}
+                error={showErr('startingPoint')}
                 placeholder="the CCT main entrance"
                 onChange={(e) => patch({ startingPoint: e.target.value })}
               />
@@ -553,26 +691,26 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             <Field
               label="Walk time (minutes)"
               htmlFor="ps-walk"
-              error={fieldErrors.walkTimeMinutes}
-              hint={fieldErrors.walkTimeMinutes ? undefined : 'From the starting point, at a walk.'}
+              error={showErr('walkTimeMinutes')}
+              hint={showErr('walkTimeMinutes') ? undefined : 'From the starting point, at a walk.'}
             >
               <Input
                 id="ps-walk"
                 type="number"
                 min="0"
                 value={form.walkTimeMinutes}
-                error={fieldErrors.walkTimeMinutes}
+                error={showErr('walkTimeMinutes')}
                 onChange={(e) => patch({ walkTimeMinutes: e.target.value })}
               />
             </Field>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Entrance" htmlFor="ps-entrance" error={fieldErrors.entranceName}>
+            <Field label="Entrance" htmlFor="ps-entrance" error={showErr('entranceName')}>
               <Input
                 id="ps-entrance"
                 value={form.entranceName}
-                error={fieldErrors.entranceName}
+                error={showErr('entranceName')}
                 placeholder="North doors"
                 onChange={(e) => patch({ entranceName: e.target.value })}
               />
@@ -580,9 +718,9 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             <Field
               label="Entrance description"
               htmlFor="ps-entrance-desc"
-              error={fieldErrors.entranceDescription}
+              error={showErr('entranceDescription')}
               hint={
-                fieldErrors.entranceDescription
+                showErr('entranceDescription')
                   ? undefined
                   : 'How to recognise it from outside.'
               }
@@ -590,7 +728,7 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
               <Input
                 id="ps-entrance-desc"
                 value={form.entranceDescription}
-                error={fieldErrors.entranceDescription}
+                error={showErr('entranceDescription')}
                 placeholder="Glass doors beside the bike racks"
                 onChange={(e) => patch({ entranceDescription: e.target.value })}
               />
@@ -611,7 +749,7 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
               </Button>
             </div>
 
-            {fieldErrors.steps && <p className="mb-2 text-[12px] text-bad">{fieldErrors.steps}</p>}
+            {showErr('steps') && <p className="mb-2 text-[12px] text-bad">{showErr('steps')}</p>}
 
             {form.steps.length === 0 ? (
               <p className="text-[12.5px] text-muted leading-relaxed">
@@ -705,8 +843,74 @@ export default function PrayerSpaceEditor({ open, space, onSaved, onClose }) {
             placeholder="The north door locks at 18:00"
             addLabel="Add tip"
           />
-        </FormSection>
-      </div>
-    </Modal>
+        </div>
+      )}
+
+      {stepIndex === LAST_STEP && (
+        <div>
+          <StepIntro title="Review">
+            {creating
+              ? 'Check it over, then create it. Everything here can be edited afterwards.'
+              : dirty
+                ? `${Object.keys(pending).length} ${
+                    Object.keys(pending).length === 1 ? 'field' : 'fields'
+                  } changed since you opened this — the save sends only those.`
+                : 'Nothing has changed since you opened this.'}
+          </StepIntro>
+
+          <div className="grid gap-x-8 sm:grid-cols-2">
+            <KeyValue label="Name" prose>
+              {form.name || null}
+            </KeyValue>
+            <KeyValue label="Tag" prose>
+              {form.tag || null}
+            </KeyValue>
+            <KeyValue label="Type" prose>
+              {prayerSpaceTypeLabel(form.type)}
+            </KeyValue>
+            <KeyValue label="Listed to" prose>
+              {AUDIENCE_LABELS[form.audience] ?? form.audience}
+            </KeyValue>
+            <KeyValue label="Building" prose>
+              {form.building || null}
+            </KeyValue>
+            <KeyValue label="Floor / room" prose>
+              {[form.floor, form.roomInfo].filter(Boolean).join(' · ') || null}
+            </KeyValue>
+            <KeyValue label="Capacity">{form.capacity || null}</KeyValue>
+            <KeyValue label="Coordinates">
+              {form.latitude && form.longitude
+                ? `${form.latitude}, ${form.longitude}`
+                : null}
+            </KeyValue>
+            <KeyValue label="Walk" prose>
+              {form.walkTimeMinutes
+                ? `${form.walkTimeMinutes} min${
+                    form.startingPoint ? ` from ${form.startingPoint}` : ''
+                  }`
+                : null}
+            </KeyValue>
+            <KeyValue label="Directions">
+              {realSteps > 0
+                ? `${realSteps} step${realSteps === 1 ? '' : 's'}`
+                : form.directions.trim()
+                  ? 'prose'
+                  : null}
+            </KeyValue>
+            <KeyValue label="Amenities">{cleanCount(form.amenities) || null}</KeyValue>
+            <KeyValue label="Tips">{cleanCount(form.tips) || null}</KeyValue>
+          </div>
+
+          {!form.latitude && (
+            <p className="mt-4 flex items-start gap-2 text-[12px] text-warn leading-relaxed">
+              <MapPinOff size={13} className="mt-0.5 shrink-0" />
+              No coordinates, so the app cannot drop a pin or offer to navigate here — the
+              written directions are all a student gets. Go back to <span className="text-ink">Where</span> to
+              add one.
+            </p>
+          )}
+        </div>
+      )}
+    </WizardShell>
   );
 }

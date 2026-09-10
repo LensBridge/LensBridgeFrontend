@@ -1,56 +1,78 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight, Clock, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Clock } from 'lucide-react';
 import CommandOutput from './CommandOutput';
+import Badge from '../ui/Badge';
+import Spinner from '../ui/Spinner';
 import { formatRelativeTime, TERMINAL_COMMAND_STATUSES } from '../../utils/deviceStatus';
 
-const STATUS_STYLES = {
-  PENDING: 'bg-amber-100 text-amber-800',
-  DELIVERED: 'bg-blue-100 text-blue-700',
-  ACKED: 'bg-indigo-100 text-indigo-700',
-  RUNNING: 'bg-purple-100 text-purple-700',
-  SUCCEEDED: 'bg-green-100 text-green-700',
-  FAILED: 'bg-red-100 text-red-700',
-  TIMEOUT: 'bg-orange-100 text-orange-700',
-  REJECTED: 'bg-red-100 text-red-700',
-  EXPIRED: 'bg-gray-100 text-gray-700'
+/**
+ * Status tones. Everything before a terminal state is neutral-to-cool: an
+ * in-flight command is not news. Only the outcomes get colour, so scanning the
+ * list finds what failed rather than what is happening.
+ */
+const STATUS_TONE = {
+  PENDING: 'quiet',
+  DELIVERED: 'cool',
+  ACKED: 'cool',
+  RUNNING: 'cool',
+  SUCCEEDED: 'good',
+  FAILED: 'bad',
+  TIMEOUT: 'warn',
+  REJECTED: 'bad',
+  EXPIRED: 'quiet',
 };
 
-function CommandRow({ command }) {
+export default function CommandRow({ command }) {
   const [open, setOpen] = useState(false);
   const terminal = TERMINAL_COMMAND_STATUSES.has(command.status);
 
   return (
-    <div className="border-b border-gray-100 last:border-b-0">
+    <div className="border-b border-hair last:border-b-0">
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-raised/60 transition-colors"
       >
-        {open ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+        {open ? (
+          <ChevronDown size={14} className="text-faint shrink-0" />
+        ) : (
+          <ChevronRight size={14} className="text-faint shrink-0" />
+        )}
+
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-mono text-sm font-semibold text-gray-900">{command.kind}</span>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_STYLES[command.status] || STATUS_STYLES.PENDING}`}>
+            <span className="font-mono text-[12px] text-ink">{command.kind}</span>
+            <Badge tone={STATUS_TONE[command.status] ?? 'quiet'} size="sm">
               {command.status}
-            </span>
-            {!terminal && <Loader2 className="h-4 w-4 animate-spin text-gray-400" />}
+            </Badge>
+            {!terminal && <Spinner size={12} className="text-muted" />}
           </div>
           {command.progress?.message && (
-            <div className="mt-1 text-sm text-gray-500">{command.progress.message}</div>
+            <p className="mt-1 text-[12px] text-muted">{command.progress.message}</p>
           )}
         </div>
-        <div className="hidden items-center gap-1 text-sm text-gray-500 sm:flex">
-          <Clock className="h-4 w-4" />
+
+        <span className="hidden sm:flex items-center gap-1.5 text-[12px] text-muted tabular shrink-0">
+          <Clock size={12} className="text-faint" />
           {formatRelativeTime(command.issuedAt)}
-        </div>
+        </span>
       </button>
 
       {open && (
-        <div className="space-y-3 bg-white px-11 pb-4">
-          <div className="grid grid-cols-1 gap-2 text-sm text-gray-600 sm:grid-cols-3">
-            <div>Issued by: {command.issuedBy || 'Unknown'}</div>
-            <div>Deadline: {command.deadlineMs || 30000}ms</div>
-            <div>Finished: {command.finishedAt ? formatRelativeTime(command.finishedAt) : 'Not finished'}</div>
+        <div className="px-5 pb-4 pl-12 space-y-3">
+          <div className="grid gap-1.5 sm:grid-cols-3 text-[12px] text-muted">
+            <span>
+              Issued by <span className="text-soft">{command.issuedBy || 'unknown'}</span>
+            </span>
+            <span>
+              Deadline <span className="text-soft tabular">{command.deadlineMs || 30000}ms</span>
+            </span>
+            <span>
+              Finished{' '}
+              <span className="text-soft">
+                {command.finishedAt ? formatRelativeTime(command.finishedAt) : 'not yet'}
+              </span>
+            </span>
           </div>
           <CommandOutput command={command} />
         </div>
@@ -58,5 +80,3 @@ function CommandRow({ command }) {
     </div>
   );
 }
-
-export default CommandRow;

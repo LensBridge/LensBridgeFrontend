@@ -157,7 +157,7 @@ export const AuthProvider = ({ children }) => {
         });
         return result;
       }
-    } catch (error) {
+    } catch {
       const errorMessage = 'Login failed. Please try again.';
       dispatch({ 
         type: 'AUTH_ERROR', 
@@ -280,7 +280,8 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use auth context
+// Custom hook to use auth context.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

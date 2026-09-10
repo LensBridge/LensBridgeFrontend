@@ -1,177 +1,183 @@
-import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Loader2, X } from 'lucide-react';
+import { useState } from 'react';
+import { UserPlus } from 'lucide-react';
+import { Modal, Button, Field, Input, Select, Switch, ErrorNote } from '../ui';
 
 /**
- * Create a user from the admin console.
+ * Create a user from the console.
  *
- * The failure that actually happens here is a collision: `createUser` rejects a
- * duplicate email *or* student number with one message naming both. That used to
- * surface as a toast at the top of the dashboard while the modal closed itself
- * and discarded what had been typed. It stays open now and renders the server's
- * message next to the form, because re-entering four fields to find out which one
- * collided is the whole cost of the mistake.
+ * The failure that actually happens here is a collision: the server rejects a
+ * duplicate email with a message naming it. That used to surface as a toast
+ * while the modal closed and discarded what had been typed. It stays open now
+ * and renders the server's message beside the form, because re-entering four
+ * fields to find out which one collided is the whole cost of the mistake.
  *
- * Field limits mirror `SignupRequest`'s column caps. The endpoint takes
- * `@RequestBody` without `@Valid`, so nothing else about the shape is enforced
- * server-side and nothing else is enforced here either — an operator creating an
- * account with an off-pattern address is doing it deliberately.
+ * Two creation modes, and the default is the safe one. Omitting a password
+ * creates the account disabled and emails a reset link — nobody handles a
+ * secret, and the account only becomes usable once its owner sets one. Supplying
+ * a password creates an account that works immediately, which is occasionally
+ * what you want (a shared scanner login before an event) and is otherwise a way
+ * to end up sending a password over Discord.
+ *
+ * Field limits mirror the column caps. The endpoint takes `@RequestBody` without
+ * `@Valid`, so nothing else about the shape is enforced server-side and nothing
+ * else is enforced here either — an operator creating an account with an
+ * off-pattern address is doing it deliberately.
  */
+const LIMITS = { firstName: 20, lastName: 20, email: 50 };
+const EMPTY = { firstName: '', lastName: '', email: '', audience: '', password: '' };
 
-const LIMITS = { firstName: 20, lastName: 20, email: 50, studentNumber: 10 };
-const EMPTY = { firstName: '', lastName: '', email: '', studentNumber: '' };
-
-function Field({ id, label, value, onChange, type = 'text', placeholder, maxLength, autoFocus }) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
-        {label}
-      </label>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        maxLength={maxLength}
-        autoFocus={autoFocus}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        placeholder={placeholder}
-      />
-    </div>
-  );
-}
-
-function CreateUserModal({ onSubmit, onClose }) {
+export default function CreateUserModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState(EMPTY);
+  const [setPasswordNow, setSetPasswordNow] = useState(false);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-
-  useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') closeRef.current();
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
 
   const set = (field) => (value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError(null);
   };
 
-  const complete = Object.values(form).every((v) => v.trim().length > 0);
+  const complete =
+    form.firstName.trim() &&
+    form.lastName.trim() &&
+    form.email.trim() &&
+    form.audience &&
+    (!setPasswordNow || form.password.length >= 8);
 
-  const submit = async () => {
+  const close = () => {
+    setForm(EMPTY);
+    setSetPasswordNow(false);
+    setError(null);
+    onClose();
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
     if (!complete || submitting) return;
     setSubmitting(true);
     const result = await onSubmit({
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
       email: form.email.trim(),
-      studentNumber: form.studentNumber.trim(),
+      audience: form.audience,
+      ...(setPasswordNow ? { password: form.password } : {}),
     });
     setSubmitting(false);
-    if (result.ok) onClose();
+    if (result.ok) close();
     else setError(result.message);
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget && !submitting) onClose();
-      }}
-    >
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+    <Modal
+      open={open}
+      onClose={close}
+      caption="Access"
+      title="Create an account"
+      dismissable={!submitting}
+      footer={
+        <>
+          <Button variant="ghost" onClick={close} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            icon={UserPlus}
+            onClick={submit}
+            loading={submitting}
+            disabled={!complete}
           >
-            <X className="h-5 w-5" />
-          </button>
+            Create account
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={submit} className="space-y-4">
+        {error && <ErrorNote>{error}</ErrorNote>}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="First name" htmlFor="cu-first" required>
+            <Input
+              id="cu-first"
+              autoFocus
+              maxLength={LIMITS.firstName}
+              value={form.firstName}
+              onChange={(e) => set('firstName')(e.target.value)}
+            />
+          </Field>
+          <Field label="Last name" htmlFor="cu-last" required>
+            <Input
+              id="cu-last"
+              maxLength={LIMITS.lastName}
+              value={form.lastName}
+              onChange={(e) => set('lastName')(e.target.value)}
+            />
+          </Field>
         </div>
 
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit();
-          }}
-        >
-          <Field
-            id="create-user-first-name"
-            label="First Name"
-            value={form.firstName}
-            onChange={set('firstName')}
-            maxLength={LIMITS.firstName}
-            placeholder="Enter first name"
-            autoFocus
-          />
-          <Field
-            id="create-user-last-name"
-            label="Last Name"
-            value={form.lastName}
-            onChange={set('lastName')}
-            maxLength={LIMITS.lastName}
-            placeholder="Enter last name"
-          />
-          <Field
-            id="create-user-email"
-            label="Email"
+        <Field label="Email" htmlFor="cu-email" required hint="Also the sign-in identity. It cannot be changed later from the console.">
+          <Input
+            id="cu-email"
             type="email"
-            value={form.email}
-            onChange={set('email')}
             maxLength={LIMITS.email}
-            placeholder="Enter email address"
+            value={form.email}
+            onChange={(e) => set('email')(e.target.value)}
           />
-          <Field
-            id="create-user-student-number"
-            label="Student Number"
-            value={form.studentNumber}
-            onChange={set('studentNumber')}
-            maxLength={LIMITS.studentNumber}
-            placeholder="Enter student number"
-          />
+        </Field>
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p className="text-sm text-yellow-800">
-              <strong>Note:</strong> The user account will be created in a disabled state. The user must reset their password via the &quot;Forgot Password&quot; link to activate their account.
-            </p>
+        <Field
+          label="Audience"
+          htmlFor="cu-audience"
+          required
+          hint="Decides which board content this account sees in the app."
+        >
+          <Select
+            id="cu-audience"
+            value={form.audience}
+            onChange={(e) => set('audience')(e.target.value)}
+          >
+            <option value="">Choose one</option>
+            <option value="brothers">Brothers</option>
+            <option value="sisters">Sisters</option>
+            <option value="both">Both</option>
+          </Select>
+        </Field>
+
+        <div className="pt-1 border-t border-hair">
+          <div className="pt-4">
+            <Switch
+              checked={setPasswordNow}
+              onChange={setSetPasswordNow}
+              label="Set a password now"
+              hint="Off: the account is created disabled and a reset link is emailed. On: it works immediately and no email is sent — you become responsible for handing over the secret."
+            />
           </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 text-sm text-red-800">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
+          {setPasswordNow && (
+            <div className="mt-4">
+              <Field
+                label="Password"
+                htmlFor="cu-password"
+                required
+                hint="At least 8 characters."
+              >
+                <Input
+                  id="cu-password"
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={form.password}
+                  onChange={(e) => set('password')(e.target.value)}
+                />
+              </Field>
             </div>
           )}
+        </div>
 
-          <div className="flex justify-end space-x-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!complete || submitting}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {submitting ? 'Creating...' : 'Create User'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <p className="text-[12px] text-muted leading-relaxed">
+          New accounts carry no grants. Give the account what it needs from the access editor once
+          it exists.
+        </p>
+      </form>
+    </Modal>
   );
 }
-
-export default CreateUserModal;
