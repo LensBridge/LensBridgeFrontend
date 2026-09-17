@@ -4,6 +4,8 @@ import {
   MapPin, Users, Search, CalendarDays
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 const audienceOptions = [
   { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
@@ -42,8 +44,8 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
           <input
             type="datetime-local"
-            value={formatDateTimeLocal(formData.startTimestamp)}
-            onChange={(e) => setFormData({ ...formData, startTimestamp: new Date(e.target.value).getTime() })}
+            value={formatDateTimeLocal(formData.startEpochMs)}
+            onChange={(e) => setFormData({ ...formData, startEpochMs: new Date(e.target.value).getTime() })}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
           />
         </div>
@@ -52,14 +54,14 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
           <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
           <input
             type="datetime-local"
-            value={formatDateTimeLocal(formData.endTimestamp)}
-            onChange={(e) => setFormData({ ...formData, endTimestamp: new Date(e.target.value).getTime() })}
+            value={formatDateTimeLocal(formData.endEpochMs)}
+            onChange={(e) => setFormData({ ...formData, endEpochMs: new Date(e.target.value).getTime() })}
             className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
           <input
             type="text"
             value={formData.location}
@@ -87,7 +89,7 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -128,6 +130,8 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
 }
 
 function EventsEditor({ events, onUpdate, showMessage }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BOARD_EVENT_WRITE);
   const [editingId, setEditingId] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,8 +142,8 @@ function EventsEditor({ events, onUpdate, showMessage }) {
   function getEmptyEvent() {
     return {
       name: '',
-      startTimestamp: Date.now() + 86400000,
-      endTimestamp: Date.now() + 90000000,
+      startEpochMs: Date.now() + 86400000,
+      endEpochMs: Date.now() + 90000000,
       location: '',
       description: '',
       allDay: false,
@@ -159,16 +163,35 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     });
   };
 
+  // Status is driven by the *end* time so an event in progress isn't "Past".
+  const getEventStatus = (event) => {
+    const now = Date.now();
+    const start = event.startEpochMs ?? 0;
+    const end = event.endEpochMs ?? start;
+    if (now < start) return 'upcoming';
+    if (now <= end) return 'ongoing';
+    return 'past';
+  };
+
   const filteredEvents = events
-    .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    .filter(e => e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                  e.location?.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(e => filterAudience === 'all' || e.audience === filterAudience)
-    .filter(e => !hidePastEvents || e.startTimestamp > Date.now())
-    .sort((a, b) => a.startTimestamp - b.startTimestamp);
+    .filter(e => !hidePastEvents || getEventStatus(e) !== 'past')
+    .sort((a, b) => a.startEpochMs - b.startEpochMs);
 
   const handleSave = async (isNew = false) => {
+    if (!canWrite) return;
     if (!formData.name.trim()) {
       showMessage('Event name is required', 'error');
+      return;
+    }
+    if (!formData.location.trim()) {
+      showMessage('Location is required', 'error');
+      return;
+    }
+    if (!formData.description.trim()) {
+      showMessage('Description is required', 'error');
       return;
     }
 
@@ -191,6 +214,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
   };
 
   const handleDelete = async (id) => {
+    if (!canWrite) return;
     if (!confirm('Delete this event?')) return;
     try {
       await BoardService.deleteEvent(id);
@@ -207,7 +231,6 @@ function EventsEditor({ events, onUpdate, showMessage }) {
     setShowAddForm(false);
   };
 
-  const isUpcoming = (timestamp) => timestamp > Date.now();
   const getAudienceBadge = (audience) => {
     const opt = audienceOptions.find(o => o.value === audience) || audienceOptions[0];
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${opt.color}`}>{opt.label}</span>;
@@ -234,13 +257,15 @@ function EventsEditor({ events, onUpdate, showMessage }) {
           />
         </div>
         
-        <button
-          onClick={() => { setShowAddForm(true); setEditingId(null); setFormData(getEmptyEvent()); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Event
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => { setShowAddForm(true); setEditingId(null); setFormData(getEmptyEvent()); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Event
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -311,7 +336,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
               <div
                 key={event.id}
                 className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow ${
-                  isUpcoming(event.startTimestamp) ? 'border-gray-200' : 'border-gray-100 opacity-60'
+                  getEventStatus(event) === 'past' ? 'border-gray-100 opacity-60' : 'border-gray-200'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -319,7 +344,10 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <h4 className="font-semibold text-gray-900">{event.name}</h4>
                       {getAudienceBadge(event.audience)}
-                      {!isUpcoming(event.startTimestamp) && (
+                      {getEventStatus(event) === 'ongoing' && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Now</span>
+                      )}
+                      {getEventStatus(event) === 'past' && (
                         <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Past</span>
                       )}
                     </div>
@@ -327,12 +355,12 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-gray-400" />
-                        {formatDisplayDate(event.startTimestamp)}
+                        {formatDisplayDate(event.startEpochMs)}
                       </span>
                       {!event.allDay && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4 text-gray-400" />
-                          {formatDisplayTime(event.startTimestamp)} - {formatDisplayTime(event.endTimestamp)}
+                          {formatDisplayTime(event.startEpochMs)} - {formatDisplayTime(event.endEpochMs)}
                         </span>
                       )}
                       {event.allDay && <span className="text-indigo-600 font-medium">All Day</span>}
@@ -349,20 +377,22 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => startEdit(event)}
-                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(event.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  {canWrite && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => startEdit(event)}
+                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )

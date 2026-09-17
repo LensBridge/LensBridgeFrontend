@@ -4,11 +4,18 @@ import {
   Eye, Upload, X, Search, Loader2, CheckCircle
 } from 'lucide-react';
 import BoardService from '../../services/BoardService';
+import { useAuth } from '../../context/AuthContext';
+import { PERMISSIONS } from '../../utils/permissions';
 
 /**
- * PostersEditor - Grid-based poster management with drag-drop upload
+ * PostersEditor - Grid-based poster management with drag-drop upload.
+ *
+ * `board:content:read` gets the grid and the preview; everything that writes
+ * needs `board:poster:write` on top of it.
  */
 function PostersEditor({ posters = [], onUpdate, showMessage }) {
+  const { can } = useAuth();
+  const canWrite = can(PERMISSIONS.BOARD_POSTER_WRITE);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,7 +35,10 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
     duration: 10000,
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    audience: 'both'
+    audience: 'both',
+    // Optional. When set, the board shows this poster beside a QR code encoding
+    // the link instead of full-bleed.
+    signupUrl: ''
   });
 
   const audienceOptions = [
@@ -44,7 +54,8 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
       duration: 10000,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      audience: 'both'
+      audience: 'both',
+      signupUrl: ''
     });
     setImageFile(null);
   };
@@ -86,13 +97,40 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
     handleFileUpload(e.dataTransfer.files?.[0]);
   };
 
+  /**
+   * A QR encoding a malformed URL still renders — it just fails when scanned,
+   * on a wall, where nobody is watching. Cheaper to catch it here.
+   * @returns {string} error message, or '' when the link is fine or empty
+   */
+  const validateSignupUrl = (value) => {
+    const trimmed = (value || '').trim();
+    if (!trimmed) return '';
+    let parsed;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      return 'Enter a complete URL, including https://';
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return 'Only http:// and https:// links can be opened by a phone camera.';
+    }
+    return '';
+  };
+
+  const signupUrlError = validateSignupUrl(formData.signupUrl);
+
   const handleSave = async (isNew) => {
+    if (!canWrite) return;
     if (!formData.title.trim()) {
       showMessage('Title is required', 'error');
       return;
     }
     if (isNew && !imageFile) {
       showMessage('Image is required', 'error');
+      return;
+    }
+    if (signupUrlError) {
+      showMessage(signupUrlError, 'error');
       return;
     }
 
@@ -118,6 +156,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
   };
 
   const handleDelete = async (id) => {
+    if (!canWrite) return;
     if (!confirm('Delete this poster?')) return;
     try {
       await BoardService.deletePoster(id);
@@ -134,7 +173,8 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
       duration: poster.duration || 10000,
       startDate: poster.startDate || '',
       endDate: poster.endDate || '',
-      audience: poster.audience || 'both'
+      audience: poster.audience || 'both',
+      signupUrl: poster.signupUrl || ''
     });
     setEditingId(poster.id);
     setShowAddForm(false);
@@ -160,13 +200,15 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
           />
         </div>
         
-        <button
-          onClick={() => { setShowAddForm(true); setEditingId(null); resetForm(); }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
-        >
-          <Plus className="h-4 w-4" />
-          Add Poster
-        </button>
+        {canWrite && (
+          <button
+            onClick={() => { setShowAddForm(true); setEditingId(null); resetForm(); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-medium shadow-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Poster
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -306,9 +348,34 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   ))}
                 </div>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Sign-up link <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="url"
+                  inputMode="url"
+                  value={formData.signupUrl}
+                  onChange={(e) => setFormData({ ...formData, signupUrl: e.target.value })}
+                  placeholder="https://forms.gle/..."
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white ${
+                    signupUrlError ? 'border-red-300' : 'border-gray-200'
+                  }`}
+                />
+                {signupUrlError ? (
+                  <p className="mt-1 text-xs text-red-600">{signupUrlError}</p>
+                ) : (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {formData.signupUrl?.trim()
+                      ? 'The board will show this poster beside a scannable QR code.'
+                      : 'Leave empty to display the poster full-screen with no QR code.'}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-2 mt-5">
             <button
               onClick={() => { setShowAddForm(false); setEditingId(null); resetForm(); }}
@@ -360,18 +427,22 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   >
                     <Eye className="h-5 w-5 text-gray-700" />
                   </button>
-                  <button
-                    onClick={() => startEdit(poster)}
-                    className="p-2 bg-white rounded-lg hover:bg-gray-100"
-                  >
-                    <Edit2 className="h-5 w-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(poster.id)}
-                    className="p-2 bg-white rounded-lg hover:bg-red-50"
-                  >
-                    <Trash2 className="h-5 w-5 text-red-500" />
-                  </button>
+                  {canWrite && (
+                    <>
+                      <button
+                        onClick={() => startEdit(poster)}
+                        className="p-2 bg-white rounded-lg hover:bg-gray-100"
+                      >
+                        <Edit2 className="h-5 w-5 text-gray-700" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(poster.id)}
+                        className="p-2 bg-white rounded-lg hover:bg-red-50"
+                      >
+                        <Trash2 className="h-5 w-5 text-red-500" />
+                      </button>
+                    </>
+                  )}
                 </div>
                 
                 {/* Status Badge */}

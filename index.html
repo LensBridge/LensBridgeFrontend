@@ -12,9 +12,129 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>LensBridge</title>
+
+    <!--
+      Shown only when scripting is off. The styles are inline rather than Tailwind
+      classes on purpose: in dev, Vite serves the stylesheet through the JS module
+      graph, so with JS disabled no Tailwind rule ever arrives and a class-styled
+      banner would render as unstyled text.
+    -->
+    <noscript>
+      <style>
+        /* React never mounts, so #root is an empty box that only adds scroll. */
+        #root { display: none !important; }
+
+        .noscript-page {
+          min-height: 100vh;
+          margin: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          box-sizing: border-box;
+          background: #f8fafc;
+          color: #0f172a;
+          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+                       "Helvetica Neue", Arial, sans-serif;
+          line-height: 1.6;
+        }
+
+        .noscript-card {
+          max-width: 34rem;
+          width: 100%;
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 32px;
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        .noscript-mark {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 56px;
+          height: 56px;
+          border-radius: 16px;
+          background: linear-gradient(to right, #1e40af, #10b981);
+          margin-bottom: 20px;
+        }
+
+        .noscript-mark img { width: 32px; height: 32px; display: block; }
+
+        .noscript-card h1 {
+          margin: 0 0 12px;
+          font-size: 1.5rem;
+          line-height: 1.3;
+          font-weight: 700;
+        }
+
+        .noscript-card p { margin: 0 0 16px; color: #475569; }
+
+        .noscript-card ul { margin: 0 0 16px; padding-left: 20px; color: #475569; }
+        .noscript-card li { margin-bottom: 6px; }
+
+        .noscript-card strong { color: #0f172a; }
+
+        .noscript-card code {
+          background: #f1f5f9;
+          border: 1px solid #e2e8f0;
+          border-radius: 5px;
+          padding: 1px 5px;
+          font-size: 0.875em;
+          color: #0f172a;
+          white-space: nowrap;
+        }
+
+        .noscript-footer {
+          margin: 20px 0 0;
+          padding-top: 16px;
+          border-top: 1px solid #e2e8f0;
+          font-size: 0.875rem;
+          color: #64748b;
+        }
+
+        .noscript-footer a { color: #1e40af; }
+      </style>
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
+
+    <noscript>
+      <div class="noscript-page">
+        <div class="noscript-card">
+          <span class="noscript-mark">
+            <img src="/lensbridge-logo.svg" alt="" />
+          </span>
+          <h1>LensBridge needs JavaScript</h1>
+          <p>
+            Your browser has JavaScript turned off, so this page cannot load. Signing in,
+            browsing the gallery and uploading your photos and videos all run in the
+            browser, and none of it works without it.
+          </p>
+          <p><strong>To turn it back on:</strong></p>
+          <ul>
+            <li><strong>Firefox</strong> — open <code>about:config</code>, search for
+              <code>javascript.enabled</code> and set it to <code>true</code>.</li>
+            <li><strong>Chrome or Edge</strong> — Settings → Privacy and security →
+              Site settings → JavaScript → <em>Sites can use JavaScript</em>.</li>
+            <li><strong>Safari</strong> — Settings → Advanced → Show features for web
+              developers, then Developer → <em>Enable JavaScript</em>.</li>
+          </ul>
+          <p>
+            If JavaScript is already on, a content blocker such as NoScript, uBlock Origin
+            or Brave Shields may be blocking scripts for this site. Allow this site in the
+            extension, then reload.
+          </p>
+          <p class="noscript-footer">
+            Still stuck? Email
+            <a href="mailto:support@lensbridge.tech">support@lensbridge.tech</a> and we will help.
+          </p>
+        </div>
+      </div>
+    </noscript>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

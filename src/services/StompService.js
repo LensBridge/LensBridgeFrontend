@@ -1,0 +1,130 @@
+import { Client } from '@stomp/stompjs';
+// STOMP over WebSocket sits outside the OpenAPI contract entirely -- the spec
+// describes no part of this channel. Only the origin is shared with the REST client.
+import { BASE_URL } from '../api/client';
+import AuthService from './AuthService';
+import { hasPermission } from '../utils/auth';
+import { PERMISSIONS } from '../utils/permissions';
+
+const DEVICE_TOPIC_PREFIX = '/topic/devices';
+
+class StompService {
+  constructor() {
+    this.client = null;
+    this.subscriptions = new Map();
+    this.connectListeners = new Set();
+    this.connected = false;
+  }
+
+  getBrokerUrl() {
+    return `${BASE_URL.replace(/^http/, 'ws')}/api/dashboard/ws`;
+  }
+
+  ensureClient() {
+    const token = AuthService.getAccessToken();
+
+    if (this.client) {
+      this.client.configure({
+        connectHeaders: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!this.client.active) this.client.activate();
+      return this.client;
+    }
+
+    this.client = new Client({
+      brokerURL: this.getBrokerUrl(),
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      reconnectDelay: 5000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      splitLargeFrames: true,
+      maxWebSocketChunkSize: 16 * 1024,
+      onConnect: () => {
+        this.connected = true;
+        this.resubscribe();
+        this.connectListeners.forEach((listener) => listener());
+      },
+      onDisconnect: () => {
+        this.connected = false;
+      },
+      onStompError: (frame) => {
+        console.error('Dashboard STOMP error:', frame.headers.message || frame.body);
+      },
+      onWebSocketClose: () => {
+        this.connected = false;
+      }
+    });
+
+    this.client.activate();
+    return this.client;
+  }
+
+  /**
+   * `/topic/devices/**` requires `board:telemetry:subscribe`. The server rejects
+   * a SUBSCRIBE it doesn't like by throwing, which makes the broker emit an
+   * ERROR frame and close the session — so one unauthorized subscription takes
+   * every other subscription on the page down with it. Callers gate themselves;
+   * this is the backstop that keeps a missed gate from costing the whole socket.
+   */
+  canSubscribe(topic) {
+    if (!topic.startsWith(DEVICE_TOPIC_PREFIX)) return true;
+    return hasPermission(AuthService.getCurrentUser(), PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE);
+  }
+
+  subscribe(topic, handler) {
+    if (!this.canSubscribe(topic)) {
+      console.warn(`Refusing to subscribe to ${topic} without ${PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE}`);
+      return () => {};
+    }
+
+    const id = `${topic}:${Date.now()}:${Math.random()}`;
+    this.subscriptions.set(id, { topic, handler, subscription: null });
+    this.ensureClient();
+
+    if (this.connected) {
+      this.activateSubscription(id);
+    }
+
+    return () => {
+      const entry = this.subscriptions.get(id);
+      if (entry?.subscription) entry.subscription.unsubscribe();
+      this.subscriptions.delete(id);
+    };
+  }
+
+  onConnect(listener) {
+    this.connectListeners.add(listener);
+    return () => this.connectListeners.delete(listener);
+  }
+
+  activateSubscription(id) {
+    const entry = this.subscriptions.get(id);
+    if (!entry || entry.subscription || !this.client?.connected) return;
+
+    entry.subscription = this.client.subscribe(entry.topic, (message) => {
+      try {
+        entry.handler(JSON.parse(message.body));
+      } catch (error) {
+        console.error(`Failed to handle STOMP message on ${entry.topic}:`, error);
+      }
+    });
+  }
+
+  resubscribe() {
+    this.subscriptions.forEach((entry, id) => {
+      if (entry.subscription) entry.subscription.unsubscribe();
+      entry.subscription = null;
+      this.activateSubscription(id);
+    });
+  }
+
+  disconnect() {
+    this.subscriptions.forEach((entry) => entry.subscription?.unsubscribe());
+    this.subscriptions.clear();
+    this.connected = false;
+    if (this.client?.active) this.client.deactivate();
+    this.client = null;
+  }
+}
+
+export default new StompService();

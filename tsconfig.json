@@ -1,0 +1,37 @@
+{
+  // Scoped deliberately to src/api. The rest of the app stays .jsx and is not
+  // type-checked: `npm run typecheck` should fail only when the API layer stops
+  // matching the generated schema, which is the drift this setup exists to catch.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["vite/client"],
+
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+
+    // src/services/*.js is checked too: that is where the API calls actually live,
+    // so leaving it out would mean a wrong path or body shape in a service still
+    // compiled fine. Inference alone is enough to catch those against the
+    // generated schema -- the files do not need converting to .ts.
+    //
+    // `strict` is relaxed for these because they predate type checking and are
+    // full of implicit any; the goal is API-contract errors, not a null-safety
+    // audit of existing code.
+    "allowJs": true,
+    "checkJs": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false
+  },
+  "include": [
+    "src/api/**/*.ts",
+    "src/api/**/*.d.ts",
+    "src/services/**/*.js"
+  ]
+}

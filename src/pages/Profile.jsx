@@ -21,10 +21,10 @@ import {
   Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 
 function Profile() {
-  const { user, makeAuthenticatedRequest, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadsLoading, setUploadsLoading] = useState(true);
@@ -60,26 +60,23 @@ function Profile() {
       setUploadsLoading(true);
       
       // Fetch uploads and stats in parallel
-      const [uploadsResponse, statsResponse] = await Promise.all([
-        makeAuthenticatedRequest(
-          `${API_CONFIG.BASE_URL}/api/user/uploads?page=0&size=100&sort=date,desc`
-        ),
-        makeAuthenticatedRequest(
-          `${API_CONFIG.BASE_URL}/api/user/stats`
-        )
+      const [uploadsResult, statsResult] = await Promise.all([
+        api.GET('/api/user/uploads', {
+          params: { query: { page: 0, size: 100, sort: ['createdDate,desc'] } }
+        }),
+        api.GET('/api/user/stats', {})
       ]);
 
-      if (!uploadsResponse.ok) {
+      if (uploadsResult.error) {
         throw new Error('Failed to fetch uploads');
       }
 
-      const uploadsData = await uploadsResponse.json();
+      const uploadsData = uploadsResult.data;
       setUserUploads(uploadsData.content || []);
-      
+
       // Use stats from dedicated endpoint if available, otherwise calculate
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData);
+      if (!statsResult.error) {
+        setStats(statsResult.data);
       } else {
         // Fallback to calculating stats from uploads data
         const total = uploadsData.content?.length || 0;
@@ -153,23 +150,14 @@ function Profile() {
 
     setLoading(true);
     try {
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}/api/user/profile`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(editForm),
-        }
-      );
+      const { data: updatedUser, error } = await api.PATCH('/api/user/profile', {
+        body: editForm,
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+      if (error) {
+        throw new Error(error.message || 'Failed to update profile');
       }
 
-      const updatedUser = await response.json();
       await updateUser(updatedUser);
       
       setSuccess('Profile updated successfully! 🎉');
@@ -253,16 +241,12 @@ function Profile() {
 
     setDeletingUpload(uploadId);
     try {
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}/api/user/uploads/${uploadId}`,
-        {
-          method: 'DELETE'
-        }
-      );
+      const { error } = await api.DELETE('/api/user/uploads/{uploadId}', {
+        params: { path: { uploadId } },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete upload');
+      if (error) {
+        throw new Error(error.message || 'Failed to delete upload');
       }
 
       // Remove the upload from the local state
@@ -570,7 +554,7 @@ function Profile() {
                             <Video className="h-8 w-8 text-gray-500" />
                           </div>
                         )}
-                        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Eye className="h-6 w-6 text-white" />
                         </div>
                       </div>
@@ -652,12 +636,12 @@ function Profile() {
 
       {/* Media Viewer Modal */}
       {showMediaViewer && selectedMedia && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
             {/* Close Button */}
             <button
               onClick={closeMediaViewer}
-              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-colors"
+              className="absolute top-4 right-4 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black/75 transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
@@ -684,7 +668,7 @@ function Profile() {
             </div>
 
             {/* Media Info Overlay */}
-            <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-75 text-white p-4 rounded-lg">
+            <div className="absolute bottom-4 left-4 right-4 bg-black/75 text-white p-4 rounded-lg">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1">{selectedMedia.title || 'Untitled'}</h3>

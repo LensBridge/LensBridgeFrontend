@@ -3,34 +3,26 @@
  * Handles direct file uploads to Cloudflare R2 storage bypassing the backend server
  */
 
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 
 export class DirectUploadService {
-  constructor(makeAuthenticatedRequest) {
-    this.makeAuthenticatedRequest = makeAuthenticatedRequest;
-    this.baseUrl = `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.UPLOAD}`;
-  }
+  /**
+   * @param {unknown} [_legacyRequestFn] Previously an authenticated-fetch callback.
+   *   Credentials and token refresh now come from the shared client; the parameter
+   *   is kept so existing callers construct this the same way.
+   */
+  constructor(_legacyRequestFn) {}
 
   /**
    * Get user's upload limits based on their role
    * @returns {Promise<Object>} Upload limits object
    */
   async getUploadLimits() {
-    const response = await this.makeAuthenticatedRequest(
-      `${this.baseUrl}/limits`,
-      {
-        headers: {
-          ...API_CONFIG.HEADERS
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to get upload limits: ${errorText}`);
+    const { data, error } = await api.GET('/api/upload/limits');
+    if (error || !data) {
+      throw new Error(`Failed to get upload limits: ${error?.message ?? 'unknown error'}`);
     }
-    
-    return response.json();
+    return data;
   }
 
   /**
@@ -55,40 +47,20 @@ export class DirectUploadService {
    * @returns {Promise<Object>} Presigned URL response
    */
   async getPresignedUrl(eventId, filename, contentType, fileSize, expectedSha256) {
-    const params = new URLSearchParams({
-      filename,
-      contentType,
-      fileSize: fileSize.toString(),
-      expectedSha256
+    // These were previously form-encoded in the body. The server binds them with
+    // @RequestParam, which reads either, and the spec declares them as query
+    // parameters -- so the client sends them there.
+    const { data, error } = await api.POST('/api/upload/{eventId}/direct/presign', {
+      params: {
+        path: { eventId },
+        query: { filename, contentType, fileSize, expectedSha256 },
+      },
     });
 
-    const response = await this.makeAuthenticatedRequest(
-      `${this.baseUrl}/${eventId}/direct/presign`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...API_CONFIG.HEADERS
-        },
-        body: params
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `Failed to get presigned URL: ${response.statusText}`;
-      
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-      
-      throw new Error(errorMessage);
+    if (error || !data) {
+      throw new Error(error?.message ?? 'Failed to get presigned URL');
     }
-
-    return response.json();
+    return data;
   }
 
   /**
@@ -147,49 +119,27 @@ export class DirectUploadService {
    * @returns {Promise<Object>} Upload completion response
    */
   async completeUpload(eventId, objectKey, filename, contentType, fileSize, expectedSha256, options = {}) {
-    const params = new URLSearchParams({
-      objectKey,
-      filename,
-      contentType,
-      fileSize: fileSize.toString(),
-      expectedSha256,
-      anon: (options.anon || false).toString()
+    const { data, error } = await api.POST('/api/upload/{eventId}/direct/complete', {
+      params: {
+        path: { eventId },
+        query: {
+          objectKey,
+          filename,
+          contentType,
+          fileSize,
+          expectedSha256,
+          anon: options.anon || false,
+          // Omitted rather than sent empty so the server applies its own default.
+          ...(options.description ? { description: options.description } : {}),
+          ...(options.instagramHandle ? { instagramHandle: options.instagramHandle } : {}),
+        },
+      },
     });
 
-    if (options.description) {
-      params.append('description', options.description);
+    if (error || !data) {
+      throw new Error(error?.message ?? 'Failed to complete upload');
     }
-    if (options.instagramHandle) {
-      params.append('instagramHandle', options.instagramHandle);
-    }
-
-    const response = await this.makeAuthenticatedRequest(
-      `${this.baseUrl}/${eventId}/direct/complete`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          ...API_CONFIG.HEADERS
-        },
-        body: params
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMessage = `Failed to complete upload: ${response.statusText}`;
-      
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-      
-      throw new Error(errorMessage);
-    }
-
-    return response.json();
+    return data;
   }
 
   /**
@@ -324,10 +274,10 @@ export class DirectUploadService {
 
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
-        results.push({ 
-          success: false, 
-          file: file.name, 
-          error: error.message 
+        results.push({
+          success: false,
+          file: file.name,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }

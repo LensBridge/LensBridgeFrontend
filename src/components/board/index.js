@@ -1,8 +1,13 @@
-// Board Management Components
-export { default as BoardConfigEditor } from './BoardConfigEditor';
+// Board management components.
+//
+// Quotes and Jummah are both weekly-scoped on the backend (WeeklyContent owns
+// `quotes` and `jummahPrayers`), so WeeklyContentEditor covers what the old
+// DailyContentEditor and JummahEditor used to do separately.
+export { default as BoardConfigEditor, TickerEditor } from './BoardConfigEditor';
 export { default as EventsEditor } from './EventsEditor';
 export { default as PostersEditor } from './PostersEditor';
+export { default as SocialsEditor } from './SocialsEditor';
+export { default as SocialFramePreview } from './SocialFramePreview';
+export { default as SocialIcon } from './SocialIcon';
 export { default as FramesEditor } from './FramesEditor';
-export { default as DailyContentEditor } from './DailyContentEditor';
 export { default as WeeklyContentEditor } from './WeeklyContentEditor';
-export { default as JummahEditor } from './JummahEditor';

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, Camera, CheckCircle, ArrowLeft } from 'lucide-react';
+import { api } from '../api/client';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -34,22 +35,14 @@ function ForgotPassword() {
     setErrorMessage('');
     
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-      const response = await fetch(`${apiBaseUrl}/api/auth/forgot-password?email=${encodeURIComponent(email)}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true'
-        }
+      const { error } = await api.POST('/api/auth/forgot-password', {
+        params: { query: { email } }
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (!error) {
         setIsSuccess(true);
       } else {
-        const errorMsg = data.message || data.error || 'Failed to send reset email. Please try again.';
-        setErrorMessage(errorMsg);
+        setErrorMessage(error.message || 'Failed to send reset email. Please try again.');
       }
     } catch (error) {
       console.error('Forgot password error:', error);

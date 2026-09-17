@@ -1,19 +1,54 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Shield, Users, Image, BarChart3, Settings, Crown, 
-  ChevronLeft, ChevronRight, CheckCircle, X, Star, 
+import {
+  Shield, Users, Image, BarChart3, Crown,
+  ChevronLeft, ChevronRight, CheckCircle, X, Star,
   Calendar, Activity, AlertTriangle, Plus, Filter,
   Search, Download, Eye, Trash2, Instagram, ExternalLink,
   Play, Pause, Volume2, VolumeX, Maximize, DownloadIcon,
-  XCircle, StarOff, Monitor
+  XCircle, StarOff, Monitor, KeyRound
 } from 'lucide-react';
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import {
+  BOARD_SECTION_PERMISSIONS,
+  PERMISSIONS,
+} from '../utils/permissions';
+import {
+  AuditActionBadge,
+  CreateUserModal,
+  PermissionGrantPanel,
+  RoleAssignmentModal,
+  RoleBadge,
+} from '../components/admin';
+import { AUDIT_ENTITY_LABELS } from '../components/admin/audit';
+import { bareRoleName, canAssignRole } from '../components/admin/roles';
+
+/**
+ * What each tab needs to be worth showing.
+ *
+ * These were role names — uploads and events were `ADMIN`, everything else was
+ * `ROOT`, which is why a BOARD_ADMIN who needs the audit log had to be made a
+ * root account. Each tab now asks for the permission its endpoints actually
+ * check, and a tab nobody can use is not rendered at all.
+ */
+const TAB_PERMISSIONS = {
+  uploads: [PERMISSIONS.MEDIA_UPLOAD_READ, PERMISSIONS.MEDIA_UPLOAD_MODERATE],
+  events: [PERMISSIONS.MEDIA_EVENT_WRITE],
+  audit: [PERMISSIONS.AUDIT_READ],
+  users: [PERMISSIONS.IAM_USER_READ],
+};
+
+const TABS = [
+  { id: 'uploads', label: 'Upload Management', icon: Image },
+  { id: 'events', label: 'Event Management', icon: Calendar },
+  { id: 'audit', label: 'Audit Logs', icon: Activity },
+  { id: 'users', label: 'User Management', icon: Users },
+];
 
 function AdminDashboard() {
-  const { user, makeAuthenticatedRequest, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState('uploads');
+  const { user, can, canAny, isRoot, permissions: heldPermissions } = useAuth();
+  const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -43,18 +78,11 @@ function AdminDashboard() {
   const [userSize] = useState(20);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [showCreateUser, setShowCreateUser] = useState(false);
-  const [showAddRole, setShowAddRole] = useState(false);
-  const [showRemoveRole, setShowRemoveRole] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  // 'add-role' | 'remove-role' | 'permissions', always against `selectedUser`.
+  const [userAction, setUserAction] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [availableRoles, setAvailableRoles] = useState([]);
-  const [newUser, setNewUser] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    studentNumber: ''
-  });
-  const [selectedRole, setSelectedRole] = useState('');
+  const [availablePermissions, setAvailablePermissions] = useState([]);
 
   // Stats State
   const [stats, setStats] = useState({
@@ -68,75 +96,36 @@ function AdminDashboard() {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showMediaViewer, setShowMediaViewer] = useState(false);
 
+  const visibleTabs = useMemo(
+    () => TABS.filter((tab) => canAny(TAB_PERMISSIONS[tab.id])),
+    [canAny]
+  );
+
+  /**
+   * §6.5: a bundle may only be handed over — or taken away — by someone holding
+   * every permission in it. Filtering the options here rather than letting the
+   * server refuse means the operator is not picking from a list of choices that
+   * were never going to work.
+   */
+  const assignableRoles = useMemo(
+    () => availableRoles.filter((role) => canAssignRole(role, heldPermissions)),
+    [availableRoles, heldPermissions]
+  );
+
+  /** Nobody may modify their own roles or permissions, so nothing is offered. */
+  const isSelf = useCallback((row) => Boolean(user?.id) && row.id === user.id, [user]);
+
+  /**
+   * Someone who can see the uploads tab and someone who can only see the audit
+   * log are both admins now, so there is no tab that is always safe to open by
+   * default — a BOARD_ADMIN used to land on an empty upload table.
+   */
   useEffect(() => {
-    // Load initial data
-    fetchUploads();
-    fetchEvents();
-    fetchAuditActions();
-    if (hasRootPermissions()) {
-      fetchAvailableRoles();
+    if (visibleTabs.length === 0) return;
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      setActiveTab(visibleTabs[0].id);
     }
-    if (activeTab === 'audit') {
-      fetchAudits();
-    } else if (activeTab === 'users' && hasRootPermissions()) {
-      fetchUsers();
-    }
-
-    // Add keyboard shortcuts
-    const handleKeyPress = (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 'r':
-            e.preventDefault();
-            fetchUploads();
-            showMessage('🔄 Refreshed uploads');
-            break;
-          case '1':
-            e.preventDefault();
-            setActiveTab('uploads');
-            break;
-          case '2':
-            e.preventDefault();
-            setActiveTab('events');
-            break;
-          case '3':
-            e.preventDefault();
-            if (hasAdminPermissions()) setActiveTab('audit');
-            break;
-          case '4':
-            e.preventDefault();
-            if (hasRootPermissions()) setActiveTab('users');
-            break;
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, []);
-
-  // Helper function to check if user has ROLE_ROOT permissions
-  const hasRootPermissions = () => {
-    if (!user) return false;
-    
-    return (
-      (user.authorities && user.authorities.some(auth => auth.authority === 'ROLE_ROOT')) ||
-      (user.roles && user.roles.some(role => role === 'ROLE_ROOT' || role === 'ROOT')) ||
-      user.role === 'ROLE_ROOT'
-    );
-  };
-
-  // Helper function to check if user has admin permissions (ROLE_ADMIN or ROLE_ROOT)
-  const hasAdminPermissions = () => {
-    if (!user) return false;
-    
-    return (
-      hasRootPermissions() ||
-      isAdmin()
-    );
-  };
+  }, [visibleTabs, activeTab]);
 
   const showMessage = useCallback((message, isError = false) => {
     if (isError) {
@@ -156,32 +145,19 @@ function AdminDashboard() {
   const fetchUploads = useCallback(async (page = uploadPage, filter = uploadFilter) => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: uploadSize.toString(),
-        sort: 'createdDate,desc'
-      });
+      // openapi-fetch derives parameter and response types from the literal path,
+      // so the filter picks a call rather than building a URL string.
+      const options = {
+        params: { query: { page, size: uploadSize, sort: ['createdDate,desc'] } }
+      };
+      const { data, error } =
+        filter === 'pending' ? await api.GET('/api/admin/uploads/pending', options)
+        : filter === 'approved' ? await api.GET('/api/admin/uploads/approved', options)
+        : filter === 'featured' ? await api.GET('/api/admin/uploads/featured', options)
+        : await api.GET('/api/admin/uploads', options);
 
-      let endpoint = '/api/admin/uploads';
-      switch (filter) {
-        case 'pending':
-          endpoint = '/api/admin/uploads/pending';
-          break;
-        case 'approved':
-          endpoint = '/api/admin/uploads/approved';
-          break;
-        case 'featured':
-          endpoint = '/api/admin/uploads/featured';
-          break;
-        default:
-          endpoint = '/api/admin/uploads';
-      }
+      if (error) throw new Error('Failed to fetch uploads');
 
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${endpoint}?${queryParams}`);
-
-      if (!response.ok) throw new Error('Failed to fetch uploads');
-
-      const data = await response.json();
       setUploads(data);
       
       // Calculate stats from all uploads (only when fetching 'all')
@@ -198,26 +174,22 @@ function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [uploadPage, uploadSize, uploadFilter, makeAuthenticatedRequest]);
+  }, [uploadPage, uploadSize, uploadFilter]);
 
   const approveUpload = useCallback(async (uploadId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'POST'
+      const { data: result, error } = await api.POST('/api/admin/upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   const deleteUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
@@ -226,38 +198,33 @@ function AdminDashboard() {
     if (!confirm(`⚠️ Are you sure you want to permanently delete "${uploadTitle}"?\n\nThis action cannot be undone.`)) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) throw new Error('Failed to delete upload');
+      if (error) throw new Error('Failed to delete upload');
 
-      const result = await response.json();
       showMessage(`🗑️ ${result.message}`);
       fetchUploads();
     } catch (error) {
       showMessage('❌ Failed to delete upload', true);
     }
-  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [uploads.content, showMessage, fetchUploads]);
 
   const featureUpload = useCallback(async (uploadId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/feature-upload/${uploadId}`, {
-        method: 'POST'
+      const { data: result, error } = await api.POST('/api/admin/feature-upload/{uploadId}', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   const unapproveUpload = useCallback(async (uploadId) => {
     const upload = uploads.content.find(u => u.uuid === uploadId);
@@ -266,52 +233,43 @@ function AdminDashboard() {
     if (!confirm(`🤔 Remove approval from "${uploadTitle}"?\n\nThis will hide it from the public gallery until re-approved.`)) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/approval`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}/approval', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(`⏪ ${result.message}`);
       fetchUploads();
     } catch (error) {
       showMessage(`❌ ${error.message}`, true);
     }
-  }, [uploads.content, makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [uploads.content, showMessage, fetchUploads]);
 
   const unfeatureUpload = useCallback(async (uploadId) => {
     if (!confirm('Are you sure you want to unfeature this upload?')) return;
     
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/upload/${uploadId}/featured`, {
-        method: 'DELETE'
+      const { data: result, error } = await api.DELETE('/api/admin/upload/{uploadId}/featured', {
+        params: { path: { uploadId } }
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message);
-      }
+      if (error) throw new Error(error.message);
 
-      const result = await response.json();
       showMessage(result.message);
       fetchUploads();
     } catch (error) {
       showMessage(error.message, true);
     }
-  }, [makeAuthenticatedRequest, showMessage, fetchUploads]);
+  }, [showMessage, fetchUploads]);
 
   // Event Management Functions
   const fetchEvents = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/events`);
+      const { data, error } = await api.GET('/api/admin/events', {});
 
-      if (!response.ok) throw new Error('Failed to fetch events');
+      if (error) throw new Error('Failed to fetch events');
 
-      const data = await response.json();
       setEvents(data);
       setStats(prev => ({ ...prev, totalEvents: data.length }));
     } catch (error) {
@@ -333,22 +291,19 @@ function AdminDashboard() {
         isoDateTime = date.toISOString();
       }
 
-      const formData = new URLSearchParams();
-      formData.append('eventName', newEvent.eventName);
-      formData.append('eventDate', isoDateTime);
-      formData.append('status', newEvent.status);
-
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/create-event`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: formData
+      // Bound with @RequestParam server-side, so these are query parameters.
+      const { data: result, error } = await api.POST('/api/admin/create-event', {
+        params: {
+          query: {
+            eventName: newEvent.eventName,
+            eventDate: isoDateTime,
+            status: newEvent.status
+          }
+        }
       });
 
-      if (!response.ok) throw new Error('Failed to create event');
+      if (error) throw new Error('Failed to create event');
 
-      const result = await response.json();
       showMessage(result.message);
       setNewEvent({ eventName: '', eventDate: '', eventTime: '', status: 'ONGOING' });
       setShowCreateEvent(false);
@@ -362,41 +317,34 @@ function AdminDashboard() {
   const fetchAudits = useCallback(async (page = auditPage) => {
     setLoading(true);
     try {
-      let url = `${API_CONFIG.BASE_URL}/api/admin/audit`;
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: auditSize.toString(),
-        sort: 'timestamp,desc'
-      });
+      const paging = { page, size: auditSize, sort: ['timestamp,desc'] };
 
-      if (selectedAction) {
-        url = `${API_CONFIG.BASE_URL}/api/admin/audit/action/${selectedAction}`;
-      } else if (dateRange.start && dateRange.end) {
-        url = `${API_CONFIG.BASE_URL}/api/admin/audit/daterange`;
-        queryParams.append('start', dateRange.start);
-        queryParams.append('end', dateRange.end);
-      }
+      const { data, error } = selectedAction
+        ? await api.GET('/api/admin/audit/action/{action}', {
+            params: { path: { action: selectedAction }, query: paging }
+          })
+        : dateRange.start && dateRange.end
+        ? await api.GET('/api/admin/audit/daterange', {
+            params: { query: { ...paging, start: dateRange.start, end: dateRange.end } }
+          })
+        : await api.GET('/api/admin/audit', { params: { query: paging } });
 
-      const response = await makeAuthenticatedRequest(`${url}?${queryParams}`);
+      if (error) throw new Error('Failed to fetch audit logs');
 
-      if (!response.ok) throw new Error('Failed to fetch audit logs');
-
-      const data = await response.json();
       setAudits(data);
     } catch (error) {
       showMessage('Failed to fetch audit logs', true);
     } finally {
       setLoading(false);
     }
-  }, [auditPage, auditSize, selectedAction, dateRange, makeAuthenticatedRequest]);
+  }, [auditPage, auditSize, selectedAction, dateRange]);
 
   const fetchAuditActions = async () => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/audit/actions`);
+      const { data, error } = await api.GET('/api/admin/audit/actions', {});
 
-      if (!response.ok) throw new Error('Failed to fetch audit actions');
+      if (error) throw new Error('Failed to fetch audit actions');
 
-      const data = await response.json();
       setAuditActions(data);
     } catch (error) {
       showMessage('Failed to fetch audit actions', true);
@@ -404,33 +352,28 @@ function AdminDashboard() {
   };
 
   // User Management Functions
-  const fetchUsers = useCallback(async (page = userPage, searchTerm = userSearchTerm) => {
-    if (!hasRootPermissions(user)) return;
-    
+  const fetchUsers = useCallback(async (page = userPage) => {
+    if (!can(PERMISSIONS.IAM_USER_READ)) return;
+
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        size: userSize.toString(),
-        sort: 'firstName,asc'
+      // NOTE: `searchTerm` is not sent. GET /api/admin/users binds only Pageable
+      // (AdminController.getAllUsers -> UserService.getAllUsers), so the previous
+      // `search` query param was discarded server-side and user search has never
+      // filtered anything. Making it work needs backend support first.
+      const { data, error } = await api.GET('/api/admin/users', {
+        params: { query: { page, size: userSize, sort: ['firstName,asc'] } }
       });
 
-      if (searchTerm.trim()) {
-        queryParams.append('search', searchTerm.trim());
-      }
+      if (error) throw new Error('Failed to fetch users');
 
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}/api/admin/users?${queryParams}`);
-
-      if (!response.ok) throw new Error('Failed to fetch users');
-
-      const data = await response.json();
       setUsers(data);
     } catch (error) {
       showMessage('Failed to fetch users', true);
     } finally {
       setLoading(false);
     }
-  }, [userPage, userSize, userSearchTerm, user, makeAuthenticatedRequest]);
+  }, [userPage, userSize, can, showMessage]);
 
   // Debounced search to prevent excessive API calls
   const searchTimeoutRef = useRef(null);
@@ -445,105 +388,106 @@ function AdminDashboard() {
     // Set new timeout for debounced search
     searchTimeoutRef.current = setTimeout(() => {
       setUserPage(0);
-      fetchUsers(0, searchTerm);
+      fetchUsers(0);
     }, 300); // 300ms debounce
   }, [fetchUsers]);
 
-  const fetchAvailableRoles = async () => {
-    if (!hasRootPermissions(user)) return;
-    
+  /**
+   * `RoleDefinitionResponse[]`, not the bare `string[]` this used to return —
+   * each entry carries the bundle's description and permission set, which is
+   * what the assignment modals render and what decides whether the current user
+   * is allowed to hand the bundle over at all.
+   */
+  const fetchAvailableRoles = useCallback(async () => {
+    if (!can(PERMISSIONS.IAM_USER_READ)) return;
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.ROLES}`);
+      const { data, error } = await api.GET('/api/admin/roles', {});
 
-      if (!response.ok) throw new Error('Failed to fetch roles');
+      if (error) throw new Error(error.message || 'Failed to fetch roles');
 
-      const data = await response.json();
       setAvailableRoles(data);
-      if (data.length > 0) {
-        setSelectedRole(data[0]);
-      }
     } catch (error) {
-      showMessage('Failed to fetch available roles', true);
+      showMessage(error.message, true);
     }
-  };
+  }, [can, showMessage]);
 
-  const createUser = async () => {
+  const fetchAvailablePermissions = useCallback(async () => {
+    if (!can(PERMISSIONS.IAM_ROLE_GRANT)) return;
+
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_CREATE}`, {
-        method: 'POST',
-        body: JSON.stringify(newUser)
-      });
+      const { data, error } = await api.GET('/api/admin/permissions', {});
 
-      const data = await response.json();
+      if (error) throw new Error(error.message || 'Failed to fetch permissions');
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to create user');
+      setAvailablePermissions(data);
+    } catch (error) {
+      showMessage(error.message, true);
+    }
+  }, [can, showMessage]);
+
+  /**
+   * Returns the outcome rather than toasting it, so the modal can keep the
+   * form open and show a collision next to the fields that caused it.
+   */
+  const createUser = useCallback(async (body) => {
+    try {
+      const { data, error } = await api.POST('/api/admin/user/create', { body });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to create user');
       }
 
       showMessage(data.message || 'User created successfully');
-      setNewUser({ firstName: '', lastName: '', email: '', studentNumber: '' });
-      setShowCreateUser(false);
       fetchUsers();
+      return { ok: true };
     } catch (error) {
-      showMessage(error.message, true);
+      return { ok: false, message: error.message };
     }
-  };
+  }, [fetchUsers, showMessage]);
 
-  const addRoleToUser = async () => {
+  /**
+   * The four grant endpoints share a result shape.
+   *
+   * The server's refusals (§6.5) name the rule that was broken — "cannot grant a
+   * permission you do not hold", "last holder of iam:role:grant" — so the
+   * message is returned verbatim to whichever modal made the call and rendered
+   * next to the control, rather than replaced with a generic failure string.
+   */
+  const grantCall = useCallback(async (path, userId, body) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_ADD_ROLE}/${selectedUserId}/add-role`, {
-        method: 'POST',
-        body: JSON.stringify(selectedRole)
+      const { data, error } = await api.POST(path, {
+        params: { path: { userId } },
+        body
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to add role');
-      }
+      if (error) throw new Error(error.message || 'Request failed');
 
-      showMessage('Role added successfully');
-      setShowAddRole(false);
-      setSelectedUserId(null);
-      setSelectedRole('');
       fetchUsers();
+      return { ok: true, message: data?.message || 'Done' };
     } catch (error) {
-      showMessage(error.message, true);
+      return { ok: false, message: error.message };
     }
-  };
+  }, [fetchUsers]);
 
-  const removeRoleFromUser = async () => {
-    try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_REMOVE_ROLE}/${selectedUserId}/remove-role`, {
-        method: 'POST',
-        body: JSON.stringify(selectedRole)
-      });
+  const addRoleToUser = (roleName) =>
+    grantCall('/api/admin/user/{userId}/add-role', selectedUser.id, roleName);
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to remove role');
-      }
+  const removeRoleFromUser = (roleName) =>
+    grantCall('/api/admin/user/{userId}/remove-role', selectedUser.id, roleName);
 
-      showMessage('Role removed successfully');
-      setShowRemoveRole(false);
-      setSelectedUserId(null);
-      setSelectedUser(null);
-      setSelectedRole('');
-      fetchUsers();
-    } catch (error) {
-      showMessage(error.message, true);
-    }
-  };
+  const grantPermission = (permissionName) =>
+    grantCall('/api/admin/user/{userId}/grant-permission', selectedUser.id, permissionName);
+
+  const revokePermission = (permissionName) =>
+    grantCall('/api/admin/user/{userId}/revoke-permission', selectedUser.id, permissionName);
 
   const verifyUser = async (userId) => {
     try {
-      const response = await makeAuthenticatedRequest(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ADMIN.USER_VERIFY}`, {
-        method: 'POST',
-        body: JSON.stringify({ userId })
-      });
+      const { error } = await api.POST('/api/admin/user/verify', { body: { userId } });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to verify user');
+      if (error) {
+        throw new Error(error.message || 'Failed to verify user');
       }
 
       showMessage('User verified successfully');
@@ -554,13 +498,57 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
+    if (canAny(TAB_PERMISSIONS.uploads)) fetchUploads();
+    if (canAny(TAB_PERMISSIONS.events)) fetchEvents();
+    if (can(PERMISSIONS.AUDIT_READ)) fetchAuditActions();
+    fetchAvailableRoles();
+    fetchAvailablePermissions();
+  }, []);
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      if (e.key === 'r' && canAny(TAB_PERMISSIONS.uploads)) {
+        e.preventDefault();
+        fetchUploads();
+        showMessage('🔄 Refreshed uploads');
+        return;
+      }
+
+      // Ctrl+N indexes the tabs the user can see rather than a fixed list, so
+      // the shortcut can never select one that is not rendered.
+      const index = Number(e.key) - 1;
+      if (Number.isInteger(index) && index >= 0 && index < visibleTabs.length) {
+        e.preventDefault();
+        setActiveTab(visibleTabs[index].id);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [visibleTabs, canAny, fetchUploads, showMessage]);
+
+  useEffect(() => {
     if (activeTab === 'audit') {
       fetchAudits();
-    } else if (activeTab === 'users' && hasRootPermissions(user)) {
+    } else if (activeTab === 'users') {
       fetchUsers();
-      fetchAvailableRoles();
     }
-  }, [activeTab, fetchAudits, fetchUsers, user]);
+  }, [activeTab, fetchAudits, fetchUsers]);
+
+  /**
+   * Grants land on the server, not on the copy of the user held here, so an
+   * open picker would keep showing the state from before the click. Re-reading
+   * the row out of the refreshed page keeps effective/direct honest.
+   */
+  useEffect(() => {
+    if (!selectedUser) return;
+    const fresh = users.content.find((row) => row.id === selectedUser.id);
+    if (fresh && fresh !== selectedUser) setSelectedUser(fresh);
+  }, [users, selectedUser]);
 
   const formatDate = useCallback((dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -661,7 +649,7 @@ function AdminDashboard() {
                   muted
                   preload="none"
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                   <Play className="h-4 w-4 text-white" />
                 </div>
               </div>
@@ -670,7 +658,7 @@ function AdminDashboard() {
                 <Image className="h-6 w-6 text-gray-400" />
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
               <Eye className="h-4 w-4 text-white" />
             </div>
           </div>
@@ -802,7 +790,7 @@ function AdminDashboard() {
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
               <Crown className="h-4 w-4" />
               <span>Admin Dashboard</span>
-              {hasRootPermissions(user) && (
+              {isRoot() && (
                 <div className="ml-2 bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
                   ROOT
                 </div>
@@ -816,31 +804,40 @@ function AdminDashboard() {
           </h1>
           <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Welcome back, {user?.firstName || 'Admin'}! Manage your platform
-            {hasRootPermissions(user) && (
+            {isRoot() && (
               <span className="block text-sm text-yellow-600 font-medium mt-1">
                 🔑 Root Access Enabled - Full System Control
               </span>
             )}
           </p>
-          {/* Board Management Quick Access for ROOT users */}
-          {hasRootPermissions(user) && (
-            <div className="mt-4">
+          <div className="mt-4 flex flex-wrap justify-center gap-3">
+            {canAny(BOARD_SECTION_PERMISSIONS) && (
               <Link
                 to="/admin/board"
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white px-6 py-3 rounded-lg font-medium hover:shadow-lg transition-all hover:scale-[1.02]"
               >
                 <Monitor className="h-5 w-5" />
                 <span>Manage Musallah Boards</span>
-                <Crown className="h-4 w-4 text-yellow-300" />
               </Link>
-            </div>
-          )}
+            )}
+            {can(PERMISSIONS.BOARD_DEVICE_READ) && (
+              <Link
+                to="/admin/devices"
+                className="inline-flex items-center space-x-2 bg-gray-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-800 transition-all hover:scale-[1.02]"
+              >
+                <Monitor className="h-5 w-5" />
+                <span>Board Devices</span>
+              </Link>
+            )}
+          </div>
           {/* Quick Actions */}
           <div className="mt-4 flex flex-wrap gap-2 justify-center">
             <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+R</kbd>
             <span className="text-xs text-gray-500">Refresh</span>
             <span className="text-gray-300 mx-2">•</span>
-            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+1-4</kbd>
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">
+              Ctrl+1-{Math.max(visibleTabs.length, 1)}
+            </kbd>
             <span className="text-xs text-gray-500">Switch tabs</span>
           </div>
         </div>
@@ -866,7 +863,10 @@ function AdminDashboard() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Stats. Every counter here is media, and none of them are ever fetched
+          for someone without the media permissions — four zeros read as an empty
+          platform rather than as a section they cannot see. */}
+      {canAny([...TAB_PERMISSIONS.uploads, ...TAB_PERMISSIONS.events]) && (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 text-center">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
@@ -900,55 +900,46 @@ function AdminDashboard() {
           <div className="text-sm text-gray-600">Events</div>
         </div>
       </div>
+      )}
 
       {/* Navigation Tabs */}
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6 overflow-x-auto">
-            {[
-              { id: 'uploads', label: 'Upload Management', icon: Image, requiredRole: 'admin' },
-              { id: 'events', label: 'Event Management', icon: Calendar, requiredRole: 'admin' },
-              { id: 'audit', label: 'Audit Logs', icon: Activity, requiredRole: 'admin' },
-              ...(hasRootPermissions(user) ? [
-                { id: 'users', label: 'User Management', icon: Users, requiredRole: 'root' },
-                { id: 'boards', label: 'Board Management', icon: Monitor, requiredRole: 'root', isLink: true, href: '/admin/board' },
-                { id: 'system', label: 'System Settings', icon: Settings, requiredRole: 'root' },
-                { id: 'permissions', label: 'Role Management', icon: Crown, requiredRole: 'root' }
-              ] : [])
-            ].filter(tab => {
-              if (tab.requiredRole === 'root') return hasRootPermissions(user);
-              if (tab.requiredRole === 'admin') return hasAdminPermissions(user);
-              return true;
-            }).map(({ id, label, icon: Icon, isLink, href }) => (
-              isLink ? (
-                <Link
-                  key={id}
-                  to={href}
-                  className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                  <Crown className="h-3 w-3 text-yellow-500" title="Root Access Required" />
-                  <ExternalLink className="h-3 w-3 text-gray-400" />
-                </Link>
-              ) : (
-                <button
-                  key={id}
-                  onClick={() => setActiveTab(id)}
-                  className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
-                    activeTab === id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                  {hasRootPermissions(user) && (id === 'users' || id === 'system' || id === 'permissions') && (
-                    <Crown className="h-3 w-3 text-yellow-500" title="Root Access Required" />
-                  )}
-                </button>
-              )
+            {visibleTabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
+                  activeTab === id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </button>
             ))}
+            {canAny(BOARD_SECTION_PERMISSIONS) && (
+              <Link
+                to="/admin/board"
+                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
+              >
+                <Monitor className="h-4 w-4" />
+                <span>Board Management</span>
+                <ExternalLink className="h-3 w-3 text-gray-400" />
+              </Link>
+            )}
+            {can(PERMISSIONS.BOARD_DEVICE_READ) && (
+              <Link
+                to="/admin/devices"
+                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
+              >
+                <Monitor className="h-4 w-4" />
+                <span>Board Devices</span>
+                <ExternalLink className="h-3 w-3 text-gray-400" />
+              </Link>
+            )}
           </nav>
         </div>
 
@@ -957,12 +948,12 @@ function AdminDashboard() {
 
       {/* Media Viewer Modal */}
       {showMediaViewer && selectedMedia && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-4xl max-h-full w-full h-full flex items-center justify-center">
             {/* Close Button */}
             <button
               onClick={closeMediaViewer}
-              className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-colors"
+              className="absolute top-4 right-4 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black/75 transition-colors"
             >
               <X className="h-6 w-6" />
             </button>
@@ -1008,7 +999,7 @@ function AdminDashboard() {
             </div>
 
             {/* Media Info Overlay */}
-            <div className="absolute bottom-4 left-4 right-4 bg-black bg-opacity-75 text-white p-4 rounded-lg">
+            <div className="absolute bottom-4 left-4 right-4 bg-black/75 text-white p-4 rounded-lg">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex-1">
                   <h3 className="font-semibold text-lg mb-1">{selectedMedia.fileName}</h3>
@@ -1084,6 +1075,13 @@ function AdminDashboard() {
   );
 
   function renderTabContent() {
+    // The nav only renders tabs the user holds a permission for, so reaching a
+    // tab id that is not in `visibleTabs` means the permission set changed under
+    // an open page rather than that someone guessed a tab name.
+    if (activeTab && !visibleTabs.some((tab) => tab.id === activeTab)) {
+      return renderAccessDenied();
+    }
+
     switch (activeTab) {
       case 'uploads':
         return renderUploadsTab();
@@ -1092,11 +1090,7 @@ function AdminDashboard() {
       case 'audit':
         return renderAuditTab();
       case 'users':
-        return hasRootPermissions(user) ? renderUsersTab() : renderAccessDenied();
-      case 'system':
-        return hasRootPermissions(user) ? renderSystemTab() : renderAccessDenied();
-      case 'permissions':
-        return hasRootPermissions(user) ? renderPermissionsTab() : renderAccessDenied();
+        return renderUsersTab();
       default:
         return null;
     }
@@ -1221,7 +1215,7 @@ function AdminDashboard() {
                         className="h-full w-full object-cover"
                         muted
                       />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                         <Play className="h-5 w-5 text-white" />
                       </div>
                     </div>
@@ -1230,7 +1224,7 @@ function AdminDashboard() {
                       <Image className="h-8 w-8 text-gray-400" />
                     </div>
                   )}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Eye className="h-5 w-5 text-white" />
                   </div>
                 </div>
@@ -1541,6 +1535,9 @@ function renderAuditTab() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Entity
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Details
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -1553,12 +1550,21 @@ function renderAuditTab() {
                   {audit.adminEmail}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
-                    {audit.action}
-                  </span>
+                  <AuditActionBadge action={audit.action} />
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {audit.entityType}: {audit.entityId}
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  <div>{AUDIT_ENTITY_LABELS[audit.targetEntityType] ?? audit.targetEntityType}</div>
+                  <div className="font-mono text-xs text-gray-400 break-all">{audit.targetEntityId}</div>
+                </td>
+                {/* Without this, "issued a command" and "screenshotted a prayer
+                    space" are the same log line, as are granting
+                    board:content:read and granting iam:role:grant. */}
+                <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
+                  {audit.details ? (
+                    <span className="font-mono text-xs break-words">{audit.details}</span>
+                  ) : (
+                    <span className="text-gray-300">—</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -1597,37 +1603,39 @@ function renderAuditTab() {
   );
 }
 
-  // Access denied component for unauthorized access to root-only features
   function renderAccessDenied() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Shield className="h-16 w-16 text-red-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Not permitted</h3>
         <p className="text-gray-600 max-w-md">
-          This section requires ROOT permissions. Please contact a system administrator if you need access.
+          Your account no longer holds a permission this section requires. Sign in again, or ask
+          whoever administers the console for the grant.
         </p>
       </div>
     );
   }
 
-  // Root-only: User Management Tab
   function renderUsersTab() {
+    const canGrant = can(PERMISSIONS.IAM_ROLE_GRANT);
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
+            <Users className="h-5 w-5 text-blue-600" />
             <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
           </div>
           <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowCreateUser(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create User</span>
-            </button>
+            {can(PERMISSIONS.IAM_USER_WRITE) && (
+              <button
+                onClick={() => setShowCreateUser(true)}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Create User</span>
+              </button>
+            )}
             <button
               onClick={() => fetchUsers()}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -1671,6 +1679,9 @@ function renderAuditTab() {
                     Roles
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Permissions
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1679,121 +1690,128 @@ function renderAuditTab() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.content.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-green-600 flex items-center justify-center">
-                            <span className="text-white font-medium text-sm">
-                              {user.firstName.charAt(0)}{user.lastName.charAt(0)}
-                            </span>
+                {users.content.map((row) => {
+                  const directCount = row.directPermissions?.length ?? 0;
+                  const effectiveCount = row.effectivePermissions?.length ?? 0;
+                  const self = isSelf(row);
+
+                  return (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-600 to-green-600 flex items-center justify-center">
+                              <span className="text-white font-medium text-sm">
+                                {row.firstName.charAt(0)}{row.lastName.charAt(0)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {row.firstName} {row.lastName}
+                              {self && (
+                                <span className="ml-2 text-xs font-normal text-gray-400">(you)</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {row.id}
+                            </div>
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.firstName} {user.lastName}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            ID: {user.id}
-                          </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {row.studentNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {row.email}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {row.roles.map((role) => (
+                            <RoleBadge key={role} role={role} />
+                          ))}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.studentNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles.map((role, index) => (
-                          <span
-                            key={index}
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              role === 'ROLE_ROOT'
-                                ? 'bg-red-100 text-red-800'
-                                : role === 'ROLE_ADMIN'
-                                ? 'bg-purple-100 text-purple-800'
-                                : 'bg-blue-100 text-blue-800'
-                            }`}
-                          >
-                            {role === 'ROLE_ROOT' && <Crown className="h-3 w-3 mr-1" />}
-                            {role.replace('ROLE_', '')}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        user.verified
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {user.verified ? (
-                          <>
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Verified
-                          </>
-                        ) : (
-                          <>
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Pending
-                          </>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="text-gray-900">{effectiveCount} effective</div>
+                        {directCount > 0 && (
+                          <div className="text-xs text-indigo-600">{directCount} direct</div>
                         )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => {
-                            setSelectedUserId(user.id);
-                            setShowAddRole(true);
-                          }}
-                          className="text-green-600 hover:text-green-900"
-                          title="Add Role"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                        {user.roles.length > 0 && (
-                          <button
-                            onClick={() => {
-                              setSelectedUserId(user.id);
-                              setSelectedUser(user);
-                              setShowRemoveRole(true);
-                            }}
-                            className="text-orange-600 hover:text-orange-900"
-                            title="Remove Role"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        )}
-                        {!user.verified && (
-                          <button
-                            onClick={() => verifyUser(user.id)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Verify User"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          className="text-gray-600 hover:text-gray-900"
-                          title="Edit User"
-                        >
-                          <Settings className="h-4 w-4" />
-                        </button>
-                        <button
-                          className="text-red-600 hover:text-red-900"
-                          title="Delete User"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          row.verified
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {row.verified ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Verified
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              Pending
+                            </>
+                          )}
+                        </span>
+                      </td>
+                      {/* Guard 1 of §6.5: nobody modifies their own grants, so
+                          the whole set of grant controls is absent on your own
+                          row rather than present and rejected. */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          {canGrant && !self && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedUser(row);
+                                  setUserAction('add-role');
+                                }}
+                                className="text-green-600 hover:text-green-900"
+                                title="Add Role"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </button>
+                              {row.roles.length > 0 && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(row);
+                                    setUserAction('remove-role');
+                                  }}
+                                  className="text-orange-600 hover:text-orange-900"
+                                  title="Remove Role"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  setSelectedUser(row);
+                                  setUserAction('permissions');
+                                }}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Direct permissions"
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          {!row.verified && can(PERMISSIONS.IAM_USER_WRITE) && (
+                            <button
+                              onClick={() => verifyUser(row.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Verify User"
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1846,301 +1864,44 @@ function renderAuditTab() {
           </div>
         )}
 
-        {/* Create User Modal */}
         {showCreateUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
-                <button
-                  onClick={() => setShowCreateUser(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.firstName}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, firstName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter first name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.lastName}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, lastName: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter last name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={newUser.email}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter email address"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Student Number
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.studentNumber}
-                    onChange={(e) => setNewUser(prev => ({ ...prev, studentNumber: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter student number"
-                  />
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> The user account will be created in a disabled state. The user must reset their password via the "Forgot Password" link to activate their account.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowCreateUser(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={createUser}
-                  disabled={!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.studentNumber}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Create User
-                </button>
-              </div>
-            </div>
-          </div>
+          <CreateUserModal onSubmit={createUser} onClose={() => setShowCreateUser(false)} />
         )}
 
-        {/* Add Role Modal */}
-        {showAddRole && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Add Role to User</h3>
-                <button
-                  onClick={() => setShowAddRole(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Role
-                  </label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a role</option>
-                    {availableRoles.map((role) => (
-                      <option key={role} value={role}>
-                        {role.replace('ROLE_', '')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Warning:</strong> Adding roles will grant additional permissions to the user. Be careful when assigning ADMIN or ROOT roles.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowAddRole(false)}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={addRoleToUser}
-                  disabled={!selectedRole}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Add Role
-                </button>
-              </div>
-            </div>
-          </div>
+        {(userAction === 'add-role' || userAction === 'remove-role') && selectedUser && (
+          <RoleAssignmentModal
+            mode={userAction === 'remove-role' ? 'remove' : 'add'}
+            targetUser={selectedUser}
+            options={
+              userAction === 'remove-role'
+                ? assignableRoles.filter((role) =>
+                    selectedUser.roles.some((held) => bareRoleName(held) === role.name)
+                  )
+                : assignableRoles.filter((role) =>
+                    !selectedUser.roles.some((held) => bareRoleName(held) === role.name)
+                  )
+            }
+            onSubmit={userAction === 'remove-role' ? removeRoleFromUser : addRoleToUser}
+            onClose={() => {
+              setUserAction(null);
+              setSelectedUser(null);
+            }}
+          />
         )}
 
-        {/* Remove Role Modal */}
-        {showRemoveRole && selectedUser && (
-          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Remove Role from User</h3>
-                <button
-                  onClick={() => {
-                    setShowRemoveRole(false);
-                    setSelectedUserId(null);
-                    setSelectedUser(null);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                  <p className="text-sm text-gray-700">
-                    <strong>User:</strong> {selectedUser.firstName} {selectedUser.lastName}
-                  </p>
-                  <p className="text-sm text-gray-700">
-                    <strong>Email:</strong> {selectedUser.email}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select Role to Remove
-                  </label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a role to remove</option>
-                    {selectedUser.roles.map((role) => (
-                      <option key={role} value={role}>
-                        {role.replace('ROLE_', '')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <p className="text-sm text-red-800">
-                    <strong>Warning:</strong> Removing roles will revoke permissions from the user. This action cannot be undone.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => {
-                    setShowRemoveRole(false);
-                    setSelectedUserId(null);
-                    setSelectedUser(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={removeRoleFromUser}
-                  disabled={!selectedRole}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Remove Role
-                </button>
-              </div>
-            </div>
-          </div>
+        {userAction === 'permissions' && selectedUser && (
+          <PermissionGrantPanel
+            targetUser={selectedUser}
+            permissions={availablePermissions}
+            heldPermissions={heldPermissions}
+            onGrant={grantPermission}
+            onRevoke={revokePermission}
+            onClose={() => {
+              setUserAction(null);
+              setSelectedUser(null);
+            }}
+          />
         )}
-      </div>
-    );
-  }
-
-  // Root-only: System Settings Tab
-  function renderSystemTab() {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold text-gray-900">System Settings</h3>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
-          </div>
-        </div>
-        
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-            <div>
-              <h4 className="text-sm font-medium text-yellow-800">Root Access Feature</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                System settings management is currently under development. This feature will allow ROOT users to:
-              </p>
-              <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
-                <li>Configure application settings</li>
-                <li>Manage file upload limits</li>
-                <li>Configure email templates</li>
-                <li>Database maintenance tools</li>
-                <li>System backup and restore</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Root-only: Permissions/Role Management Tab
-  function renderPermissionsTab() {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold text-gray-900">Role Management</h3>
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">ROOT ONLY</span>
-          </div>
-        </div>
-        
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3" />
-            <div>
-              <h4 className="text-sm font-medium text-yellow-800">Root Access Feature</h4>
-              <p className="text-sm text-yellow-700 mt-1">
-                Role and permission management is currently under development. This feature will allow ROOT users to:
-              </p>
-              <ul className="text-sm text-yellow-700 mt-2 list-disc list-inside">
-                <li>Create and modify user roles</li>
-                <li>Assign permissions to roles</li>
-                <li>View role hierarchy</li>
-                <li>Manage access control policies</li>
-                <li>Audit permission changes</li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }

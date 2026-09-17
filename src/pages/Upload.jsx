@@ -11,7 +11,7 @@ import {
   Users,
   Calendar,
 } from "lucide-react";
-import API_CONFIG from "../config/api";
+import { api } from "../api/client";
 import { useAuth } from "../context/AuthContext";
 import { useFileUpload } from "../hooks/useFileUpload";
 import { useUploadForm } from "../hooks/useUploadForm";
@@ -47,7 +47,7 @@ function Upload() {
   }, []);
   
   const fileInputRef = useRef(null);
-  const { makeAuthenticatedRequest, user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // Custom hooks
   const { 
@@ -84,13 +84,10 @@ function Upload() {
     try {
       setLoadingEvents(true);
       setErrors(prev => ({ ...prev, fetch: null }));
-      const response = await makeAuthenticatedRequest(
-        `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EVENTS}`
-      );
-      if (!response.ok) {
+      const { data: eventsData, error } = await api.GET("/api/events", {});
+      if (error) {
         throw new Error("Failed to fetch events");
       }
-      const eventsData = await response.json();
       setEvents(eventsData);
     } catch (error) {
       console.error("Error fetching events:", error);

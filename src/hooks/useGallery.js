@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import heic2any from 'heic2any';
-import API_CONFIG from '../config/api';
+import { api } from '../api/client';
 
 export const useGallery = () => {
   const [galleryItems, setGalleryItems] = useState([]);
@@ -87,39 +87,20 @@ export const useGallery = () => {
       }
       setError(null);
       
-      // Build URL with pagination parameters
-      const params = new URLSearchParams({
-        page: page.toString(),
-        size: size.toString(),
-        sort: 'createdDate,desc'
+      // NOTE: `searchTerm` and `selectedFilter` are accepted by this hook but not
+      // sent. GET /api/gallery binds only Pageable (GalleryController.getGalleryUploads
+      // -> GalleryService.getAllApprovedGalleryItems), so the previous `search`,
+      // `featured` and `type` query params were discarded by the server, and nothing
+      // filters client-side either. Search and the featured/images/videos filters
+      // therefore do not work today; making them work needs backend support first.
+      const { data, error } = await api.GET('/api/gallery', {
+        params: { query: { page, size, sort: ['createdDate,desc'] } }
       });
-      
-      // Add filter parameters
-      if (searchTerm) {
-        params.append('search', searchTerm);
+
+      if (error) {
+        throw new Error(`Failed to fetch gallery: ${error.message ?? 'unknown error'}`);
       }
-      
-      if (selectedFilter !== 'all') {
-        if (selectedFilter === 'featured') {
-          params.append('featured', 'true');
-        } else if (selectedFilter === 'images') {
-          params.append('type', 'image');
-        } else if (selectedFilter === 'videos') {
-          params.append('type', 'video');
-        }
-      }
-      
-      console.log('Fetching gallery data from API');
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GALLERY}?${params}`, {
-        headers: API_CONFIG.HEADERS
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch gallery: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
+
       // Handle Spring Boot Page response
       if (data.content) {
         const processedItems = await processGalleryItems(data.content);
