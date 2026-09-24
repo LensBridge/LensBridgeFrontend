@@ -10,6 +10,7 @@ import TelemetryPanel from '../components/devices/TelemetryPanel';
 import CommandLauncher from '../components/devices/CommandLauncher';
 import CommandRow from '../components/devices/CommandRow';
 import DeviceBoardConfig from '../components/devices/DeviceBoardConfig';
+import OfflineBundleDownload from '../components/devices/OfflineBundleDownload';
 import Can from '../components/Can';
 import { audienceLabel, formatDateTime, formatRelativeTime } from '../utils/deviceStatus';
 import { PERMISSIONS } from '../utils/permissions';
@@ -153,6 +154,12 @@ function DeviceDetail() {
           )}
         </div>
       </section>
+
+      {!device.revokedAt && (
+        <Can permission={PERMISSIONS.BOARD_DEVICE_READ}>
+          <OfflineBundleDownload deviceId={deviceId} />
+        </Can>
+      )}
 
       <Can permission={PERMISSIONS.BOARD_CONFIG_READ}>
         <DeviceBoardConfig deviceId={deviceId} disabled={Boolean(device.revokedAt)} />
