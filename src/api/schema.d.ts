@@ -223,6 +223,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/board/devices/{deviceId}/offline-bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a content bundle for a board with no internet
+         * @description A zip holding one fully assembled payload per day, starting today in the device's timezone, plus every poster image those payloads reference. Pushed to the board by hand with mbpush. Requires board:device:read.
+         */
+        get: operations["downloadOfflineBundle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/board/devices/{deviceId}/revoke": {
         parameters: {
             query?: never;
@@ -2639,6 +2659,78 @@ export interface operations {
             };
             /** @description Caller lacks the permission for this command kind */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    downloadOfflineBundle: {
+        parameters: {
+            query?: {
+                /** @description Number of days in the bundle, starting today in the device's timezone */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bundle */
+            200: {
+                headers: {
+                    /** @description attachment; filename="musallahboard-<first 8 chars of deviceId>-<firstDay>.zip" */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description days outside 1-31 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No device with that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Device is revoked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description A poster image could not be fetched; the message names the poster */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
