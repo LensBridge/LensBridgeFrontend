@@ -1,5 +1,5 @@
 import { createElement, useMemo, useState } from 'react';
-import { Camera, FileText, Loader2, MoreHorizontal, Power, RefreshCcw, RotateCw, ServerCog } from 'lucide-react';
+import { Camera, Download, FileText, Loader2, MoreHorizontal, Power, RefreshCcw, RotateCw, ServerCog } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import { useAuth } from '../../context/AuthContext';
 import { COMMAND_PERMISSIONS, COMMAND_RISK, PERMISSIONS } from '../../utils/permissions';
@@ -9,8 +9,24 @@ const QUICK_COMMANDS = [
   { kind: 'config.refresh', label: 'Refresh Config', icon: RefreshCcw, confirm: false },
   { kind: 'chrome.screenshot', label: 'Screenshot', icon: Camera, confirm: false },
   { kind: 'kiosk.restart', label: 'Restart Kiosk', icon: ServerCog, confirm: true },
-  { kind: 'system.reboot', label: 'Reboot Device', icon: Power, confirm: true }
+  { kind: 'system.reboot', label: 'Reboot Device', icon: Power, confirm: true },
+  {
+    kind: 'update.install_now',
+    label: 'Update Now',
+    icon: Download,
+    confirm: 'Check for a new board app or agent and install it now? The board shows its update screen while it installs, instead of waiting for tonight.'
+  }
 ];
+
+/**
+ * How long the agent may run a command. Most finish in seconds; an update has
+ * to download a release first (the install itself always finishes once it
+ * starts, whatever the deadline).
+ */
+const DEADLINE_MS = {
+  'logs.tail': 45000,
+  'update.install_now': 600000
+};
 
 /**
  * The three command permissions are separately grantable, so the buttons have to
@@ -55,7 +71,8 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
   ]);
 
   const issue = async (kind, payload = {}, confirmCommand = false) => {
-    if (confirmCommand && !confirm(`Issue ${kind} to this device?`)) return;
+    const question = typeof confirmCommand === 'string' ? confirmCommand : `Issue ${kind} to this device?`;
+    if (confirmCommand && !confirm(question)) return;
 
     try {
       setError('');
@@ -63,7 +80,7 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
       const issued = await DeviceService.issueCommand(deviceId, {
         kind,
         payload,
-        deadlineMs: kind === 'logs.tail' ? 45000 : 30000
+        deadlineMs: DEADLINE_MS[kind] ?? 30000
       });
       onIssued?.(issued);
       setShowLogs(false);
