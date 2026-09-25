@@ -50,7 +50,9 @@ export function useDevice(deviceId) {
         setDevice((prev) => prev ? {
           ...prev,
           lastHeartbeat: event.at,
-          lastSeenIp: event.telemetry?.ipv4?.[0] || prev.lastSeenIp
+          lastSeenIp: event.telemetry?.ipv4?.[0] || prev.lastSeenIp,
+          // The board's report of itself rides on the heartbeat too.
+          ...(event.telemetry?.board ? { board: event.telemetry.board, boardReportAt: event.at } : {})
         } : prev);
         setTelemetrySamples((prev) => [
           ...prev,

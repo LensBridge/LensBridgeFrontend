@@ -36,8 +36,14 @@ function OfflineBundleDownload({ deviceId }) {
       <div className="mb-5">
         <h2 className="text-lg font-semibold text-gray-900">Offline bundle</h2>
         <p className="mt-1 text-sm text-gray-500">
-          Plug a laptop into the board&apos;s ethernet port and run <code className="font-mono">mbpush &lt;file&gt;</code> with the downloaded zip.
+          For a board without internet: a signed <code className="font-mono">.mbu</code> file with this board&apos;s
+          content for the coming days. Bundles for several boards can share one stick; each board takes only its own.
         </p>
+        <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-gray-500">
+          <li>Copy it to a USB stick (FAT32 or exFAT, at the top or in a <code className="font-mono">MusallahBoard</code> folder) and plug it into the board.</li>
+          <li>Or connect a laptop or phone to the board&apos;s ethernet port and open <code className="font-mono">http://10.77.0.1/</code> (boards set up with the service port).</li>
+        </ul>
+        <p className="mt-2 text-sm text-gray-500">Content you edit after downloading reaches an offline board only with a new bundle.</p>
       </div>
       {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       <div className="flex flex-wrap items-end gap-3">

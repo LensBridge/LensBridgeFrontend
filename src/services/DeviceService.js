@@ -32,6 +32,17 @@ class DeviceService {
     );
   }
 
+  /** Rename a board. The name is what admins see; the board never shows it. */
+  static async renameDevice(deviceId, displayName) {
+    return this.unwrap(
+      await api.PATCH('/api/admin/board/devices/{deviceId}', {
+        params: { path: { deviceId } },
+        body: { displayName },
+      }),
+      'Failed to rename device'
+    );
+  }
+
   static async issueEnrollmentToken(request) {
     return this.unwrap(
       await api.POST('/api/admin/board/devices/enrollment-tokens', { body: request }),

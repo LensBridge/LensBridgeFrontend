@@ -1,12 +1,13 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { Ban, ChevronLeft, Loader2, Monitor, RefreshCcw, Server } from 'lucide-react';
+import { Ban, Check, ChevronLeft, LayoutDashboard, Loader2, Monitor, Pencil, RefreshCcw, Server, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDevice } from '../hooks/useDevice';
 import { upsertCommand, useCommandStream } from '../hooks/useCommandStream';
 import DeviceService from '../services/DeviceService';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
 import TelemetryPanel from '../components/devices/TelemetryPanel';
+import BoardStatePanel from '../components/devices/BoardStatePanel';
 import CommandLauncher from '../components/devices/CommandLauncher';
 import CommandRow from '../components/devices/CommandRow';
 import DeviceBoardConfig from '../components/devices/DeviceBoardConfig';
@@ -23,6 +24,29 @@ function DeviceDetail() {
   const [showRevoke, setShowRevoke] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [revokeError, setRevokeError] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [renameError, setRenameError] = useState('');
+
+  const saveName = async () => {
+    const name = nameDraft.trim();
+    if (!name || name === device?.displayName) {
+      setRenaming(false);
+      return;
+    }
+    setSavingName(true);
+    setRenameError('');
+    try {
+      await DeviceService.renameDevice(deviceId, name);
+      setRenaming(false);
+      refetch();
+    } catch (err) {
+      setRenameError(err.message || 'Failed to rename the board');
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const handleIssued = (issued) => {
     setCommands((prev) => upsertCommand(prev, {
@@ -82,10 +106,47 @@ function DeviceDetail() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <Monitor className="h-5 w-5 text-indigo-600" />
-              <h1 className="text-2xl font-semibold text-gray-900">{device.displayName}</h1>
+              {renaming ? (
+                <form
+                  className="flex items-center gap-2"
+                  onSubmit={(event) => { event.preventDefault(); saveName(); }}
+                >
+                  <input
+                    autoFocus
+                    value={nameDraft}
+                    maxLength={255}
+                    disabled={savingName}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    onKeyDown={(event) => { if (event.key === 'Escape') setRenaming(false); }}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-xl font-semibold text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                    aria-label="Board name"
+                  />
+                  <button type="submit" disabled={savingName || !nameDraft.trim()} className="rounded-lg p-2 text-green-700 hover:bg-green-50 disabled:opacity-50" title="Save name">
+                    {savingName ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  </button>
+                  <button type="button" onClick={() => setRenaming(false)} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100" title="Cancel">
+                    <X className="h-4 w-4" />
+                  </button>
+                </form>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-semibold text-gray-900">{device.displayName}</h1>
+                  <Can permission={PERMISSIONS.BOARD_CONFIG_WRITE}>
+                    <button
+                      type="button"
+                      onClick={() => { setNameDraft(device.displayName || ''); setRenameError(''); setRenaming(true); }}
+                      className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      title="Rename board"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                  </Can>
+                </>
+              )}
               <DeviceStatusBadge status={device.status} />
             </div>
             <p className="mt-1 font-mono text-sm text-gray-500">{device.id}</p>
+            {renameError && <p className="mt-1 text-sm text-red-700">{renameError}</p>}
           </div>
         </div>
         <div className="flex gap-2">
@@ -116,6 +177,14 @@ function DeviceDetail() {
           <div><div className="text-sm text-gray-500">Enrolled</div><div className="mt-1 font-medium text-gray-900">{formatDateTime(device.enrolledAt)}</div></div>
           <div><div className="text-sm text-gray-500">Revoked</div><div className="mt-1 font-medium text-gray-900">{device.revokedAt ? formatDateTime(device.revokedAt) : 'No'}</div></div>
         </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex items-center gap-2">
+          <LayoutDashboard className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Board</h2>
+        </div>
+        <BoardStatePanel device={device} />
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">

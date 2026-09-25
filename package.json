@@ -11,7 +11,7 @@
     "deploy": "npm run build && wrangler deploy",
     "api:generate": "node scripts/generate-api.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node scripts/run-refresh-test.mjs && node --test src/models/board.test.mjs src/utils/auth.test.mjs src/utils/inlineMarkdown.test.mjs",
+    "test": "node scripts/run-refresh-test.mjs && node --test src/models/board.test.mjs src/utils/auth.test.mjs src/utils/inlineMarkdown.test.mjs src/utils/boardState.test.mjs",
     "api:check": "node scripts/generate-api.mjs --check"
   },
   "dependencies": {
