@@ -2,11 +2,13 @@ import { AlertTriangle, CheckCircle2, Clock, Download, Film, History, LayoutTemp
 import { createElement } from 'react';
 import BoardIssueChips from './BoardIssueChips';
 import {
+  contentDays,
   contentSource,
   describeAgentUpdate,
   describeClock,
   describeContent,
-  describeUpdates
+  describeUpdates,
+  updateCheckProblem
 } from '../../utils/boardState';
 import { formatRelativeTime } from '../../utils/deviceStatus';
 
@@ -45,14 +47,16 @@ function BoardStatePanel({ device }) {
   }
 
   const content = board.content;
-  const contentLevel = board.error || !content || content.staleDays > 0 ? 'danger' : content.daysRemaining <= 2 ? 'warning' : 'ok';
+  const days = contentDays(content);
+  const contentLevel = board.error || !content || days.staleDays > 0 ? 'danger' : days.daysRemaining <= 2 ? 'warning' : 'ok';
   const updates = describeUpdates(board.updates);
+  const checkProblem = updateCheckProblem(board.updates);
   const agentUpdate = describeAgentUpdate(board.lastAgentUpdate);
   const clock = describeClock(board.clock);
 
   return (
     <div className="space-y-5">
-      <BoardIssueChips board={board} />
+      <BoardIssueChips board={board} reportAt={device.boardReportAt} />
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         <Row icon={LayoutTemplate} label="Board app">{board.appVersion || 'Not installed'}</Row>
         <Row
@@ -66,9 +70,10 @@ function BoardStatePanel({ device }) {
         <Row
           icon={Download}
           label="Waiting to install"
+          level={checkProblem && !updates ? 'warning' : 'ok'}
           hint={updates && !board.updates?.installing ? 'Update Now, under Commands, installs it straight away.' : null}
         >
-          {updates || 'Nothing: the board app and agent are up to date'}
+          {updates || checkProblem || 'Nothing: the board app and agent are up to date'}
         </Row>
         {agentUpdate && (
           <Row

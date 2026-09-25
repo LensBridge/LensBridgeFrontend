@@ -7,8 +7,8 @@ const STYLES = {
 };
 
 /** What needs attention on a board, as small chips. Nothing when all is well. */
-function BoardIssueChips({ board, empty = null }) {
-  const issues = boardIssues(board);
+function BoardIssueChips({ board, reportAt = null, empty = null }) {
+  const issues = boardIssues(board, { reportAt });
   if (!issues.length) return empty;
   return (
     <div className="flex flex-wrap gap-1.5">

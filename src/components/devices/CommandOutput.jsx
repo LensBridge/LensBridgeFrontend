@@ -51,10 +51,13 @@ function CommandOutput({ command }) {
     return (
       <div className="space-y-2 text-sm">
         {output.checkError && (
-          <div className="rounded-lg bg-amber-50 p-3 text-amber-800">Could not check for updates: {output.checkError}</div>
+          <div className="rounded-lg bg-amber-50 p-3 text-amber-800">
+            Could not check for updates: {output.checkError}
+            {output.results.length === 0 && <div className="mt-1">Nothing was installed. Check the board&apos;s internet connection and try again.</div>}
+          </div>
         )}
         {output.results.length === 0 ? (
-          <div className="text-gray-600">Nothing to install: the board app and agent are up to date.</div>
+          !output.checkError && <div className="text-gray-600">Nothing to install: the board app and agent are up to date.</div>
         ) : (
           <ul className="space-y-1">
             {output.results.map((result, index) => (

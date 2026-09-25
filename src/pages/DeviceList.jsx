@@ -81,6 +81,7 @@ function DeviceList() {
                   <td className="px-5 py-4">
                     <BoardIssueChips
                       board={device.board}
+                      reportAt={device.boardReportAt}
                       empty={<span className="text-sm text-gray-500">{device.board ? 'All good' : 'Not reported'}</span>}
                     />
                   </td>

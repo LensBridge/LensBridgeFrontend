@@ -15,6 +15,19 @@ import { PERMISSIONS } from '../../utils/permissions';
  * button that always 403s for the role most likely to press it.
  */
 
+/**
+ * Where a save goes: online boards pick it up on their own, offline ones only
+ * from a new bundle. Said right after saving, when it matters.
+ */
+function SavedHint({ show }) {
+  if (!show) return null;
+  return (
+    <span className="hidden text-xs text-gray-500 md:inline">
+      Online boards update within a minute; offline boards need a new offline bundle.
+    </span>
+  );
+}
+
 function SaveButton({ dirty, saving, saved, disabled, onSave }) {
   return (
     <button
@@ -174,6 +187,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
           </div>
           {canWriteConfig && (
             <div className="flex items-center gap-2">
+              <SavedHint show={configSaved} />
               {configDirty && <DiscardButton saving={configSaving} onDiscard={discardConfig} />}
               <SaveButton
                 dirty={configDirty}
@@ -214,6 +228,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
           </div>
           {canWriteTicker && (
             <div className="flex items-center gap-2">
+              <SavedHint show={tickerSaved} />
               {tickerDirty && <DiscardButton saving={tickerSaving} onDiscard={discardTicker} />}
               <SaveButton
                 dirty={tickerDirty}
