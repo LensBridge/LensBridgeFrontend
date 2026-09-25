@@ -21,6 +21,9 @@ import {
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
+/** The backend's base URL, as a board must be told it at enrollment. */
+export const API_BASE_URL: string = BASE_URL.replace(/\/+$/, "");
+
 /** Sent on every request; the ngrok tunnel used for demos returns an interstitial without it. */
 const STATIC_HEADERS: Record<string, string> = {
   "ngrok-skip-browser-warning": "true",

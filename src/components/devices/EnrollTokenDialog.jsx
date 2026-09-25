@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Copy, Printer, QrCode, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { API_BASE_URL } from '../../api/client';
 
 function EnrollTokenDialog({ tokenResponse, onClose }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState('');
   const [showQr, setShowQr] = useState(true);
   const [now, setNow] = useState(Date.now());
 
@@ -20,10 +21,14 @@ function EnrollTokenDialog({ tokenResponse, onClose }) {
     return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
   }, [tokenResponse.expiresAt, now]);
 
-  const copyToken = async () => {
-    await navigator.clipboard.writeText(tokenResponse.token);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // What the installer runs on the board, over SSH. The backend URL is this
+  // console's own API: a board enrolled against anything else cannot sync.
+  const command = `sudo musallahboard-agent enroll --token=${tokenResponse.token} --backend=${API_BASE_URL}`;
+
+  const copy = async (what, text) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(what);
+    setTimeout(() => setCopied(''), 2000);
   };
 
   return (
@@ -67,17 +72,22 @@ function EnrollTokenDialog({ tokenResponse, onClose }) {
           )}
 
           <div className="rounded-lg bg-gray-50 p-4">
-            <div className="mb-2 text-sm font-medium text-gray-700">Pi enroll command</div>
-            <code className="block break-all rounded bg-white p-3 text-sm text-gray-800">
-              musallahboard-agent enroll --token={tokenResponse.token} --backend=http://localhost:8080
-            </code>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <div className="text-sm font-medium text-gray-700">Run this on the board (over SSH)</div>
+              <button type="button" onClick={() => copy('command', command)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <Copy className="h-4 w-4" />
+                {copied === 'command' ? 'Copied' : 'Copy command'}
+              </button>
+            </div>
+            <code className="block break-all rounded bg-white p-3 text-sm text-gray-800">{command}</code>
+            <p className="mt-2 text-xs text-gray-500">The board shows its address on screen while it waits to be enrolled.</p>
           </div>
         </div>
 
         <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 px-6 py-4">
-          <button type="button" onClick={copyToken} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={() => copy('token', tokenResponse.token)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
             <Copy className="h-4 w-4" />
-            {copied ? 'Copied' : 'Copy token'}
+            {copied === 'token' ? 'Copied' : 'Copy token'}
           </button>
           <button type="button" onClick={() => setShowQr((value) => !value)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
             <QrCode className="h-4 w-4" />

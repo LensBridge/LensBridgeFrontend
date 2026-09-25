@@ -32,6 +32,17 @@ class DeviceService {
     );
   }
 
+  /** Rename a board. The name is what admins see; the board never shows it. */
+  static async renameDevice(deviceId, displayName) {
+    return this.unwrap(
+      await api.PATCH('/api/admin/board/devices/{deviceId}', {
+        params: { path: { deviceId } },
+        body: { displayName },
+      }),
+      'Failed to rename device'
+    );
+  }
+
   static async issueEnrollmentToken(request) {
     return this.unwrap(
       await api.POST('/api/admin/board/devices/enrollment-tokens', { body: request }),
@@ -54,6 +65,32 @@ class DeviceService {
       }),
       'Failed to issue command'
     );
+  }
+
+  /**
+   * Content bundle for a board with no internet, fetched as a Blob so the
+   * request carries the Bearer token (a plain <a href> would not).
+   * Bundling downloads every referenced poster, so this can take several seconds.
+   * @returns {Promise<{ blob: Blob, filename: string }>}
+   */
+  static async downloadOfflineBundle(deviceId, days) {
+    const { data, error, response } = await api.GET('/api/admin/board/devices/{deviceId}/offline-bundle', {
+      params: { path: { deviceId }, query: { days } },
+      parseAs: 'blob',
+    });
+    if (error !== undefined || !data) {
+      const fallback = {
+        400: 'Days must be between 1 and 31.',
+        404: 'This device no longer exists.',
+        409: 'This device has been revoked, so no bundle can be built for it.',
+        502: 'A poster image could not be fetched. Try again in a moment.',
+      }[response.status] || 'Failed to build the offline bundle';
+      throw new Error((typeof error === 'object' && error?.message) || fallback);
+    }
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const match = /filename="?([^";]+)"?/i.exec(disposition);
+    const filename = match?.[1] || `musallahboard-${String(deviceId).slice(0, 8)}.zip`;
+    return { blob: data, filename };
   }
 
   static async listCommands(deviceId) {
