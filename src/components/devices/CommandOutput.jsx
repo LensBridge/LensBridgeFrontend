@@ -46,6 +46,28 @@ function CommandOutput({ command }) {
     );
   }
 
+  // { checkError?, results: [{ file, type, version, action, message }] }
+  if (command.kind === 'update.install_now' && Array.isArray(output.results)) {
+    return (
+      <div className="space-y-2 text-sm">
+        {output.checkError && (
+          <div className="rounded-lg bg-amber-50 p-3 text-amber-800">Could not check for updates: {output.checkError}</div>
+        )}
+        {output.results.length === 0 ? (
+          <div className="text-gray-600">Nothing to install: the board app and agent are up to date.</div>
+        ) : (
+          <ul className="space-y-1">
+            {output.results.map((result, index) => (
+              <li key={`${result.file}-${index}`} className={result.action === 'rejected' ? 'text-red-700' : 'text-gray-700'}>
+                <span className="font-medium">{result.action}</span>: {result.message}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <pre className="max-h-[360px] overflow-auto rounded-lg bg-gray-50 p-4 text-xs text-gray-700">
       {JSON.stringify(output, null, 2)}
