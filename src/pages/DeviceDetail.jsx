@@ -1,12 +1,13 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { Ban, ChevronLeft, Loader2, Monitor, RefreshCcw, Server } from 'lucide-react';
+import { Ban, ChevronLeft, LayoutDashboard, Loader2, Monitor, RefreshCcw, Server } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDevice } from '../hooks/useDevice';
 import { upsertCommand, useCommandStream } from '../hooks/useCommandStream';
 import DeviceService from '../services/DeviceService';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
 import TelemetryPanel from '../components/devices/TelemetryPanel';
+import BoardStatePanel from '../components/devices/BoardStatePanel';
 import CommandLauncher from '../components/devices/CommandLauncher';
 import CommandRow from '../components/devices/CommandRow';
 import DeviceBoardConfig from '../components/devices/DeviceBoardConfig';
@@ -115,6 +116,14 @@ function DeviceDetail() {
           <div><div className="text-sm text-gray-500">Enrolled</div><div className="mt-1 font-medium text-gray-900">{formatDateTime(device.enrolledAt)}</div></div>
           <div><div className="text-sm text-gray-500">Revoked</div><div className="mt-1 font-medium text-gray-900">{device.revokedAt ? formatDateTime(device.revokedAt) : 'No'}</div></div>
         </div>
+      </section>
+
+      <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-5 flex items-center gap-2">
+          <LayoutDashboard className="h-5 w-5 text-indigo-600" />
+          <h2 className="text-lg font-semibold text-gray-900">Board</h2>
+        </div>
+        <BoardStatePanel device={device} />
       </section>
 
       <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">

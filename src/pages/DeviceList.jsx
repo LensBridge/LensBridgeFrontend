@@ -3,6 +3,7 @@ import { ChevronLeft, Monitor, Plus, RefreshCcw, Thermometer, WifiOff } from 'lu
 import { useDeviceList } from '../hooks/useDeviceList';
 import Can from '../components/Can';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
+import BoardIssueChips from '../components/devices/BoardIssueChips';
 import { audienceLabel, formatRelativeTime } from '../utils/deviceStatus';
 import { PERMISSIONS } from '../utils/permissions';
 
@@ -58,6 +59,7 @@ function DeviceList() {
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Audience</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Board</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Last heartbeat</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">CPU</th>
                 <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Agent</th>
@@ -65,9 +67,9 @@ function DeviceList() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan="6" className="px-5 py-12 text-center text-gray-500">Loading devices...</td></tr>
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">Loading devices...</td></tr>
               ) : devices.length === 0 ? (
-                <tr><td colSpan="6" className="px-5 py-12 text-center text-gray-500">No devices enrolled yet.</td></tr>
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">No devices enrolled yet.</td></tr>
               ) : devices.map((device) => (
                 <tr key={device.id} onClick={() => navigate(`/admin/devices/${device.id}`)} className="cursor-pointer hover:bg-gray-50">
                   <td className="px-5 py-4">
@@ -76,6 +78,12 @@ function DeviceList() {
                   </td>
                   <td className="px-5 py-4 text-sm text-gray-700">{audienceLabel(device.audience)}</td>
                   <td className="px-5 py-4"><DeviceStatusBadge status={device.status} /></td>
+                  <td className="px-5 py-4">
+                    <BoardIssueChips
+                      board={device.board}
+                      empty={<span className="text-sm text-gray-500">{device.board ? 'All good' : 'Not reported'}</span>}
+                    />
+                  </td>
                   <td className="px-5 py-4 text-sm text-gray-700">{formatRelativeTime(device.lastHeartbeat)}</td>
                   <td className="px-5 py-4 text-sm text-gray-700">
                     <span className="inline-flex items-center gap-1">

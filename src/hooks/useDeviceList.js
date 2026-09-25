@@ -67,7 +67,8 @@ export function useDeviceList({ enabled = true } = {}) {
             ? {
                 ...device,
                 lastHeartbeat: event.at,
-                lastSeenIp: event.telemetry?.ipv4?.[0] || device.lastSeenIp
+                lastSeenIp: event.telemetry?.ipv4?.[0] || device.lastSeenIp,
+                ...(event.telemetry?.board ? { board: event.telemetry.board, boardReportAt: event.at } : {})
               }
             : device
         )));
