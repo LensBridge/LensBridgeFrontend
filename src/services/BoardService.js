@@ -1,5 +1,6 @@
 import { api } from '../api/client';
 import { toQuoteDurationSeconds } from '../models/board';
+import { endDateToIso, isoToEndDate, isoToStartDate, startDateToIso } from '../utils/posterDates';
 
 const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
@@ -14,8 +15,9 @@ const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
  *              backend returns startTime/endTime (ISO date-time),
  *              create accepts startEpochMs/endEpochMs (int64),
  *              update accepts startTime/endTime (ISO date-time)
- *   - posters: UI uses imageUrl + startDate/endDate (yyyy-mm-dd) + duration (ms);
- *              backend uses image + startTime/endTime (ISO date-time) + duration (seconds)
+ *   - posters: UI uses imageUrl + startDate/endDate (yyyy-mm-dd, local days, end
+ *              included) + duration (ms); backend uses image + startTime/endTime
+ *              (ISO date-time, end excluded) + duration (seconds); see utils/posterDates
  *   - weekly content: flat { year, weekNumber, quotes[], jummahPrayers[] }
  *   - socials: duration stays in seconds on both sides (the poster ms/seconds
  *              split is a poster-only wart); `handle` is nullable server-side
@@ -239,8 +241,8 @@ class BoardService {
       // UI keeps duration in ms; backend stores seconds.
       duration: (poster.duration || 0) * 1000,
       // UI's <input type="date"> wants yyyy-mm-dd; backend sends ISO date-time.
-      startDate: poster.startTime ? poster.startTime.slice(0, 10) : '',
-      endDate: poster.endTime ? poster.endTime.slice(0, 10) : '',
+      startDate: isoToStartDate(poster.startTime),
+      endDate: isoToEndDate(poster.endTime),
       audience: this.fromApiAudience(poster.audience),
       // Optional; when set the board pairs the poster with a QR code.
       signupUrl: poster.signupUrl || ''
@@ -285,8 +287,8 @@ class BoardService {
         body: {
           title: posterData.title,
           duration: Math.floor((posterData.duration || 0) / 1000),
-          startTime: this.toIso(posterData.startDate),
-          endTime: this.toIso(posterData.endDate),
+          startTime: startDateToIso(posterData.startDate),
+          endTime: endDateToIso(posterData.endDate),
           audience: this.toApiAudience(posterData.audience),
           imageFile: posterData.imageFile,
           // Omitted when blank so the server stores null rather than "".
@@ -305,8 +307,8 @@ class BoardService {
     const body = {};
     if (updates.title !== undefined) body.title = updates.title;
     if (updates.duration !== undefined) body.duration = Math.floor(updates.duration / 1000);
-    if (updates.startDate !== undefined) body.startTime = this.toIso(updates.startDate);
-    if (updates.endDate !== undefined) body.endTime = this.toIso(updates.endDate);
+    if (updates.startDate !== undefined) body.startTime = startDateToIso(updates.startDate);
+    if (updates.endDate !== undefined) body.endTime = endDateToIso(updates.endDate);
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
     // Sent as '' rather than omitted when cleared: the server treats an empty
     // string as "remove the link", where undefined would leave it unchanged.

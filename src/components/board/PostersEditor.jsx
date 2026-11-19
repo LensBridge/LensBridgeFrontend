@@ -6,6 +6,7 @@ import {
 import BoardService from '../../services/BoardService';
 import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
+import { isShowing } from '../../utils/posterDates';
 
 /**
  * PostersEditor - Grid-based poster management with drag-drop upload.
@@ -64,14 +65,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
     .filter(p => p.title?.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(p => filterAudience === 'all' || p.audience === filterAudience);
 
-  const isPosterActive = (poster) => {
-    const now = new Date();
-    const start = poster.startDate ? new Date(poster.startDate) : null;
-    const end = poster.endDate ? new Date(poster.endDate) : null;
-    if (start && now < start) return false;
-    if (end && now > end) return false;
-    return true;
-  };
+  const isPosterActive = (poster) => isShowing(poster.startDate, poster.endDate);
 
   const handleFileUpload = (file) => {
     if (!file) return;
@@ -310,7 +304,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (last day shown)</label>
                   <input
                     type="date"
                     value={formData.endDate}
