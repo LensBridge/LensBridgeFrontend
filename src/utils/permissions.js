@@ -131,7 +131,7 @@ export const PERMISSION_DESCRIPTIONS = {
   [PERMISSIONS.BOARD_REFRESH]: 'Push a refresh to every board',
 
   [PERMISSIONS.BOARD_DEVICE_READ]: 'List devices, telemetry, and command history',
-  [PERMISSIONS.BOARD_DEVICE_ENROLL]: 'Mint enrollment tokens — grants fleet access',
+  [PERMISSIONS.BOARD_DEVICE_ENROLL]: 'Add boards, download their setup files, mint enrollment tokens',
   [PERMISSIONS.BOARD_DEVICE_REVOKE]: 'Revoke an enrolled device',
   [PERMISSIONS.BOARD_TELEMETRY_SUBSCRIBE]: 'Stream live device telemetry',
 
