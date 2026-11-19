@@ -6,7 +6,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
   pull_request:
   workflow_dispatch:
 
@@ -18,10 +18,28 @@ jobs:
         with:
           path: LensBridgeFrontend
 
+      # The contract to check against is the backend branch matching this one:
+      # a PR's base branch, or the pushed branch. Backend develop runs ahead of
+      # master, so checking a develop PR against master fails on every new
+      # endpoint. A branch the backend does not have falls back to master.
+      - name: Pick the backend branch
+        id: backend
+        env:
+          WANTED: ${{ github.base_ref || github.ref_name }}
+        run: |
+          if git ls-remote --exit-code --heads https://github.com/LensBridge/LensBridgeBackend.git "refs/heads/$WANTED" > /dev/null; then
+            ref="$WANTED"
+          else
+            ref=master
+          fi
+          echo "Checking against LensBridgeBackend@$ref"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
       - name: Check out the backend for its OpenAPI contract
         uses: actions/checkout@v4
         with:
           repository: LensBridge/LensBridgeBackend
+          ref: ${{ steps.backend.outputs.ref }}
           path: LensBridgeBackend
 
       - uses: actions/setup-node@v4

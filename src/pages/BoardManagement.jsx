@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  Calendar, Image, Play, BookOpen, Share2,
+  Calendar, Image, BookOpen, Share2,
   Crown, ChevronLeft, RotateCcw, Monitor,
   Check, AlertCircle, ChevronRight, X, Wifi, WifiOff, ShieldCheck
 } from 'lucide-react';
@@ -14,7 +14,6 @@ import { useDeviceList } from '../hooks/useDeviceList';
 import EventsEditor from '../components/board/EventsEditor';
 import PostersEditor from '../components/board/PostersEditor';
 import SocialsEditor from '../components/board/SocialsEditor';
-import FramesEditor from '../components/board/FramesEditor';
 import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
 
 /**
@@ -22,8 +21,7 @@ import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
  *
  * Scope note: everything here is fleet-wide and audience-scoped. Per-device
  * settings (location, night mode, ticker text) live on the device itself —
- * see /admin/devices/:deviceId. The Slideshow tab is the one place the two
- * meet, because frames are assembled per device.
+ * see /admin/devices/:deviceId.
  *
  * The route guard decides who gets in at all; every tab, button, and counter
  * below asks for the one permission it actually needs, so a BOARD_VIEWER lands
@@ -34,8 +32,7 @@ const SECTIONS = [
   { id: 'events', label: 'Events', icon: Calendar, description: 'Calendar entries', permission: PERMISSIONS.BOARD_CONTENT_READ },
   { id: 'posters', label: 'Posters', icon: Image, description: 'Uploaded artwork', permission: PERMISSIONS.BOARD_CONTENT_READ },
   { id: 'socials', label: 'Socials', icon: Share2, description: 'Promoted accounts', permission: PERMISSIONS.BOARD_CONTENT_READ },
-  { id: 'content', label: 'Weekly', icon: BookOpen, description: 'Verse, hadith, Jummah', permission: PERMISSIONS.BOARD_CONTENT_READ },
-  { id: 'frames', label: 'Slideshow', icon: Play, description: 'Live per-board preview', permission: PERMISSIONS.BOARD_CONFIG_READ }
+  { id: 'content', label: 'Weekly', icon: BookOpen, description: 'Verse, hadith, Jummah', permission: PERMISSIONS.BOARD_CONTENT_READ }
 ];
 
 /** Most-privileged first, so the badge names the role that explains the page. */
@@ -61,7 +58,7 @@ function BoardManagement() {
   const canReadContent = can(PERMISSIONS.BOARD_CONTENT_READ);
   const canReadDevices = can(PERMISSIONS.BOARD_DEVICE_READ);
 
-  const { devices, loading: devicesLoading } = useDeviceList({ enabled: canReadDevices });
+  const { devices } = useDeviceList({ enabled: canReadDevices });
 
   const sections = useMemo(() => SECTIONS.filter(s => can(s.permission)), [can]);
   const activeSection = sections.some(s => s.id === requestedSection)
@@ -174,8 +171,6 @@ function BoardManagement() {
         return <SocialsEditor socials={content.socials} onUpdate={updateSocials} showMessage={showToast} />;
       case 'content':
         return <WeeklyContentEditor weeklyContent={content.weeklyContent} onUpdate={updateWeeklyContent} showMessage={showToast} />;
-      case 'frames':
-        return <FramesEditor devices={devices} devicesLoading={devicesLoading} showMessage={showToast} />;
       default:
         return null;
     }

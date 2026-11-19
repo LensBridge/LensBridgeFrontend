@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { Ban, Check, ChevronLeft, LayoutDashboard, Loader2, Monitor, Pencil, RefreshCcw, Server, X } from 'lucide-react';
+import { Ban, Check, ChevronLeft, KeyRound, LayoutDashboard, Loader2, Monitor, Pencil, RefreshCcw, Server, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useDevice } from '../hooks/useDevice';
 import { upsertCommand, useCommandStream } from '../hooks/useCommandStream';
@@ -11,7 +11,8 @@ import BoardStatePanel from '../components/devices/BoardStatePanel';
 import CommandLauncher from '../components/devices/CommandLauncher';
 import CommandRow from '../components/devices/CommandRow';
 import DeviceBoardConfig from '../components/devices/DeviceBoardConfig';
-import OfflineBundleDownload from '../components/devices/OfflineBundleDownload';
+import UsbStickDownloads from '../components/devices/UsbStickDownloads';
+import EnrollTokenDialog from '../components/devices/EnrollTokenDialog';
 import Can from '../components/Can';
 import { audienceLabel, formatDateTime, formatRelativeTime } from '../utils/deviceStatus';
 import { PERMISSIONS } from '../utils/permissions';
@@ -28,6 +29,18 @@ function DeviceDetail() {
   const [nameDraft, setNameDraft] = useState('');
   const [savingName, setSavingName] = useState(false);
   const [renameError, setRenameError] = useState('');
+  const [enrollToken, setEnrollToken] = useState(null);
+  const [enrollError, setEnrollError] = useState('');
+
+  // The maintainer's path: enroll this board over SSH with a one-time token.
+  const issueEnrollToken = async () => {
+    setEnrollError('');
+    try {
+      setEnrollToken(await DeviceService.issueDeviceEnrollmentToken(deviceId));
+    } catch (err) {
+      setEnrollError(err.message || 'Failed to issue an enrollment token');
+    }
+  };
 
   const saveName = async () => {
     const name = nameDraft.trim();
@@ -174,7 +187,7 @@ function DeviceDetail() {
           <div><div className="text-sm text-gray-500">Agent</div><div className="mt-1 font-medium text-gray-900">{device.agentVersion || 'Unknown'}</div></div>
           <div><div className="text-sm text-gray-500">Last seen</div><div className="mt-1 font-medium text-gray-900">{formatRelativeTime(device.lastHeartbeat)}</div></div>
           <div><div className="text-sm text-gray-500">IP</div><div className="mt-1 font-medium text-gray-900">{device.lastSeenIp || 'Unknown'}</div></div>
-          <div><div className="text-sm text-gray-500">Enrolled</div><div className="mt-1 font-medium text-gray-900">{formatDateTime(device.enrolledAt)}</div></div>
+          <div><div className="text-sm text-gray-500">First connected</div><div className="mt-1 font-medium text-gray-900">{device.enrolledAt ? formatDateTime(device.enrolledAt) : 'Never (USB only)'}</div></div>
           <div><div className="text-sm text-gray-500">Revoked</div><div className="mt-1 font-medium text-gray-900">{device.revokedAt ? formatDateTime(device.revokedAt) : 'No'}</div></div>
         </div>
       </section>
@@ -226,13 +239,33 @@ function DeviceDetail() {
 
       {!device.revokedAt && (
         <Can permission={PERMISSIONS.BOARD_DEVICE_READ}>
-          <OfflineBundleDownload deviceId={deviceId} />
+          <UsbStickDownloads device={device} />
         </Can>
       )}
 
       <Can permission={PERMISSIONS.BOARD_CONFIG_READ}>
         <DeviceBoardConfig deviceId={deviceId} disabled={Boolean(device.revokedAt)} />
       </Can>
+
+      {!device.revokedAt && (
+        <Can permission={PERMISSIONS.BOARD_DEVICE_ENROLL}>
+          <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-900">Maintainers: enroll over SSH</h2>
+            <p className="mt-1 text-sm text-gray-500">
+              A one-time token for <code className="font-mono">musallahboard-agent enroll</code> on this board. It binds the
+              board&apos;s key to this board, replacing any key it had (for a replaced SD card). Boards set up with an online
+              setup file connect by themselves and need none.
+            </p>
+            {enrollError && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{enrollError}</div>}
+            <button type="button" onClick={issueEnrollToken} className="mt-4 inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <KeyRound className="h-4 w-4" />
+              Issue enrollment token
+            </button>
+          </section>
+        </Can>
+      )}
+
+      {enrollToken && <EnrollTokenDialog tokenResponse={enrollToken} onClose={() => setEnrollToken(null)} />}
 
       {showRevoke && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

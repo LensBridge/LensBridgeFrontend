@@ -16,8 +16,13 @@ export function isHeartbeatFresh(isoString) {
   return Number.isFinite(time) && Date.now() - time < HEARTBEAT_STALE_MS;
 }
 
+/**
+ * 'usb': a board added in the console that has never connected (an offline
+ * board, or one whose online setup has not happened yet). Not a fault.
+ */
 export function getDeviceStatus(device, lifecycle = {}) {
   if (device?.revokedAt) return 'revoked';
+  if (device && !device.enrolledAt && lifecycle.online !== true) return 'usb';
   if (lifecycle.online === false) return 'offline';
   if (lifecycle.online === true && isHeartbeatFresh(lifecycle.lastHeartbeat || device?.lastHeartbeat)) return 'online';
   if (isHeartbeatFresh(device?.lastHeartbeat)) return 'online';
