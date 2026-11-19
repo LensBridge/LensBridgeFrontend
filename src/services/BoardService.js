@@ -545,25 +545,6 @@ class BoardService {
   }
 
   // ============================================================================
-  // ASSEMBLED PAYLOAD
-  // ============================================================================
-
-  /**
-   * The exact payload a given board fetches: `{ deviceConfig, frames, weather }`.
-   *
-   * This is the same endpoint the kiosk hits, so the admin preview shows what
-   * is really on screen rather than the UI's guess at it. Frames arrive already
-   * filtered by the device's audience and ordered by the assembler — do not
-   * re-sort or re-filter them here.
-   */
-  static async getDevicePayload(deviceId) {
-    return this.unwrap(
-      await api.GET('/api/musallah/payload', { params: { query: { deviceId } } }),
-      'Failed to fetch board payload'
-    );
-  }
-
-  // ============================================================================
   // BOARD REFRESH
   // ============================================================================
 

@@ -6,8 +6,6 @@
  * else in the UI should hardcode a frame type or a calculation method.
  *
  * Backend sources:
- *   model/board/frames/FrameType.java
- *   model/board/frames/FrameSlot.java
  *   model/board/frames/FrameDefinition.java
  *   model/board/Audience.java
  *   model/board/CalculationMethod.java
@@ -18,73 +16,6 @@
 // ============================================================================
 // FRAMES
 // ============================================================================
-
-/**
- * Frame types the assembler can emit, keyed by the enum name Jackson actually
- * puts on the wire.
- *
- * `FrameType` overrides `toString()` to return a lowercase snake_case form, and
- * that is what springdoc wrote into openapi.yaml — but Jackson serializes enums
- * with `name()` unless `@JsonValue` or `WRITE_ENUMS_USING_TO_STRING` says
- * otherwise, and neither is set. So the documented value is `poster` while the
- * response body says `POSTER`. Keying this map on the lowercase form is what
- * made every frame render as an unlabelled grey box.
- *
- * `normalizeFrameType` accepts both, so whichever side of that contract gets
- * fixed, this keeps working. `FrameSlot` has no custom `toString()` and so was
- * never affected — which is why the slot chip resolved while the type did not.
- *
- * @typedef {'POSTER'|'EVENT_LIST'|'DAILY_SCHEDULE'|'NEXT_PRAYER'|'JUMMAH'|'ISLAMIC_QUOTE'} FrameType
- */
-export const FRAME_TYPES = {
-  POSTER: {
-    label: 'Poster',
-    description: 'A single uploaded poster image',
-    source: 'Posters tab'
-  },
-  EVENT_LIST: {
-    label: 'Upcoming Events',
-    description: 'Events ahead of today, for this board audience',
-    source: 'Events tab'
-  },
-  DAILY_SCHEDULE: {
-    label: "Today's Schedule",
-    description: "Events falling inside the device's current day",
-    source: 'Events tab'
-  },
-  NEXT_PRAYER: {
-    label: 'Next Prayer',
-    description: 'Computed on the board itself from deviceConfig.location',
-    source: 'Device config'
-  },
-  JUMMAH: {
-    label: 'Jummah',
-    description: 'Khutbah slots for the current week',
-    source: 'Weekly tab'
-  },
-  ISLAMIC_QUOTE: {
-    label: 'Verse & Hadith',
-    description: "The week's verse and hadith",
-    source: 'Weekly tab'
-  }
-};
-
-/**
- * Both spellings of a frame type collapse to the enum name. The lowercase wire
- * form is exactly the snake_case of the name, so upcasing is the whole mapping.
- */
-export function normalizeFrameType(frameType) {
-  return frameType ? String(frameType).toUpperCase() : '';
-}
-
-
-/** Human label for a frame type, tolerating anything the backend adds later. */
-export function frameTypeLabel(frameType) {
-  const key = normalizeFrameType(frameType);
-  // An unknown type still reads better title-cased than as a raw SCREAMING_CASE
-  // token, and the assembler gaining a frame type is not a reason to show one.
-  return FRAME_TYPES[key]?.label ?? titleCase(key) ?? 'Unknown frame';
-}
 
 function titleCase(value) {
   if (!value) return null;
@@ -124,9 +55,8 @@ export const AUDIENCE_LABELS = {
 
 /**
  * The platforms a `PromotableSocialMedia` can carry, in the order the enum
- * declares them. Values are lowercase on the wire — unlike `FrameType`, this
- * enum is documented and serialized the same way, so there is no dual spelling
- * to normalize.
+ * declares them. Values are lowercase on the wire, and the enum is documented
+ * and serialized the same way, so there is no dual spelling to normalize.
  *
  * `handled: false` marks a platform with no public handle to show. WhatsApp
  * community invites are a link and nothing else, so the frame's handle line is
