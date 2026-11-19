@@ -8,6 +8,11 @@
  * poster on the evening before its start date and took it off a day early in
  * any zone west of UTC. An editor and the boards share a zone, so local days
  * line up with the board's days.
+ *
+ * Posters saved before that still carry UTC-midnight instants, which the
+ * editor shows a day early here. Saving one must not rewrite its schedule as a
+ * side effect, so an edit sends only the dates the admin actually changed
+ * (scheduleChanges); the PATCH leaves an omitted instant as it is.
  */
 
 /** 'yyyy-mm-dd' -> a Date at local midnight, or null. */
@@ -17,7 +22,8 @@ function localMidnight(day) {
   return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 }
 
-function localDay(date) {
+/** A Date -> its 'yyyy-mm-dd' day in the local zone. */
+export function localDay(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -46,6 +52,25 @@ export function isoToStartDate(iso) {
 export function isoToEndDate(iso) {
   const date = iso ? new Date(iso) : null;
   return date && !Number.isNaN(date.getTime()) ? localDay(new Date(date.getTime() - 1)) : '';
+}
+
+/** Editor dates -> the instants a new poster is created with. */
+export function scheduleToInstants({ startDate, endDate }) {
+  return { startTime: startDateToIso(startDate), endTime: endDateToIso(endDate) };
+}
+
+/**
+ * The instants an edit should send: only for a date that differs from what
+ * the editor showed when it opened (`shown`), so an untouched date keeps its
+ * stored instant exactly, legacy or not. A blank or malformed date is never
+ * sent. Without `shown`, every valid date is sent.
+ */
+export function scheduleChanges(edited, shown) {
+  const changes = {};
+  const { startTime, endTime } = scheduleToInstants(edited);
+  if (startTime && edited.startDate !== shown?.startDate) changes.startTime = startTime;
+  if (endTime && edited.endDate !== shown?.endDate) changes.endTime = endTime;
+  return changes;
 }
 
 /** Whether a poster with these editor dates is showing on `now`'s day. */

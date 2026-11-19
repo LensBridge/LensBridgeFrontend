@@ -1,6 +1,6 @@
 import { api } from '../api/client';
 import { toQuoteDurationSeconds } from '../models/board';
-import { endDateToIso, isoToEndDate, isoToStartDate, startDateToIso } from '../utils/posterDates';
+import { isoToEndDate, isoToStartDate, scheduleChanges, scheduleToInstants } from '../utils/posterDates';
 
 const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
@@ -287,8 +287,7 @@ class BoardService {
         body: {
           title: posterData.title,
           duration: Math.floor((posterData.duration || 0) / 1000),
-          startTime: startDateToIso(posterData.startDate),
-          endTime: endDateToIso(posterData.endDate),
+          ...scheduleToInstants(posterData),
           audience: this.toApiAudience(posterData.audience),
           imageFile: posterData.imageFile,
           // Omitted when blank so the server stores null rather than "".
@@ -302,13 +301,18 @@ class BoardService {
     ));
   }
 
-  /** Patch poster metadata (UpdatePosterRequest, JSON). */
-  static async updatePoster(posterId, updates) {
+  /**
+   * Patch poster metadata (UpdatePosterRequest, JSON).
+   *
+   * `original` is the poster as the editor opened it. A date equal to its
+   * date is left out, so the server keeps the stored instant (a poster saved
+   * as UTC midnight is not moved by an unrelated edit); see scheduleChanges.
+   */
+  static async updatePoster(posterId, updates, original) {
     const body = {};
     if (updates.title !== undefined) body.title = updates.title;
     if (updates.duration !== undefined) body.duration = Math.floor(updates.duration / 1000);
-    if (updates.startDate !== undefined) body.startTime = startDateToIso(updates.startDate);
-    if (updates.endDate !== undefined) body.endTime = endDateToIso(updates.endDate);
+    Object.assign(body, scheduleChanges(updates, original));
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
     // Sent as '' rather than omitted when cleared: the server treats an empty
     // string as "remove the link", where undefined would leave it unchanged.
