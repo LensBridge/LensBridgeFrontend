@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useOnlineSetupDefault from '../../hooks/useOnlineSetupDefault';
 import { AlertTriangle, Download, Loader2, Usb } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import { useAuth } from '../../context/AuthContext';
@@ -14,7 +15,7 @@ function AllBoardsUsbKit() {
   const canSetUp = can(PERMISSIONS.BOARD_DEVICE_ENROLL);
   const [days, setDays] = useState(DEFAULT_CONTENT_DAYS);
   const [includeSetup, setIncludeSetup] = useState(false);
-  const [online, setOnline] = useState(false);
+  const [online, setOnline] = useOnlineSetupDefault();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');

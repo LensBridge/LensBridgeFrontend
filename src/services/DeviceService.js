@@ -26,6 +26,14 @@ class DeviceService {
     return this.unwrap(await api.GET('/api/admin/board/devices', {}), 'Failed to fetch devices');
   }
 
+  /**
+   * How setup files are made when the console does not say: onlineSetup is
+   * true whenever the server has a backend URL for boards.
+   */
+  static async getSetupDefaults() {
+    return this.unwrap(await api.GET('/api/admin/board/devices/setup-defaults', {}), 'Failed to fetch setup defaults');
+  }
+
   static async getDevice(deviceId) {
     return this.unwrap(
       await api.GET('/api/admin/board/devices/{deviceId}', { params: { path: { deviceId } } }),

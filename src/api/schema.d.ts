@@ -192,6 +192,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/board/devices/setup-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How setup files are made when the console does not say
+         * @description onlineSetup: whether setup files and USB kits are online ones by default, which is whenever the server has a backend URL for boards. The console starts its Online setup box from it.
+         */
+        get: operations["getSetupDefaults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/board/devices/{deviceId}": {
         parameters: {
             query?: never;
@@ -2039,6 +2059,9 @@ export interface components {
             name?: string;
             permissions?: string[];
         };
+        SetupDefaultsResponse: {
+            onlineSetup: boolean;
+        };
         SigningKeyView: {
             /** @example 0123456789abcdef */
             keyId: string;
@@ -2734,6 +2757,35 @@ export interface operations {
             };
         };
     };
+    getSetupDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupDefaultsResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     getDevice: {
         parameters: {
             query?: never;
@@ -3087,7 +3139,7 @@ export interface operations {
     downloadSetupFile: {
         parameters: {
             query?: {
-                /** @description Include the backend URL and a new claim secret, for a board that will be online. Default: an offline-only board. */
+                /** @description Include the backend URL and a new claim secret, for a board that will be online. Default: online whenever the server has a backend URL for boards (getSetupDefaults), else offline-only. */
                 online?: boolean;
             };
             header?: never;
@@ -3154,7 +3206,7 @@ export interface operations {
                 days?: number;
                 /** @description Include the board's setup file */
                 includeSetup?: boolean;
-                /** @description Make the setup file an online one (backend URL and a new claim secret) */
+                /** @description Make the setup file an online one (backend URL and a new claim secret). Default: online whenever the server has a backend URL for boards */
                 online?: boolean;
             };
             header?: never;
@@ -3878,7 +3930,7 @@ export interface operations {
                 days?: number;
                 /** @description Include every board's setup file */
                 includeSetup?: boolean;
-                /** @description Make the setup files online ones (backend URL and new claim secrets) */
+                /** @description Make the setup files online ones (backend URL and new claim secrets). Default: online whenever the server has a backend URL for boards */
                 online?: boolean;
             };
             header?: never;

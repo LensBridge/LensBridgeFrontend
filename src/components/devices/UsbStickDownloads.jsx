@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import useOnlineSetupDefault from '../../hooks/useOnlineSetupDefault';
 import { AlertTriangle, Download, FileKey, Loader2, Printer, Usb } from 'lucide-react';
 import DeviceService from '../../services/DeviceService';
 import { useAuth } from '../../context/AuthContext';
@@ -11,9 +12,10 @@ import VolunteerCard from './VolunteerCard';
  * board app and agent, and optionally the setup file), the setup file alone,
  * or this board's content alone for a weekly update.
  *
- * Offline is the default. "Online setup" puts the backend URL and a new claim
- * secret in the setup file, for a board that will have a network; that board
- * then connects by itself.
+ * "Online setup" puts the backend URL and a new claim secret in the setup
+ * file, so the board connects by itself whenever it has a network. It starts
+ * on whenever the server has a backend URL for boards: an online file costs a
+ * board that never gets a network nothing.
  */
 function UsbStickDownloads({ device }) {
   const { can } = useAuth();
@@ -21,7 +23,7 @@ function UsbStickDownloads({ device }) {
   const neverConnected = !device.enrolledAt;
   const [days, setDays] = useState(DEFAULT_CONTENT_DAYS);
   const [includeSetup, setIncludeSetup] = useState(canSetUp && neverConnected);
-  const [online, setOnline] = useState(false);
+  const [online, setOnline] = useOnlineSetupDefault();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
