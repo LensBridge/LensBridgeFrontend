@@ -1,5 +1,6 @@
 import { api } from '../api/client';
 import { toQuoteDurationSeconds } from '../models/board';
+import { isoToEndDate, isoToStartDate, scheduleChanges, scheduleToInstants } from '../utils/posterDates';
 
 const VALID_QUOTE_KINDS = new Set(['VERSE', 'HADITH']);
 const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
@@ -14,8 +15,9 @@ const VALID_AUDIENCES = new Set(['brothers', 'sisters', 'both']);
  *              backend returns startTime/endTime (ISO date-time),
  *              create accepts startEpochMs/endEpochMs (int64),
  *              update accepts startTime/endTime (ISO date-time)
- *   - posters: UI uses imageUrl + startDate/endDate (yyyy-mm-dd) + duration (ms);
- *              backend uses image + startTime/endTime (ISO date-time) + duration (seconds)
+ *   - posters: UI uses imageUrl + startDate/endDate (yyyy-mm-dd, local days, end
+ *              included) + duration (ms); backend uses image + startTime/endTime
+ *              (ISO date-time, end excluded) + duration (seconds); see utils/posterDates
  *   - weekly content: flat { year, weekNumber, quotes[], jummahPrayers[] }
  *   - socials: duration stays in seconds on both sides (the poster ms/seconds
  *              split is a poster-only wart); `handle` is nullable server-side
@@ -239,8 +241,8 @@ class BoardService {
       // UI keeps duration in ms; backend stores seconds.
       duration: (poster.duration || 0) * 1000,
       // UI's <input type="date"> wants yyyy-mm-dd; backend sends ISO date-time.
-      startDate: poster.startTime ? poster.startTime.slice(0, 10) : '',
-      endDate: poster.endTime ? poster.endTime.slice(0, 10) : '',
+      startDate: isoToStartDate(poster.startTime),
+      endDate: isoToEndDate(poster.endTime),
       audience: this.fromApiAudience(poster.audience),
       // Optional; when set the board pairs the poster with a QR code.
       signupUrl: poster.signupUrl || ''
@@ -285,8 +287,7 @@ class BoardService {
         body: {
           title: posterData.title,
           duration: Math.floor((posterData.duration || 0) / 1000),
-          startTime: this.toIso(posterData.startDate),
-          endTime: this.toIso(posterData.endDate),
+          ...scheduleToInstants(posterData),
           audience: this.toApiAudience(posterData.audience),
           imageFile: posterData.imageFile,
           // Omitted when blank so the server stores null rather than "".
@@ -300,13 +301,18 @@ class BoardService {
     ));
   }
 
-  /** Patch poster metadata (UpdatePosterRequest, JSON). */
-  static async updatePoster(posterId, updates) {
+  /**
+   * Patch poster metadata (UpdatePosterRequest, JSON).
+   *
+   * `original` is the poster as the editor opened it. A date equal to its
+   * date is left out, so the server keeps the stored instant (a poster saved
+   * as UTC midnight is not moved by an unrelated edit); see scheduleChanges.
+   */
+  static async updatePoster(posterId, updates, original) {
     const body = {};
     if (updates.title !== undefined) body.title = updates.title;
     if (updates.duration !== undefined) body.duration = Math.floor(updates.duration / 1000);
-    if (updates.startDate !== undefined) body.startTime = this.toIso(updates.startDate);
-    if (updates.endDate !== undefined) body.endTime = this.toIso(updates.endDate);
+    Object.assign(body, scheduleChanges(updates, original));
     if (updates.audience !== undefined) body.audience = this.toApiAudience(updates.audience);
     // Sent as '' rather than omitted when cleared: the server treats an empty
     // string as "remove the link", where undefined would leave it unchanged.
@@ -541,25 +547,6 @@ class BoardService {
     return this.unwrap(
       await api.DELETE('/api/admin/board/events/{eventId}', { params: { path: { eventId } } }),
       'Failed to delete event'
-    );
-  }
-
-  // ============================================================================
-  // ASSEMBLED PAYLOAD
-  // ============================================================================
-
-  /**
-   * The exact payload a given board fetches: `{ deviceConfig, frames, weather }`.
-   *
-   * This is the same endpoint the kiosk hits, so the admin preview shows what
-   * is really on screen rather than the UI's guess at it. Frames arrive already
-   * filtered by the device's audience and ordered by the assembler — do not
-   * re-sort or re-filter them here.
-   */
-  static async getDevicePayload(deviceId) {
-    return this.unwrap(
-      await api.GET('/api/musallah/payload', { params: { query: { deviceId } } }),
-      'Failed to fetch board payload'
     );
   }
 

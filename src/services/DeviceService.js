@@ -1,4 +1,5 @@
 import { api } from '../api/client';
+import { filenameFrom } from '../utils/usbKit';
 
 /**
  * Board device administration.
@@ -25,6 +26,14 @@ class DeviceService {
     return this.unwrap(await api.GET('/api/admin/board/devices', {}), 'Failed to fetch devices');
   }
 
+  /**
+   * How setup files are made when the console does not say: onlineSetup is
+   * true whenever the server has a backend URL for boards.
+   */
+  static async getSetupDefaults() {
+    return this.unwrap(await api.GET('/api/admin/board/devices/setup-defaults', {}), 'Failed to fetch setup defaults');
+  }
+
   static async getDevice(deviceId) {
     return this.unwrap(
       await api.GET('/api/admin/board/devices/{deviceId}', { params: { path: { deviceId } } }),
@@ -43,9 +52,26 @@ class DeviceService {
     );
   }
 
-  static async issueEnrollmentToken(request) {
+  /**
+   * "Add board": the board exists before it is ever switched on, with no key.
+   * Its setup file and content can be downloaded at once.
+   */
+  static async createDevice({ displayName, audience, location }) {
     return this.unwrap(
-      await api.POST('/api/admin/board/devices/enrollment-tokens', { body: request }),
+      await api.POST('/api/admin/board/devices', { body: { displayName, audience, location } }),
+      'Failed to add the board'
+    );
+  }
+
+  /**
+   * One-time token for `musallahboard-agent enroll --token` over SSH, bound to
+   * this board (the maintainer path; boards set up by a setup file need none).
+   */
+  static async issueDeviceEnrollmentToken(deviceId) {
+    return this.unwrap(
+      await api.POST('/api/admin/board/devices/{deviceId}/enrollment-tokens', {
+        params: { path: { deviceId } },
+      }),
       'Failed to issue enrollment token'
     );
   }
@@ -68,29 +94,67 @@ class DeviceService {
   }
 
   /**
-   * Content bundle for a board with no internet, fetched as a Blob so the
-   * request carries the Bearer token (a plain <a href> would not).
-   * Bundling downloads every referenced poster, so this can take several seconds.
-   * @returns {Promise<{ blob: Blob, filename: string }>}
+   * Downloads are fetched as Blobs so the request carries the Bearer token (a
+   * plain <a href> would not). Building one downloads every poster image, so
+   * it can take several seconds.
+   * @param {{ data?: any, error?: any, response: Response }} result
+   * @param {string} fallbackFilename
+   * @param {string} what
+   * @returns {{ blob: Blob, filename: string, omitted: string }}
    */
-  static async downloadOfflineBundle(deviceId, days) {
-    const { data, error, response } = await api.GET('/api/admin/board/devices/{deviceId}/offline-bundle', {
-      params: { path: { deviceId }, query: { days } },
-      parseAs: 'blob',
-    });
+  static downloaded({ data, error, response }, fallbackFilename, what) {
     if (error !== undefined || !data) {
       const fallback = {
-        400: 'Days must be between 1 and 31.',
-        404: 'This device no longer exists.',
-        409: 'This device has been revoked, so no bundle can be built for it.',
+        400: 'Days must be between 1 and 92.',
+        403: 'Your account may not download this. Setup files need the enroll permission.',
+        404: 'This board no longer exists.',
+        409: 'This board has been revoked.',
         502: 'A poster image could not be fetched. Try again in a moment.',
-      }[response.status] || 'Failed to build the offline bundle';
+        503: 'The server is not set up to sign board files (or has no backend URL for online boards).',
+      }[response.status] || `Failed to build the ${what}`;
       throw new Error((typeof error === 'object' && error?.message) || fallback);
     }
-    const disposition = response.headers.get('Content-Disposition') || '';
-    const match = /filename="?([^";]+)"?/i.exec(disposition);
-    const filename = match?.[1] || `musallahboard-${String(deviceId).slice(0, 8)}.zip`;
-    return { blob: data, filename };
+    return {
+      blob: data,
+      filename: filenameFrom(response.headers.get('Content-Disposition'), fallbackFilename),
+      // Set when the kit could not include the latest board app or agent.
+      omitted: response.headers.get('X-Usb-Kit-Omitted') || '',
+    };
+  }
+
+  /** This board's content alone, a signed .mbu (the weekly update for one board). */
+  static async downloadOfflineBundle(deviceId, days) {
+    return this.downloaded(await api.GET('/api/admin/board/devices/{deviceId}/offline-bundle', {
+      params: { path: { deviceId }, query: { days } },
+      parseAs: 'blob',
+    }), `musallahboard-content-${String(deviceId).slice(0, 8)}.mbu`, 'content file');
+  }
+
+  /**
+   * The board's setup file. Online adds the backend URL and a new claim
+   * secret, which makes earlier online setup files for this board useless.
+   */
+  static async downloadSetupFile(deviceId, online) {
+    return this.downloaded(await api.GET('/api/admin/board/devices/{deviceId}/setup-file', {
+      params: { path: { deviceId }, query: { online } },
+      parseAs: 'blob',
+    }), `musallahboard-setup-${String(deviceId).slice(0, 8)}.mbu`, 'setup file');
+  }
+
+  /** A zip with a MusallahBoard/ folder: content, optionally setup, latest app and agent. */
+  static async downloadUsbKit(deviceId, { days, includeSetup, online }) {
+    return this.downloaded(await api.GET('/api/admin/board/devices/{deviceId}/usb-kit', {
+      params: { path: { deviceId }, query: { days, includeSetup, online } },
+      parseAs: 'blob',
+    }), `musallahboard-usb-kit-${String(deviceId).slice(0, 8)}.zip`, 'USB kit');
+  }
+
+  /** The same kit with the files of every board that is not revoked. */
+  static async downloadAllBoardsUsbKit({ days, includeSetup, online }) {
+    return this.downloaded(await api.GET('/api/admin/board/usb-kit', {
+      params: { query: { days, includeSetup, online } },
+      parseAs: 'blob',
+    }), 'musallahboard-usb-kit-all.zip', 'USB kit');
   }
 
   static async listCommands(deviceId) {

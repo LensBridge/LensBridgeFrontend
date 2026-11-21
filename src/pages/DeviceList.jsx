@@ -4,6 +4,7 @@ import { useDeviceList } from '../hooks/useDeviceList';
 import Can from '../components/Can';
 import DeviceStatusBadge from '../components/devices/DeviceStatusBadge';
 import BoardIssueChips from '../components/devices/BoardIssueChips';
+import AllBoardsUsbKit from '../components/devices/AllBoardsUsbKit';
 import { audienceLabel, formatRelativeTime } from '../utils/deviceStatus';
 import { PERMISSIONS } from '../utils/permissions';
 
@@ -23,7 +24,7 @@ function DeviceList() {
               <Monitor className="h-5 w-5 text-indigo-600" />
               <h1 className="text-2xl font-semibold text-gray-900">Board Devices</h1>
             </div>
-            <p className="mt-1 text-sm text-gray-500">Live enrollment, telemetry, and command control for MusallahBoard agents.</p>
+            <p className="mt-1 text-sm text-gray-500">Every board, set up by USB stick. Boards with a network also report here and take commands.</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -32,15 +33,17 @@ function DeviceList() {
             Refresh
           </button>
           <Can permission={PERMISSIONS.BOARD_DEVICE_ENROLL}>
-            <Link to="/admin/devices/enroll" className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+            <Link to="/admin/devices/new" className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
               <Plus className="h-4 w-4" />
-              Enroll new device
+              Add board
             </Link>
           </Can>
         </div>
       </div>
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+      {devices.length > 0 && <AllBoardsUsbKit />}
 
       {!live && (
         <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
@@ -69,7 +72,7 @@ function DeviceList() {
               {loading ? (
                 <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">Loading devices...</td></tr>
               ) : devices.length === 0 ? (
-                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">No devices enrolled yet.</td></tr>
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">No boards yet. Add one to download its setup file.</td></tr>
               ) : devices.map((device) => (
                 <tr key={device.id} onClick={() => navigate(`/admin/devices/${device.id}`)} className="cursor-pointer hover:bg-gray-50">
                   <td className="px-5 py-4">

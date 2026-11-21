@@ -80,7 +80,6 @@ function EnrollTokenDialog({ tokenResponse, onClose }) {
               </button>
             </div>
             <code className="block break-all rounded bg-white p-3 text-sm text-gray-800">{command}</code>
-            <p className="mt-2 text-xs text-gray-500">The board shows its address on screen while it waits to be enrolled.</p>
           </div>
         </div>
 

@@ -9,5 +9,4 @@ export { default as PostersEditor } from './PostersEditor';
 export { default as SocialsEditor } from './SocialsEditor';
 export { default as SocialFramePreview } from './SocialFramePreview';
 export { default as SocialIcon } from './SocialIcon';
-export { default as FramesEditor } from './FramesEditor';
 export { default as WeeklyContentEditor } from './WeeklyContentEditor';

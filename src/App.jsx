@@ -15,7 +15,7 @@ import Gallery from './pages/Gallery';
 import AdminDashboard from './pages/AdminDashboard';
 import BoardManagement from './pages/BoardManagement';
 import DeviceList from './pages/DeviceList';
-import EnrollDevice from './pages/EnrollDevice';
+import AddBoard from './pages/AddBoard';
 import DeviceDetail from './pages/DeviceDetail';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -64,8 +64,8 @@ function App() {
               />
               {/*
                 Board routes gate on the narrowest permission that makes the page
-                worth opening — a read, in every case but enrollment, which has
-                nothing to show someone who cannot mint a token. Controls inside
+                worth opening — a read, in every case but adding a board, which has
+                nothing to show someone who cannot add one. Controls inside
                 each page gate themselves; see src/utils/permissions.js.
               */}
               <Route
@@ -85,10 +85,10 @@ function App() {
                 }
               />
               <Route
-                path="/admin/devices/enroll"
+                path="/admin/devices/new"
                 element={
-                  <PermissionRoute anyOf={[PERMISSIONS.BOARD_DEVICE_ENROLL]} label="device enrollment">
-                    <EnrollDevice />
+                  <PermissionRoute anyOf={[PERMISSIONS.BOARD_DEVICE_ENROLL]} label="adding a board">
+                    <AddBoard />
                   </PermissionRoute>
                 }
               />

@@ -158,10 +158,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List every enrolled board device */
+        /** List every board, connected or not */
         get: operations["listDevices"];
         put?: never;
-        post?: never;
+        /**
+         * Add a board
+         * @description Creates the board before it is ever switched on, with no device key. Its config, content packages and setup file work at once; it gets a key only if it later claims online. Requires board:device:enroll.
+         */
+        post: operations["createDevice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -177,8 +181,31 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Mint a one-time token a new device can exchange for an identity */
+        /**
+         * Mint a one-time token that enrolls a new device over SSH (legacy)
+         * @description The token creates a new device when used. To enroll a board already added in the console, use POST /api/admin/board/devices/{deviceId}/enrollment-tokens.
+         */
         post: operations["issueEnrollmentToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/devices/setup-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How setup files are made when the console does not say
+         * @description onlineSetup: whether setup files and USB kits are online ones by default, which is whenever the server has a backend URL for boards. The console starts its Online setup box from it.
+         */
+        get: operations["getSetupDefaults"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -199,6 +226,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** Rename a board or change its audience */
         patch: operations["updateDevice"];
         trace?: never;
     };
@@ -214,9 +242,29 @@ export interface paths {
         put?: never;
         /**
          * Queue a command for a device
-         * @description Returns as soon as the command is queued; delivery and execution are reported asynchronously over the agent websocket. The permission required depends on the command kind: board:command:benign, :disruptive, or :inspect.
+         * @description Returns as soon as the command is queued; delivery and execution are reported asynchronously over the agent websocket. The permission required depends on the command kind: board:command:benign, :disruptive, or :inspect. ttlSeconds is capped per kind (10 minutes for kiosk.restart, system.reboot and update.install_now; 15 for chrome.screenshot and logs.tail; an hour for chrome.reload and config.refresh), deadlineMs at 15 minutes. Only logs.tail takes a payload, {"lines": 1..500}; for the others it must be absent, null or {}.
          */
         post: operations["issueDeviceCommand"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/devices/{deviceId}/enrollment-tokens": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint a one-time token that enrolls this board over SSH (maintainers)
+         * @description For musallahboard-agent enroll --token on the board. The token binds the board's key to this device, replacing any key it had (for example after an SD card swap). Boards set up with an online setup file claim by themselves and need no token.
+         */
+        post: operations["issueDeviceEnrollmentToken"];
         delete?: never;
         options?: never;
         head?: never;
@@ -231,8 +279,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Download a content bundle for a board with no internet
-         * @description A zip holding one fully assembled payload per day, starting today in the device's timezone, plus every poster image those payloads reference. Pushed to the board by hand with mbpush. Requires board:device:read.
+         * Download a signed content package for a board
+         * @description A signed .mbu content package (format version 2) holding one fully assembled payload per day, starting today in the device's timezone, plus every poster image those payloads reference. Taken to the board by USB stick, laptop or phone. Requires board:device:read.
          */
         get: operations["downloadOfflineBundle"];
         put?: never;
@@ -257,6 +305,46 @@ export interface paths {
          * @description Closes any live agent session. Idempotent: re-revoking an already revoked device is a no-op.
          */
         post: operations["revokeDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/devices/{deviceId}/setup-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a board's setup file
+         * @description A signed .mbu provision package (provision.json: deviceId, displayName, sequence, issuedAt and, with online=true, backendUrl and a claimSecret). Plugged into a fresh board on a USB stick, it makes the board this one. Every download has a newer sequence; an online one also replaces the claim secret, so earlier online files can no longer claim the board. Requires board:device:enroll.
+         */
+        get: operations["downloadSetupFile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/board/devices/{deviceId}/usb-kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a USB kit for one board
+         * @description A zip holding one folder, MusallahBoard/, with content-<id8>.mbu, setup-<id8>.mbu (includeSetup=true; online=true adds the backend URL and a new claim secret), and the latest board app and arm64 agent packages from their GitHub release channels. When a channel cannot be reached the kit goes without that package and the X-Usb-Kit-Omitted header says why. Requires board:device:read, and board:device:enroll with includeSetup.
+         */
+        get: operations["downloadUsbKit"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -387,7 +475,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["refreshSignboard"];
+        /** Ask every connected board to sync its content now */
+        post: operations["refreshBoards"];
         delete?: never;
         options?: never;
         head?: never;
@@ -440,6 +529,26 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["updateSocial"];
+        trace?: never;
+    };
+    "/api/admin/board/usb-kit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a USB kit for every board
+         * @description As the one-board kit, with the files of every board that is not revoked. One stick then updates any of them: each board keeps only its own files.
+         */
+        get: operations["downloadAllBoardsUsbKit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/admin/board/weekly-content": {
@@ -806,6 +915,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agent/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bind a board's device key to its pre-created device (online setup file)
+         * @description proof is base64url(HMAC-SHA256(key = the setup file's claimSecret bytes, msg = deviceId + "\n" + publicKey)), with the lowercase deviceId and the publicKey string exactly as sent. Idempotent: claiming again with the same key succeeds. The response is the same as enrollment's.
+         */
+        post: operations["claimAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/content-bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fetch this board's signed content package (online sync)
+         * @description Device-authenticated with the X-MB-* headers (Ed25519 signature by the enrolled device key over musallahboard-http-v1, method, path, device id, timestamp and the body's SHA-256). Returns a signed .mbu content package starting today in the device's timezone. Media whose SHA-256 is in haveMedia is listed and signed in mbu.json but left out of the zip.
+         */
+        post: operations["downloadContentBundle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agent/enroll": {
         parameters: {
             query?: never;
@@ -817,9 +966,49 @@ export interface paths {
         put?: never;
         /**
          * Exchange a one-time enrollment token for a device identity
-         * @description Called once per device by the MusallahBoard agent. The returned websocketUrl is persisted verbatim into the agent's config and never requested again.
+         * @description Called once per device by the MusallahBoard agent. The returned websocketUrl is persisted verbatim into the agent's config and never requested again. contentSigningKeys are the public content keys the agent pins in its trust store.
          */
         post: operations["enrollAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/signing-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Public content signing keys boards should trust
+         * @description Current key first, then previous keys still valid during a rotation. Empty when the server has no content signing key. Used by `musallahboard-agent trust fetch` on boards enrolled before signed content existed.
+         */
+        get: operations["getSigningKeys"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agent/weather": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current weather for this board
+         * @description Device-authenticated with the X-MB-* headers, like the content bundle; the signed body hash is the SHA-256 of the empty string. `weather` is the OpenWeatherMap current weather JSON exactly as the server last fetched it, or null when the server has none or its last fetch is over 3 hours old. `fetchedAt` is when the server fetched that weather (when `weather` is null, when it answered).
+         */
+        get: operations["getAgentWeather"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1098,104 +1287,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/musallah/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Fetch the config a kiosk should render */
-        get: operations["getPublicBoardConfig"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/musallah/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getUpcomingEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/musallah/events/range": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getEventsInRange"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/musallah/payload": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getBoardPayload"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/musallah/weekly-content": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["getCurrentWeeklyContent"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/musallah/weekly-content/{year}/{weekNumber}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Fetch weekly content for a kiosk */
-        get: operations["getPublicWeeklyContent"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/upload/event/{eventId}": {
         parameters: {
             query?: never;
@@ -1382,6 +1473,14 @@ export interface components {
              */
             type: "agenda";
         };
+        AgentClaimRequest: {
+            agentVersion?: string;
+            /** Format: uuid */
+            deviceId: string;
+            hostname?: string;
+            proof: string;
+            publicKey: string;
+        };
         AgentEnrollRequest: {
             agentVersion?: string;
             hardwareModel?: string;
@@ -1390,9 +1489,28 @@ export interface components {
             token: string;
         };
         AgentEnrollResponse: {
+            /** @description Public content signing keys the agent pins at enrollment. Always present; empty when the server has no content key configured. */
+            contentSigningKeys: components["schemas"]["SigningKeyView"][];
             /** Format: uuid */
             deviceId?: string;
             websocketUrl?: string;
+        };
+        AgentUpdate: {
+            at?: string;
+            from?: string;
+            message?: string;
+            status?: string;
+            to?: string;
+        };
+        AgentWeatherResponse: {
+            /**
+             * Format: date-time
+             * @description When the server fetched the weather from OpenWeatherMap; when weather is null, when the server answered
+             * @example 2026-09-24T14:05:00Z
+             */
+            fetchedAt: string;
+            /** @description OpenWeatherMap current weather JSON, verbatim; null when unavailable */
+            weather: components["schemas"]["JsonNode"];
         };
         AuditEventDto: {
             /** @enum {string} */
@@ -1427,9 +1545,24 @@ export interface components {
             /** Format: date-time */
             startTime?: string;
         };
+        BoardReport: {
+            appVersion?: string;
+            clock?: components["schemas"]["Clock"];
+            content?: components["schemas"]["Content"];
+            error?: string;
+            lastAgentUpdate?: components["schemas"]["AgentUpdate"];
+            servicePort?: boolean;
+            syncError?: string;
+            updates?: components["schemas"]["Updates"];
+            usbImport?: boolean;
+        };
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
+        };
+        Clock: {
+            source?: string;
+            trusted?: boolean;
         };
         CommandIssuedResponse: {
             /** Format: uuid */
@@ -1471,6 +1604,26 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING" | "DELIVERED" | "ACKED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "TIMEOUT" | "REJECTED" | "EXPIRED";
         };
+        Content: {
+            createdAt?: string;
+            /** Format: int32 */
+            daysRemaining?: number;
+            firstDay?: string;
+            installedAt?: string;
+            lastDay?: string;
+            source?: string;
+            /** Format: int32 */
+            staleDays?: number;
+            timezone?: string;
+        };
+        ContentBundleRequest: {
+            /**
+             * Format: int32
+             * @default 7
+             */
+            days: number;
+            haveMedia?: string[];
+        };
         CreateCalendarEventRequest: {
             allDay?: boolean;
             /** @enum {string} */
@@ -1482,6 +1635,12 @@ export interface components {
             name: string;
             /** Format: int64 */
             startEpochMs: number;
+        };
+        CreateDeviceRequest: {
+            /** @enum {string} */
+            audience: "brothers" | "sisters" | "both";
+            displayName: string;
+            location?: components["schemas"]["Location"];
         };
         CreatePosterRequest: {
             /** @enum {string} */
@@ -1541,6 +1700,9 @@ export interface components {
             agentVersion?: string;
             /** @enum {string} */
             audience?: "brothers" | "sisters" | "both";
+            board?: components["schemas"]["BoardReport"];
+            /** Format: date-time */
+            boardReportAt?: string;
             displayName?: string;
             /** Format: date-time */
             enrolledAt?: string;
@@ -1695,6 +1857,7 @@ export interface components {
         MessageResponse: {
             message?: string;
         };
+        /** @description Format of each payloads/<date>.json file inside a signed content package (.mbu). Not returned by any endpoint; boards read it from installed packages. weather is always null here: boards fetch current weather from GET /api/agent/weather. */
         MusallahBoardPayload: {
             deviceConfig?: components["schemas"]["DeviceConfig"];
             frames?: components["schemas"]["FrameDefinition"][];
@@ -1896,6 +2059,17 @@ export interface components {
             name?: string;
             permissions?: string[];
         };
+        SetupDefaultsResponse: {
+            onlineSetup: boolean;
+        };
+        SigningKeyView: {
+            /** @example 0123456789abcdef */
+            keyId: string;
+            publicKey: string;
+        };
+        SigningKeysResponse: {
+            content: components["schemas"]["SigningKeyView"][];
+        };
         SignupRequest: {
             /** Format: email */
             email: string;
@@ -1927,6 +2101,11 @@ export interface components {
             roles?: string[];
             valid?: boolean;
             verified?: boolean;
+        };
+        Update: {
+            description?: string;
+            type?: string;
+            version?: string;
         };
         UpdateBoardConfigRequest: {
             /** Format: int32 */
@@ -1989,6 +2168,15 @@ export interface components {
         UpdateTickerRequest: {
             enableScrollingMessage?: boolean;
             scrollingMessages?: string[];
+        };
+        Updates: {
+            autoUpdate?: boolean;
+            available?: components["schemas"]["Update"][];
+            installAt?: string;
+            installTime?: string;
+            installing?: boolean;
+            lastCheckAt?: string;
+            lastCheckError?: string;
         };
         UploadCompletionResponse: {
             /** Format: uuid */
@@ -2494,6 +2682,48 @@ export interface operations {
             };
         };
     };
+    createDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Board created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceSummary"];
+                };
+            };
+            /** @description Missing name or audience, or an unusable location */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     issueEnrollmentToken: {
         parameters: {
             query?: never;
@@ -2514,6 +2744,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssueEnrollmentTokenResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getSetupDefaults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupDefaultsResponse"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2582,13 +2841,31 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Device updated */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["DeviceSummary"];
+                };
+            };
+            /** @description Blank or over-long displayName */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No device with that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -2657,8 +2934,69 @@ export interface operations {
                     "application/json": components["schemas"]["CommandIssuedResponse"];
                 };
             };
+            /** @description Unknown kind, a payload the kind does not take, or a deadline or time-to-live over its limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
             /** @description Caller lacks the permission for this command kind */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    issueDeviceEnrollmentToken: {
+        parameters: {
+            query?: {
+                /** @description Lifetime of the token in minutes (1-1440, default 30) */
+                expiresInMinutes?: number;
+            };
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token issued; the plaintext is returned exactly once */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueEnrollmentTokenResponse"];
+                };
+            };
+            /** @description No device with that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Device is revoked */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2691,18 +3029,18 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The bundle */
+            /** @description The package */
             200: {
                 headers: {
-                    /** @description attachment; filename="musallahboard-<first 8 chars of deviceId>-<firstDay>.zip" */
+                    /** @description attachment; filename="musallahboard-content-<first 8 chars of deviceId>-<firstDay>.mbu" */
                     "Content-Disposition"?: string;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/zip": string;
+                    "application/vnd.musallahboard.mbu": string;
                 };
             };
-            /** @description days outside 1-31 */
+            /** @description days outside 1-92 */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -2731,6 +3069,15 @@ export interface operations {
             };
             /** @description A poster image could not be fetched; the message names the poster */
             502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No content signing key is configured on the server */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2771,6 +3118,156 @@ export interface operations {
             };
             /** @description No device with that id */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    downloadSetupFile: {
+        parameters: {
+            query?: {
+                /** @description Include the backend URL and a new claim secret, for a board that will be online. Default: online whenever the server has a backend URL for boards (getSetupDefaults), else offline-only. */
+                online?: boolean;
+            };
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The setup file */
+            200: {
+                headers: {
+                    /** @description attachment; filename="musallahboard-setup-<first 8 chars of deviceId>.mbu" */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.musallahboard.mbu": string;
+                };
+            };
+            /** @description No device with that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Device is revoked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No content signing key, or (online) no backend URL, is configured on the server */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    downloadUsbKit: {
+        parameters: {
+            query?: {
+                /** @description Days of content, starting today in each board's timezone */
+                days?: number;
+                /** @description Include the board's setup file */
+                includeSetup?: boolean;
+                /** @description Make the setup file an online one (backend URL and a new claim secret). Default: online whenever the server has a backend URL for boards */
+                online?: boolean;
+            };
+            header?: never;
+            path: {
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The kit */
+            200: {
+                headers: {
+                    /** @description attachment; filename="musallahboard-usb-kit-<id8>-<date>.zip" */
+                    "Content-Disposition"?: string;
+                    /** @description Present when the kit is missing the app or agent package: what, and why */
+                    "X-Usb-Kit-Omitted"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description days outside 1-92 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No device with that id */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Device is revoked */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description A poster image could not be fetched */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No content signing key (or, online, no backend URL) is configured */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3207,7 +3704,7 @@ export interface operations {
             };
         };
     };
-    refreshSignboard: {
+    refreshBoards: {
         parameters: {
             query?: never;
             header?: never;
@@ -3413,6 +3910,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PromotableSocialMedia"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    downloadAllBoardsUsbKit: {
+        parameters: {
+            query?: {
+                /** @description Days of content, starting today in each board's timezone */
+                days?: number;
+                /** @description Include every board's setup file */
+                includeSetup?: boolean;
+                /** @description Make the setup files online ones (backend URL and new claim secrets). Default: online whenever the server has a backend URL for boards */
+                online?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The kit */
+            200: {
+                headers: {
+                    /** @description attachment; filename="musallahboard-usb-kit-all-<date>.zip" */
+                    "Content-Disposition"?: string;
+                    /** @description Present when the kit is missing the app or agent package: what, and why */
+                    "X-Usb-Kit-Omitted"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            /** @description days outside 1-92 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description There are no boards */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description A poster image could not be fetched */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No content signing key (or, online, no backend URL) is configured */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */
@@ -4247,6 +4820,144 @@ export interface operations {
             };
         };
     };
+    claimAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Key bound (or already bound to this key) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentEnrollResponse"];
+                };
+            };
+            /** @description Malformed body, public key or proof */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Unknown or revoked device, no online setup file issued for it, or a wrong proof (a setup file older than the latest online one) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description The device is already bound to a different key */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    downloadContentBundle: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Enrolled device id */
+                "X-MB-Device-Id": string;
+                /** @description Unix milliseconds; must be within 5 minutes of the server clock */
+                "X-MB-Timestamp": number;
+                /** @description Base64 Ed25519 signature by the device key over musallahboard-http-v1, the method, path, device id, timestamp and the body's SHA-256 */
+                "X-MB-Signature": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ContentBundleRequest"];
+            };
+        };
+        responses: {
+            /** @description The signed content package */
+            200: {
+                headers: {
+                    /** @description attachment; filename="musallahboard-content-<first 8 chars of deviceId>-<firstDay>.mbu" */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.musallahboard.mbu": string;
+                };
+            };
+            /** @description Malformed body, days outside 1-92, or a bad haveMedia entry */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Missing or bad device signature, clock skew over 5 minutes, or an unknown or revoked device */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description A poster image could not be fetched; the message names the poster */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description No content signing key is configured on the server */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
     enrollAgent: {
         parameters: {
             query?: never;
@@ -4279,6 +4990,80 @@ export interface operations {
                 };
             };
             /** @description Enrollment token invalid, expired, or already used */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getSigningKeys: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SigningKeysResponse"];
+                };
+            };
+            /** @description Request failed; body carries a human-readable message */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    getAgentWeather: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Enrolled device id */
+                "X-MB-Device-Id": string;
+                /** @description Unix milliseconds; must be within 5 minutes of the server clock */
+                "X-MB-Timestamp": number;
+                /** @description Base64 Ed25519 signature by the device key over musallahboard-http-v1, the method, path, device id, timestamp and the body's SHA-256 */
+                "X-MB-Signature": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current weather, or null weather when unavailable */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentWeatherResponse"];
+                };
+            };
+            /** @description Missing or bad device signature, clock skew over 5 minutes, or an unknown or revoked device */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -4880,193 +5665,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PageGalleryItemDto"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getPublicBoardConfig: {
-        parameters: {
-            query: {
-                deviceId: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DeviceConfig"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getUpcomingEvents: {
-        parameters: {
-            query: {
-                audience: "brothers" | "sisters" | "both";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardEvent"][];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getEventsInRange: {
-        parameters: {
-            query: {
-                audience: "brothers" | "sisters" | "both";
-                start: string;
-                end: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["BoardEvent"][];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getBoardPayload: {
-        parameters: {
-            query: {
-                deviceId: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MusallahBoardPayload"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getCurrentWeeklyContent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WeeklyContent"];
-                };
-            };
-            /** @description Request failed; body carries a human-readable message */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageResponse"];
-                };
-            };
-        };
-    };
-    getPublicWeeklyContent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                year: number;
-                weekNumber: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WeeklyContent"];
                 };
             };
             /** @description Request failed; body carries a human-readable message */

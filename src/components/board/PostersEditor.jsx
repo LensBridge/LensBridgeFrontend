@@ -6,6 +6,7 @@ import {
 import BoardService from '../../services/BoardService';
 import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
+import { isShowing, localDay } from '../../utils/posterDates';
 
 /**
  * PostersEditor - Grid-based poster management with drag-drop upload.
@@ -33,8 +34,10 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
     title: '',
     image: '',
     duration: 10000,
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    // Local days, like the dates themselves: in UTC, "today" is already
+    // tomorrow on a Toronto evening.
+    startDate: localDay(new Date()),
+    endDate: localDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
     audience: 'both',
     // Optional. When set, the board shows this poster beside a QR code encoding
     // the link instead of full-bleed.
@@ -52,8 +55,8 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
       title: '',
       image: '',
       duration: 10000,
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      startDate: localDay(new Date()),
+      endDate: localDay(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
       audience: 'both',
       signupUrl: ''
     });
@@ -64,14 +67,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
     .filter(p => p.title?.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(p => filterAudience === 'all' || p.audience === filterAudience);
 
-  const isPosterActive = (poster) => {
-    const now = new Date();
-    const start = poster.startDate ? new Date(poster.startDate) : null;
-    const end = poster.endDate ? new Date(poster.endDate) : null;
-    if (start && now < start) return false;
-    if (end && now > end) return false;
-    return true;
-  };
+  const isPosterActive = (poster) => isShowing(poster.startDate, poster.endDate);
 
   const handleFileUpload = (file) => {
     if (!file) return;
@@ -142,7 +138,9 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
         showMessage('Poster created!');
         setShowAddForm(false);
       } else {
-        const updated = await BoardService.updatePoster(editingId, formData);
+        // The poster as the form opened it, so unchanged dates stay as stored.
+        const original = safePosters.find(p => p.id === editingId);
+        const updated = await BoardService.updatePoster(editingId, formData, original);
         onUpdate(safePosters.map(p => p.id === editingId ? updated : p));
         showMessage('Poster updated!');
         setEditingId(null);
@@ -310,7 +308,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (last day shown)</label>
                   <input
                     type="date"
                     value={formData.endDate}
