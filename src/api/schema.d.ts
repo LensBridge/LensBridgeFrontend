@@ -1687,7 +1687,6 @@ export interface components {
         DeviceConfig: {
             /** Format: int32 */
             agendaDurationSeconds?: number;
-            darkModeAfterIsha?: boolean;
             enableScrollingMessage?: boolean;
             /** Format: uuid */
             id?: string;
@@ -1695,6 +1694,8 @@ export interface components {
             /** Format: int32 */
             nextPrayerDurationSeconds?: number;
             scrollingMessages?: string[];
+            /** @enum {string} */
+            themeMode?: "LIGHT" | "DARK" | "AUTO";
         };
         DeviceSummary: {
             agentVersion?: string;
@@ -2110,12 +2111,13 @@ export interface components {
         UpdateBoardConfigRequest: {
             /** Format: int32 */
             agendaDurationSeconds?: number;
-            darkModeAfterIsha?: boolean;
             enableScrollingMessage?: boolean;
             location?: components["schemas"]["Location"];
             /** Format: int32 */
             nextPrayerDurationSeconds?: number;
             scrollingMessages?: string[];
+            /** @enum {string} */
+            themeMode?: "LIGHT" | "DARK" | "AUTO";
         };
         UpdateCalendarEventRequest: {
             allDay?: boolean;

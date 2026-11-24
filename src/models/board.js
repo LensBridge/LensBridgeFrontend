@@ -161,7 +161,7 @@ export const TIMEZONES = [
  *
  * @typedef {Object} DeviceConfig
  * @property {Location} location
- * @property {boolean} darkModeAfterIsha
+ * @property {ThemeMode} themeMode
  * @property {boolean} enableScrollingMessage
  * @property {string[]} scrollingMessages
  * @property {number|null} agendaDurationSeconds - null means the board picks it
@@ -169,12 +169,49 @@ export const TIMEZONES = [
  */
 export const DEVICE_CONFIG_FIELDS = [
   'location',
-  'darkModeAfterIsha',
+  'themeMode',
   'enableScrollingMessage',
   'scrollingMessages',
   'agendaDurationSeconds',
   'nextPrayerDurationSeconds'
 ];
+
+// ---------------------------------------------------------------------------
+// THEME MODE
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {'LIGHT'|'DARK'|'AUTO'} ThemeMode
+ *
+ * How the board picks its light or dark appearance. The board works out
+ * Maghrib and sunrise itself, so AUTO switches on time even while offline.
+ * A theme picker (custom colourways) will sit beside this later; the mode
+ * keeps choosing between each theme's light and dark variant.
+ */
+
+/** @type {{ value: ThemeMode, label: string, description: string }[]} */
+export const THEME_MODES = [
+  { value: 'LIGHT', label: 'Light', description: 'Always the light theme.' },
+  { value: 'DARK', label: 'Dark', description: 'Always the dark theme.' },
+  { value: 'AUTO', label: 'Auto', description: 'Dark from Maghrib until sunrise, light the rest of the day.' }
+];
+
+/** What the backend gives a new board, and what an unknown value is shown as. */
+export const DEFAULT_THEME_MODE = 'AUTO';
+
+/**
+ * A stored mode as one of THEME_MODES' values. Anything else (absent, or a
+ * mode this console predates) reads as the default rather than leaving the
+ * control with nothing selected.
+ *
+ * @param {unknown} mode
+ * @returns {ThemeMode}
+ */
+export function themeModeOf(mode) {
+  return THEME_MODES.some((m) => m.value === mode)
+    ? /** @type {ThemeMode} */ (mode)
+    : DEFAULT_THEME_MODE;
+}
 
 // ---------------------------------------------------------------------------
 // SLIDE DURATIONS
@@ -323,7 +360,7 @@ export const DEFAULT_DEVICE_CONFIG = {
     timezone: 'America/Toronto',
     method: 'ISNA'
   },
-  darkModeAfterIsha: true,
+  themeMode: DEFAULT_THEME_MODE,
   enableScrollingMessage: true,
   scrollingMessages: ['Welcome to UTM MSA — follow @utmmsa for updates'],
   // null is auto — the board sizes the agenda slide from its event count.
