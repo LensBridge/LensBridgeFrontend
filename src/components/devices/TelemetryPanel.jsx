@@ -12,7 +12,7 @@ function MiniSparkline({ samples, field, suffix = '', live = true }) {
     // Samples only accumulate from heartbeat frames, so without the telemetry
     // grant this never fills in — say so rather than spinning on "Waiting".
     return (
-      <div className="h-12 rounded bg-gray-50 text-xs text-gray-400 flex items-center justify-center">
+      <div className="h-12 rounded bg-gray-50 dark:bg-gray-800 text-xs text-gray-400 dark:text-gray-500 flex items-center justify-center">
         {live ? 'Waiting for data' : 'Needs live telemetry'}
       </div>
     );
@@ -32,19 +32,19 @@ function MiniSparkline({ samples, field, suffix = '', live = true }) {
       <svg viewBox="0 0 100 36" preserveAspectRatio="none" className="h-full w-full">
         <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2" className="text-indigo-500" />
       </svg>
-      <div className="text-[11px] text-gray-500">{values.at(-1)}{suffix}</div>
+      <div className="text-[11px] text-gray-500 dark:text-gray-400">{values.at(-1)}{suffix}</div>
     </div>
   );
 }
 
 function Metric({ icon, label, value }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
+    <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+      <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
         {createElement(icon, { className: 'h-4 w-4' })}
         {label}
       </div>
-      <div className="mt-2 text-xl font-semibold text-gray-900">{value}</div>
+      <div className="mt-2 text-xl font-semibold text-gray-900 dark:text-white">{value}</div>
     </div>
   );
 }
@@ -65,43 +65,43 @@ function TelemetryPanel({ device, samples, live = true }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">CPU temperature</div>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+          <div className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-200">CPU temperature</div>
           <MiniSparkline samples={samples} field="cpuTempC" suffix=" C" live={live} />
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">Memory used</div>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+          <div className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-200">Memory used</div>
           <MiniSparkline samples={samples} field="memUsedMb" suffix=" MB" live={live} />
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <div className="mb-3 text-sm font-medium text-gray-700">Disk used</div>
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+          <div className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-200">Disk used</div>
           <MiniSparkline samples={samples} field="diskUsedPct" suffix="%" live={live} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
             <Network className="h-4 w-4 text-indigo-500" />
             Network
           </div>
-          <div className="text-sm text-gray-600">Last heartbeat: {formatRelativeTime(device?.lastHeartbeat)}</div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="text-sm text-gray-600 dark:text-gray-300">Last heartbeat: {formatRelativeTime(device?.lastHeartbeat)}</div>
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
             <Wifi className="h-4 w-4" />
             {telemetry.wifiSsid || 'Unknown SSID'}
           </div>
-          <div className="text-sm text-gray-600">IP: {(telemetry.ipv4 || [device?.lastSeenIp]).filter(Boolean).join(', ') || 'Unknown'}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">IP: {(telemetry.ipv4 || [device?.lastSeenIp]).filter(Boolean).join(', ') || 'Unknown'}</div>
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
             <Radio className="h-4 w-4 text-indigo-500" />
             Runtime
           </div>
-          <div className="text-sm text-gray-600">Kiosk alive: {telemetry.kioskAlive == null ? 'Unknown' : telemetry.kioskAlive ? 'Yes' : 'No'}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Kiosk alive: {telemetry.kioskAlive == null ? 'Unknown' : telemetry.kioskAlive ? 'Yes' : 'No'}</div>
           {/* Agents report displayedFrameKey. displayedFrameId is the pre-rename
               name, kept only for agents that predate the change. */}
-          <div className="text-sm text-gray-600">Displayed frame: {telemetry.displayedFrameKey || telemetry.displayedFrameId || 'Unknown'}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Displayed frame: {telemetry.displayedFrameKey || telemetry.displayedFrameId || 'Unknown'}</div>
           <ThrottleChips value={telemetry.throttleFlags} />
         </div>
       </div>

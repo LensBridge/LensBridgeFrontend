@@ -105,27 +105,27 @@ function Login() {
           <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
             Welcome Back
           </h2>
-          <p className="text-gray-600 mt-2">Sign in to your LensBridge account</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Sign in to your LensBridge account</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
           {/* Confirmation Message */}
           {confirmationMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg">
               <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <p className="text-green-800 text-sm font-medium">{confirmationMessage}</p>
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <p className="text-green-800 dark:text-green-200 text-sm font-medium">{confirmationMessage}</p>
               </div>
             </div>
           )}
 
           {/* Error Message */}
           {(emailError || error) && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
               <div className="flex items-center space-x-2">
-                <div className="h-5 w-5 text-red-600">⚠️</div>
-                <p className="text-red-800 text-sm font-medium">{emailError || error}</p>
+                <div className="h-5 w-5 text-red-600 dark:text-red-400">⚠️</div>
+                <p className="text-red-800 dark:text-red-200 text-sm font-medium">{emailError || error}</p>
               </div>
             </div>
           )}
@@ -133,12 +133,12 @@ function Login() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   id="email"
@@ -147,7 +147,7 @@ function Login() {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your email address"
                 />
               </div>
@@ -155,12 +155,12 @@ function Login() {
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   id="password"
@@ -169,7 +169,7 @@ function Login() {
                   required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your password"
                 />
                 <button
@@ -178,9 +178,9 @@ function Login() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -193,15 +193,15 @@ function Login() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-200">
                   Remember me
                 </label>
               </div>
               <Link
                 to="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium"
               >
                 Forgot password?
               </Link>
@@ -211,7 +211,7 @@ function Login() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -227,9 +227,9 @@ function Login() {
 
           {/* Sign Up Link */}
           <div className="mt-6 text-center">
-            <p className="text-gray-600">
+            <p className="text-gray-600 dark:text-gray-300">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-blue-600 hover:text-blue-500 font-medium">
+              <Link to="/signup" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium">
                 Sign up for LensBridge
               </Link>
             </p>
@@ -238,7 +238,7 @@ function Login() {
 
         {/* MSA Info */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Exclusive platform for UTM MSA students
           </p>
         </div>

@@ -14,21 +14,21 @@ function DeviceList() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/admin" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+          <Link to="/admin" className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-indigo-600" />
-              <h1 className="text-2xl font-semibold text-gray-900">Board Devices</h1>
+              <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Board Devices</h1>
             </div>
-            <p className="mt-1 text-sm text-gray-500">Every board, set up by USB stick. Boards with a network also report here and take commands.</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Every board, set up by USB stick. Boards with a network also report here and take commands.</p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={refetch} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={refetch} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <RefreshCcw className="h-4 w-4" />
             Refresh
           </button>
@@ -41,61 +41,61 @@ function DeviceList() {
         </div>
       </div>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
 
       {devices.length > 0 && <AllBoardsUsbKit />}
 
       {!live && (
-        <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <div className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
           <WifiOff className="h-4 w-4 flex-shrink-0" />
           Live telemetry is off — this account doesn&apos;t hold
-          <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-xs">board:telemetry:subscribe</code>.
+          <code className="rounded bg-gray-100 dark:bg-gray-700 px-1 py-0.5 font-mono text-xs">board:telemetry:subscribe</code>.
           The table refreshes on a timer instead.
         </div>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Device</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Audience</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Board</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Last heartbeat</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">CPU</th>
-                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Agent</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Device</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Audience</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Board</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Last heartbeat</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">CPU</th>
+                <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Agent</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {loading ? (
-                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">Loading devices...</td></tr>
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500 dark:text-gray-400">Loading devices...</td></tr>
               ) : devices.length === 0 ? (
-                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500">No boards yet. Add one to download its setup file.</td></tr>
+                <tr><td colSpan="7" className="px-5 py-12 text-center text-gray-500 dark:text-gray-400">No boards yet. Add one to download its setup file.</td></tr>
               ) : devices.map((device) => (
-                <tr key={device.id} onClick={() => navigate(`/admin/devices/${device.id}`)} className="cursor-pointer hover:bg-gray-50">
+                <tr key={device.id} onClick={() => navigate(`/admin/devices/${device.id}`)} className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
                   <td className="px-5 py-4">
-                    <div className="font-medium text-gray-900">{device.displayName}</div>
-                    <div className="font-mono text-xs text-gray-500">{device.id}</div>
+                    <div className="font-medium text-gray-900 dark:text-white">{device.displayName}</div>
+                    <div className="font-mono text-xs text-gray-500 dark:text-gray-400">{device.id}</div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-700">{audienceLabel(device.audience)}</td>
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-200">{audienceLabel(device.audience)}</td>
                   <td className="px-5 py-4"><DeviceStatusBadge status={device.status} /></td>
                   <td className="px-5 py-4">
                     <BoardIssueChips
                       board={device.board}
                       reportAt={device.boardReportAt}
-                      empty={<span className="text-sm text-gray-500">{device.board ? 'All good' : 'Not reported'}</span>}
+                      empty={<span className="text-sm text-gray-500 dark:text-gray-400">{device.board ? 'All good' : 'Not reported'}</span>}
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-700">{formatRelativeTime(device.lastHeartbeat)}</td>
-                  <td className="px-5 py-4 text-sm text-gray-700">
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-200">{formatRelativeTime(device.lastHeartbeat)}</td>
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-200">
                     <span className="inline-flex items-center gap-1">
-                      <Thermometer className="h-4 w-4 text-gray-400" />
+                      <Thermometer className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                       {device.telemetry?.cpuTempC ? `${device.telemetry.cpuTempC} C` : 'Unknown'}
                     </span>
                   </td>
-                  <td className="px-5 py-4 text-sm text-gray-700">{device.agentVersion || 'Unknown'}</td>
+                  <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-200">{device.agentVersion || 'Unknown'}</td>
                 </tr>
               ))}
             </tbody>

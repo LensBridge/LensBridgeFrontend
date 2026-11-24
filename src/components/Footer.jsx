@@ -19,7 +19,7 @@ function Footer() {
                 LensBridge 2027
               </span>
             </div>
-            <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
+            <p className="text-gray-400 dark:text-gray-500 text-sm leading-relaxed max-w-xs mx-auto md:mx-0">
               Share your UTM MSA memories and connect with the community through photos and videos.
             </p>
           </div>
@@ -28,19 +28,19 @@ function Footer() {
           <div className="text-center">
             <h3 className="text-white font-semibold mb-4">Quick Links</h3>
             <div className="space-y-2">
-              <a href="/" className="block text-gray-400 hover:text-blue-400 transition-colors text-sm">
+              <a href="/" className="block text-gray-400 dark:text-gray-500 hover:text-blue-400 transition-colors text-sm">
                 Home
               </a>
-              <a href="/gallery" className="block text-gray-400 hover:text-blue-400 transition-colors text-sm">
+              <a href="/gallery" className="block text-gray-400 dark:text-gray-500 hover:text-blue-400 transition-colors text-sm">
                 Gallery
               </a>
-              <a href="/upload" className="block text-gray-400 hover:text-blue-400 transition-colors text-sm">
+              <a href="/upload" className="block text-gray-400 dark:text-gray-500 hover:text-blue-400 transition-colors text-sm">
                 Upload
               </a>
-              <a href="/privacy-policy" className="block text-gray-400 hover:text-blue-400 transition-colors text-sm">
+              <a href="/privacy-policy" className="block text-gray-400 dark:text-gray-500 hover:text-blue-400 transition-colors text-sm">
                 Privacy Policy
               </a>
-              <a href="/terms-of-service" className="block text-gray-400 hover:text-blue-400 transition-colors text-sm">
+              <a href="/terms-of-service" className="block text-gray-400 dark:text-gray-500 hover:text-blue-400 transition-colors text-sm">
                 Terms of Service
               </a>
             </div>
@@ -64,7 +64,7 @@ function Footer() {
                 <span className="text-sm">View on GitHub</span>
                 <ExternalLink className="h-3 w-3 opacity-60" />
               </a>
-              <div className="text-sm text-gray-400">
+              <div className="text-sm text-gray-400 dark:text-gray-500">
                 <a 
                   href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'support@lensbridge.tech'}`}
                   className="hover:text-blue-400 transition-colors"
@@ -80,7 +80,7 @@ function Footer() {
         <div className="pt-8 border-t border-gray-700">
           <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
             {/* Made with Love */}
-            <div className="flex items-center space-x-2 text-gray-400">
+            <div className="flex items-center space-x-2 text-gray-400 dark:text-gray-500">
               <span className="text-sm">Made with</span>
               <Heart className="h-4 w-4 text-red-500 fill-current animate-pulse" />
               <span className="text-sm">for UTM MSA by</span>
@@ -90,7 +90,7 @@ function Footer() {
             </div>
 
             {/* Copyright */}
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
               © {new Date().getFullYear()} LensBridge. All rights reserved.
             </div>
           </div>

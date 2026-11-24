@@ -101,14 +101,14 @@ function ConfirmEmail() {
   const renderStatusIcon = () => {
     switch (status) {
       case 'loading':
-        return <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />;
+        return <Loader2 className="h-16 w-16 text-blue-600 dark:text-blue-400 animate-spin" />;
       case 'success':
-        return <CheckCircle className="h-16 w-16 text-green-600" />;
+        return <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400" />;
       case 'error':
       case 'expired':
-        return <XCircle className="h-16 w-16 text-red-600" />;
+        return <XCircle className="h-16 w-16 text-red-600 dark:text-red-400" />;
       default:
-        return <Camera className="h-16 w-16 text-gray-400" />;
+        return <Camera className="h-16 w-16 text-gray-400 dark:text-gray-500" />;
     }
   };
 
@@ -140,23 +140,23 @@ function ConfirmEmail() {
           <h1 className={`text-3xl font-bold text-transparent bg-gradient-to-r ${getStatusColor()} bg-clip-text`}>
             LensBridge
           </h1>
-          <p className="text-gray-600 text-sm mt-2">Email Confirmation</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">Email Confirmation</p>
         </div>
 
         {/* Status Content */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
           <div className="flex justify-center mb-6">
             {renderStatusIcon()}
           </div>
 
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             {status === 'loading' && 'Confirming Your Email...'}
             {status === 'success' && 'Email Confirmed!'}
             {status === 'error' && 'Confirmation Failed'}
             {status === 'expired' && 'Link Expired'}
           </h2>
 
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
             {message}
           </p>
 
@@ -165,7 +165,7 @@ function ConfirmEmail() {
             {status === 'success' && (
               <Link
                 to="/login"
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <span>Continue to Sign In</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -175,7 +175,7 @@ function ConfirmEmail() {
             {status === 'expired' && (
               <button
                 onClick={resendConfirmation}
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <span>Resend Confirmation Email</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -186,14 +186,14 @@ function ConfirmEmail() {
               <div className="space-y-2">
                 <Link
                   to="/signup"
-                  className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                  className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   <span>Try Signing Up Again</span>
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   to="/login"
-                  className="block text-blue-600 hover:text-blue-500 font-medium text-sm"
+                  className="block text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium text-sm"
                 >
                   Or go to Sign In
                 </Link>
@@ -202,7 +202,7 @@ function ConfirmEmail() {
 
             <Link
               to="/"
-              className="block text-gray-500 hover:text-gray-600 font-medium text-sm mt-4"
+              className="block text-gray-500 dark:text-gray-400 hover:text-gray-600 font-medium text-sm mt-4"
             >
               ← Back to Home
             </Link>
@@ -211,11 +211,11 @@ function ConfirmEmail() {
 
         {/* Support Info */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Need help?{' '}
             <a 
               href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'support@lensbridge.tech'}`}
-              className="text-blue-600 hover:text-blue-500 font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium"
             >
               Contact Support
             </a>

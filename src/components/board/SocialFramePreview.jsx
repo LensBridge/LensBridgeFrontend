@@ -90,7 +90,7 @@ function SocialFramePreview({ social, className = '' }) {
 
   return (
     <figure
-      className={`relative w-full overflow-hidden rounded-xl border border-gray-200 shadow-sm ${className}`}
+      className={`relative w-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm ${className}`}
       style={{
         aspectRatio: '16 / 9',
         // Everything inside sizes against this box, not the viewport, so the

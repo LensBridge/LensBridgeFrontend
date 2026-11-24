@@ -35,9 +35,9 @@ const DEADLINE_MS = {
  * and it should not look like a page reload.
  */
 const RISK_CHIP = {
-  benign: 'bg-gray-100 text-gray-600',
-  disruptive: 'bg-amber-100 text-amber-700',
-  inspect: 'bg-purple-100 text-purple-700'
+  benign: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+  disruptive: 'bg-amber-100 text-amber-700 dark:text-amber-300',
+  inspect: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300'
 };
 
 function RiskChip({ permission }) {
@@ -95,7 +95,7 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
 
   return (
     <div className="space-y-4">
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
 
       <div className="flex flex-wrap gap-2">
         {allowedCommands.map((command) => (
@@ -104,7 +104,7 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
             type="button"
             disabled={disabled || Boolean(submitting)}
             onClick={() => issue(command.kind, {}, command.confirm)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting === command.kind ? <Loader2 className="h-4 w-4 animate-spin" /> : createElement(command.icon, { className: 'h-4 w-4' })}
             {command.label}
@@ -117,7 +117,7 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
             type="button"
             disabled={disabled || Boolean(submitting)}
             onClick={() => setShowLogs(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <FileText className="h-4 w-4" />
             Tail Logs
@@ -129,10 +129,10 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
 
       {showLogs && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900">Tail device logs</h3>
-            <p className="mt-1 text-sm text-gray-500">Request the latest journal lines from the agent. The backend clamps this between 1 and 500.</p>
-            <label className="mt-5 block text-sm font-medium text-gray-700">
+          <div className="w-full max-w-md rounded-lg bg-white dark:bg-gray-900 p-6 shadow-xl dark:shadow-2xl dark:shadow-black/20">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Tail device logs</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Request the latest journal lines from the agent. The backend clamps this between 1 and 500.</p>
+            <label className="mt-5 block text-sm font-medium text-gray-700 dark:text-gray-200">
               Lines
               <input
                 type="number"
@@ -140,14 +140,14 @@ function CommandLauncher({ deviceId, onIssued, disabled }) {
                 max="500"
                 value={lines}
                 onChange={(event) => setLines(Number(event.target.value))}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+                className="mt-2 w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               />
             </label>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowLogs(false)}
-                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 Cancel
               </button>

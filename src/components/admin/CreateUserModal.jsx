@@ -23,7 +23,7 @@ const EMPTY = { firstName: '', lastName: '', email: '', studentNumber: '' };
 function Field({ id, label, value, onChange, type = 'text', placeholder, maxLength, autoFocus }) {
   return (
     <div>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
         {label}
       </label>
       <input
@@ -33,7 +33,7 @@ function Field({ id, label, value, onChange, type = 'text', placeholder, maxLeng
         maxLength={maxLength}
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
         placeholder={placeholder}
       />
     </div>
@@ -83,13 +83,13 @@ function CreateUserModal({ onSubmit, onClose }) {
         if (e.target === e.currentTarget && !submitting) onClose();
       }}
     >
-      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl">
+      <div className="bg-white dark:bg-gray-900 rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl dark:shadow-2xl dark:shadow-black/20">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Create New User</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Create New User</h3>
           <button
             onClick={onClose}
             disabled={submitting}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -137,14 +137,14 @@ function CreateUserModal({ onSubmit, onClose }) {
             placeholder="Enter student number"
           />
 
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <p className="text-sm text-yellow-800">
+          <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-3">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
               <strong>Note:</strong> The user account will be created in a disabled state. The user must reset their password via the &quot;Forgot Password&quot; link to activate their account.
             </p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 text-sm text-red-800">
+            <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3 flex items-start gap-2 text-sm text-red-800 dark:text-red-200">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -155,7 +155,7 @@ function CreateUserModal({ onSubmit, onClose }) {
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-600 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

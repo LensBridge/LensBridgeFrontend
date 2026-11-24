@@ -44,10 +44,10 @@ function Toggle({ checked, onChange, label, disabled }) {
       aria-label={label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checked ? 'bg-indigo-600' : 'bg-gray-200'}`}
+      className={`relative h-7 w-12 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checked ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-600'}`}
     >
       <span
-        className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`}
+        className={`absolute top-1 h-5 w-5 rounded-full bg-white dark:bg-gray-900 shadow transition-all ${checked ? 'left-6' : 'left-1'}`}
       />
     </button>
   );
@@ -62,7 +62,7 @@ function Segmented({ options, value, onChange, label, disabled }) {
     <div
       role="radiogroup"
       aria-label={label}
-      className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1"
+      className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-1"
     >
       {options.map((o) => {
         const selected = o.value === value;
@@ -75,7 +75,7 @@ function Segmented({ options, value, onChange, label, disabled }) {
             disabled={disabled}
             onClick={() => onChange(o.value)}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-              selected ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+              selected ? 'bg-white dark:bg-gray-900 text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900'
             }`}
           >
             {o.icon && <o.icon className="h-4 w-4" />}
@@ -93,12 +93,12 @@ const THEME_MODE_OPTIONS = THEME_MODES.map((m) => ({ ...m, icon: THEME_MODE_ICON
 function Field({ label, hint, error, children }) {
   return (
     <div>
-      <label className="mb-1.5 block text-sm font-medium text-gray-700">{label}</label>
+      <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</label>
       {children}
       {error ? (
-        <p className="mt-1 text-xs text-red-600">{error}</p>
+        <p className="mt-1 text-xs text-red-600 dark:text-red-400">{error}</p>
       ) : (
-        hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>
+        hint && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{hint}</p>
       )}
     </div>
   );
@@ -107,15 +107,15 @@ function Field({ label, hint, error, children }) {
 const INPUT_BASE_CLASS =
   'w-full rounded-lg border px-3 py-2.5 transition-shadow focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-50 disabled:text-gray-500';
 
-const INPUT_CLASS = `${INPUT_BASE_CLASS} border-gray-200`;
+const INPUT_CLASS = `${INPUT_BASE_CLASS} border-gray-200 dark:border-gray-700`;
 
 /**
  * The border colour has to be picked, not appended: two `border-*` utilities on
  * one element resolve by their order in the stylesheet, not in the attribute,
- * so `${INPUT_CLASS} border-red-300` is a coin flip.
+ * so `${INPUT_CLASS} border-red-300 dark:border-red-600` is a coin flip.
  */
 const inputClass = (error, extra = '') =>
-  `${INPUT_BASE_CLASS} ${error ? 'border-red-300' : 'border-gray-200'} ${extra}`;
+  `${INPUT_BASE_CLASS} ${error ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'} ${extra}`;
 
 function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
   const setField = useCallback((key, value) => {
@@ -176,13 +176,13 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
   return (
     <div className="space-y-6">
       {/* Location & prayer times */}
-      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header className="flex items-center gap-2 border-b border-gray-100 px-5 py-4">
+      <section className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <header className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <MapPin className="h-5 w-5 text-emerald-600" />
-          <h3 className="font-semibold text-gray-900">Location &amp; Prayer Times</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-white">Location &amp; Prayer Times</h3>
         </header>
         <div className="space-y-4 p-5">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             The board computes prayer times itself from these coordinates — there is no
             server-side prayer source, so a wrong timezone here shows wrong times on screen.
           </p>
@@ -239,7 +239,7 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
                 value={location.timezone || 'America/Toronto'}
                 onChange={(e) => setLocationField('timezone', e.target.value)}
                 disabled={readOnly}
-                className={`${INPUT_CLASS} bg-white`}
+                className={`${INPUT_CLASS} bg-white dark:bg-gray-900`}
               >
                 {TIMEZONES.map(tz => (
                   <option key={tz} value={tz}>{tz.replace('America/', '')}</option>
@@ -251,7 +251,7 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
                 value={location.method || 'ISNA'}
                 onChange={(e) => setLocationField('method', e.target.value)}
                 disabled={readOnly}
-                className={`${INPUT_CLASS} bg-white`}
+                className={`${INPUT_CLASS} bg-white dark:bg-gray-900`}
               >
                 {CALCULATION_METHODS.map(m => (
                   <option key={m.value} value={m.value}>{m.label}</option>
@@ -263,13 +263,13 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
       </section>
 
       {/* Theme mode */}
-      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
+      <section className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-gray-800 px-5 py-4">
           <div className="flex items-center gap-2">
-            <SunMoon className="h-5 w-5 text-indigo-600" />
+            <SunMoon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             <div>
-              <h3 className="font-semibold text-gray-900">Theme</h3>
-              <p className="text-xs text-gray-500">
+              <h3 className="font-semibold text-gray-900 dark:text-white">Theme</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 {THEME_MODES.find((m) => m.value === themeModeOf(config.themeMode)).description}
               </p>
             </div>
@@ -285,17 +285,17 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
       </section>
 
       {/* Slide timing */}
-      <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header className="flex items-center gap-2 border-b border-gray-100 px-5 py-4">
-          <Timer className="h-5 w-5 text-indigo-600" />
+      <section className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <header className="flex items-center gap-2 border-b border-gray-100 dark:border-gray-800 px-5 py-4">
+          <Timer className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           <div>
-            <h3 className="font-semibold text-gray-900">Slide Timing</h3>
-            <p className="text-xs text-gray-500">How long the board holds each of these slides</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Slide Timing</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">How long the board holds each of these slides</p>
           </div>
         </header>
         <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
           <Field
-            label={<>Agenda slide duration <span className="font-normal text-gray-400">(seconds)</span></>}
+            label={<>Agenda slide duration <span className="font-normal text-gray-400 dark:text-gray-500">(seconds)</span></>}
             error={durationErrors.agendaDurationSeconds}
             hint={
               agendaAuto
@@ -323,13 +323,13 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
                   label="Set the agenda slide duration automatically"
                   disabled={readOnly}
                 />
-                <span className="text-sm font-medium text-gray-700">Auto</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Auto</span>
               </div>
             </div>
           </Field>
 
           <Field
-            label={<>Next prayer slide duration <span className="font-normal text-gray-400">(seconds)</span></>}
+            label={<>Next prayer slide duration <span className="font-normal text-gray-400 dark:text-gray-500">(seconds)</span></>}
             error={durationErrors.nextPrayerDurationSeconds}
             hint="How long the countdown to the next prayer stays up."
           >
@@ -380,13 +380,13 @@ function TickerEditor({ config, onUpdate, readOnly = false }) {
   const messages = config.scrollingMessages || [];
 
   return (
-    <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-      <header className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+    <section className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+      <header className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-5 py-4">
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-purple-600" />
           <div>
-            <h3 className="font-semibold text-gray-900">Scrolling Messages</h3>
-            <p className="text-xs text-gray-500">Cycled in the ticker along the bottom</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Scrolling Messages</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Cycled in the ticker along the bottom</p>
           </div>
         </div>
         <Toggle
@@ -400,7 +400,7 @@ function TickerEditor({ config, onUpdate, readOnly = false }) {
       {config.enableScrollingMessage && (
         <div className="space-y-3 p-5">
           {messages.length === 0 && (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 dark:text-gray-500">
               No messages — the ticker stays hidden until you add one.
             </p>
           )}
@@ -419,7 +419,7 @@ function TickerEditor({ config, onUpdate, readOnly = false }) {
                   type="button"
                   onClick={() => removeMessage(index)}
                   aria-label={`Remove message ${index + 1}`}
-                  className="rounded-lg p-2.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                  className="rounded-lg p-2.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500"
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -430,7 +430,7 @@ function TickerEditor({ config, onUpdate, readOnly = false }) {
             <button
               type="button"
               onClick={() => setField('scrollingMessages', [...messages, ''])}
-              className="flex items-center gap-2 py-2 text-sm font-medium text-indigo-600 hover:text-indigo-700"
+              className="flex items-center gap-2 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700"
             >
               <Plus className="h-4 w-4" />
               Add Message

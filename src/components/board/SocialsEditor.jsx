@@ -35,9 +35,9 @@ import SocialFramePreview from './SocialFramePreview';
  */
 
 const audienceOptions = [
-  { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700' },
-  { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700' },
-  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700' }
+  { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
+  { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' },
+  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300' }
 ];
 
 const EMPTY_FORM = {
@@ -53,14 +53,14 @@ const EMPTY_FORM = {
 };
 
 const INPUT_CLASS =
-  'w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white';
+  'w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900';
 
 /** Says what the four Markdown fields accept, in the fields themselves. */
 function MarkdownHint() {
   return (
-    <p className="mt-1 text-xs text-gray-500">
-      Inline Markdown: <code className="rounded bg-gray-100 px-1">*italic*</code> and{' '}
-      <code className="rounded bg-gray-100 px-1">**bold**</code>.
+    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      Inline Markdown: <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">*italic*</code> and{' '}
+      <code className="rounded bg-gray-100 dark:bg-gray-700 px-1">**bold**</code>.
     </p>
   );
 }
@@ -218,13 +218,13 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-xs flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search socials..."
-            className="w-full rounded-xl border border-gray-200 py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 py-2.5 pl-10 pr-4 focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
@@ -246,7 +246,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
           type="button"
           onClick={() => setFilterAudience('all')}
           className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-            filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           All ({safeSocials.length})
@@ -257,7 +257,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
             type="button"
             onClick={() => setFilterAudience(opt.value)}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-all ${
-              filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {opt.label} ({safeSocials.filter(s => s.audience === opt.value).length})
@@ -267,16 +267,16 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
 
       {/* Which platforms are live, at a glance. Icons carry their own label. */}
       {promotedPlatforms.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-          <span className="text-xs uppercase tracking-wide text-gray-400">On the boards</span>
+        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <span className="text-xs uppercase tracking-wide text-gray-400 dark:text-gray-500">On the boards</span>
           {promotedPlatforms.map(p => (
             <span
               key={p.value}
-              className="flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-gray-700"
+              className="flex items-center gap-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-gray-700 dark:text-gray-200"
             >
               <SocialIcon type={p.value} className="h-3.5 w-3.5" />
               {p.label}
-              <span className="text-gray-400">{p.count}</span>
+              <span className="text-gray-400 dark:text-gray-500">{p.count}</span>
             </span>
           ))}
         </div>
@@ -284,18 +284,18 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
 
       {/* Add/Edit form, with the frame it produces beside it */}
       {(showAddForm || editingId) && (
-        <div className={`rounded-xl border-2 p-5 ${showAddForm ? 'border-indigo-200 bg-indigo-50' : 'border-amber-200 bg-amber-50'}`}>
+        <div className={`rounded-xl border-2 p-5 ${showAddForm ? 'border-indigo-200 bg-indigo-50 dark:bg-indigo-900/30' : 'border-amber-200 bg-amber-50 dark:bg-amber-900/30'}`}>
           <div className="mb-4 flex items-center justify-between">
-            <h4 className="font-semibold text-gray-900">{showAddForm ? 'New Social' : 'Edit Social'}</h4>
-            <button type="button" onClick={closeForm} className="rounded p-1 hover:bg-gray-200">
-              <X className="h-5 w-5 text-gray-500" />
+            <h4 className="font-semibold text-gray-900 dark:text-white">{showAddForm ? 'New Social' : 'Edit Social'}</h4>
+            <button type="button" onClick={closeForm} className="rounded p-1 hover:bg-gray-200 dark:hover:bg-gray-600">
+              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <div className="space-y-4">
               <div>
-                <label htmlFor="social-name" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="social-name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   Name *
                 </label>
                 <input
@@ -306,13 +306,13 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                   className={INPUT_CLASS}
                   placeholder="e.g., MSA Instagram"
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                   For this list only. Never shown on a board.
                 </p>
               </div>
 
               <div>
-                <span className="mb-1 block text-sm font-medium text-gray-700">Platform</span>
+                <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Platform</span>
                 <div className="flex flex-wrap gap-2">
                   {SOCIAL_PLATFORMS.map(opt => (
                     <button
@@ -322,8 +322,8 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                       onClick={() => setFormData({ ...formData, type: opt.value })}
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
                         formData.type === opt.value
-                          ? 'border-indigo-300 bg-indigo-100 text-indigo-700'
-                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                          ? 'border-indigo-300 bg-indigo-100 text-indigo-700 dark:text-indigo-300'
+                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       <SocialIcon type={opt.value} className="h-4 w-4" />
@@ -334,7 +334,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
               </div>
 
               <div>
-                <label htmlFor="social-url" className="mb-1 block text-sm font-medium text-gray-700">
+                <label htmlFor="social-url" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                   QR destination *
                 </label>
                 <input
@@ -344,18 +344,18 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                   value={formData.url}
                   onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                   placeholder={platform.urlHint}
-                  className={`${INPUT_CLASS} ${urlError && formData.url ? 'border-red-300' : ''}`}
+                  className={`${INPUT_CLASS} ${urlError && formData.url ? 'border-red-300 dark:border-red-600' : ''}`}
                 />
                 {urlError && formData.url ? (
-                  <p className="mt-1 text-xs text-red-600">{urlError}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{urlError}</p>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500">Where the on-screen QR code sends a phone.</p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Where the on-screen QR code sends a phone.</p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="social-duration" className="mb-1 block text-sm font-medium text-gray-700">
+                  <label htmlFor="social-duration" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                     Duration (seconds)
                   </label>
                   <input
@@ -365,12 +365,12 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                     max={SLIDE_DURATION_MAX_SECONDS}
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value, 10) })}
-                    className={`${INPUT_CLASS} ${secondsError ? 'border-red-300' : ''}`}
+                    className={`${INPUT_CLASS} ${secondsError ? 'border-red-300 dark:border-red-600' : ''}`}
                   />
-                  {secondsError && <p className="mt-1 text-xs text-red-600">{secondsError}</p>}
+                  {secondsError && <p className="mt-1 text-xs text-red-600 dark:text-red-400">{secondsError}</p>}
                 </div>
                 <div>
-                  <span className="mb-1 block text-sm font-medium text-gray-700">Audience</span>
+                  <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">Audience</span>
                   <div className="flex gap-2">
                     {audienceOptions.map(opt => (
                       <button
@@ -381,7 +381,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                         className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-all ${
                           formData.audience === opt.value
                             ? `${opt.color} border-current`
-                            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                       >
                         {opt.label}
@@ -391,14 +391,14 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   On-screen copy
                 </p>
 
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="social-header" className="mb-1 block text-sm font-medium text-gray-700">
+                    <label htmlFor="social-header" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                       Header text
                     </label>
                     <input
@@ -409,13 +409,13 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                       className={INPUT_CLASS}
                       placeholder="follow along"
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       Two or three words. The board uppercases it.
                     </p>
                   </div>
 
                   <div>
-                    <label htmlFor="social-hero" className="mb-1 block text-sm font-medium text-gray-700">
+                    <label htmlFor="social-hero" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                       Hero text *
                     </label>
                     <textarea
@@ -430,8 +430,8 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                   </div>
 
                   <div>
-                    <label htmlFor="social-handle" className="mb-1 block text-sm font-medium text-gray-700">
-                      Handle <span className="font-normal text-gray-400">(optional)</span>
+                    <label htmlFor="social-handle" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+                      Handle <span className="font-normal text-gray-400 dark:text-gray-500">(optional)</span>
                     </label>
                     <input
                       id="social-handle"
@@ -441,7 +441,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                       className={INPUT_CLASS}
                       placeholder={platform.handleHint}
                     />
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                       {platform.handled
                         ? 'Leave empty and the board omits the handle line entirely.'
                         : `${platform.label} has no public handle — leave this empty.`}
@@ -449,7 +449,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                   </div>
 
                   <div>
-                    <label htmlFor="social-footer" className="mb-1 block text-sm font-medium text-gray-700">
+                    <label htmlFor="social-footer" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
                       Footer text
                     </label>
                     <textarea
@@ -467,18 +467,18 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
             </div>
 
             <div className="xl:sticky xl:top-24 xl:self-start">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Board preview
               </p>
               <SocialFramePreview social={formData} />
-              <p className="mt-2 text-xs text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Updates as you type. Approximate scale; the real frame is 1920&times;1080.
               </p>
             </div>
           </div>
 
           <div className="mt-5 flex justify-end gap-2">
-            <button type="button" onClick={closeForm} className="rounded-lg px-4 py-2 text-gray-600 hover:bg-white">
+            <button type="button" onClick={closeForm} className="rounded-lg px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-white">
               Cancel
             </button>
             <button
@@ -497,13 +497,13 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 py-12 text-center">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 py-12 text-center">
           <Share2 className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-          <p className="font-medium text-gray-500">
+          <p className="font-medium text-gray-500 dark:text-gray-400">
             {safeSocials.length === 0 ? 'No socials promoted yet' : 'No socials match that filter'}
           </p>
           {safeSocials.length === 0 && (
-            <p className="mt-1 text-sm text-gray-400">
+            <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
               Boards show one frame per promoted account.
             </p>
           )}
@@ -513,25 +513,25 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
           {filtered.map(social => (
             <div
               key={social.id}
-              className="group flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 transition-all hover:shadow-md sm:flex-row sm:items-center"
+              className="group flex flex-col gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 transition-all hover:shadow-md sm:flex-row sm:items-center"
             >
               <div className="flex min-w-0 flex-1 items-start gap-3">
-                <div className="mt-0.5 rounded-lg bg-gray-100 p-2 text-gray-600">
+                <div className="mt-0.5 rounded-lg bg-gray-100 dark:bg-gray-700 p-2 text-gray-600 dark:text-gray-300">
                   <SocialIcon type={social.type} className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h4 className="truncate font-medium text-gray-900">{social.name}</h4>
+                    <h4 className="truncate font-medium text-gray-900 dark:text-white">{social.name}</h4>
                     {/* The icon above is decorative; this is the platform's label. */}
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    <span className="rounded bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
                       {socialTypeLabel(social.type)}
                     </span>
                     {getAudienceBadge(social.audience)}
                   </div>
-                  <p className="mt-1 truncate text-sm text-gray-500">
+                  <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">
                     {stripInlineMarkdown(social.heroText) || 'No headline set'}
                   </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" aria-hidden="true" />
                       {social.duration}s
@@ -555,9 +555,9 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                   type="button"
                   onClick={() => setPreviewing(social)}
                   aria-label={`Preview the ${social.name} frame`}
-                  className="rounded-lg p-2 hover:bg-gray-100"
+                  className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  <Eye className="h-5 w-5 text-gray-600" />
+                  <Eye className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 </button>
                 {canWrite && (
                   <>
@@ -565,15 +565,15 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                       type="button"
                       onClick={() => startEdit(social)}
                       aria-label={`Edit ${social.name}`}
-                      className="rounded-lg p-2 hover:bg-gray-100"
+                      className="rounded-lg p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
-                      <Edit2 className="h-5 w-5 text-gray-600" />
+                      <Edit2 className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(social)}
                       aria-label={`Stop promoting ${social.name}`}
-                      className="rounded-lg p-2 hover:bg-red-50"
+                      className="rounded-lg p-2 hover:bg-red-50 dark:hover:bg-red-900/30"
                     >
                       <Trash2 className="h-5 w-5 text-red-500" />
                     </button>
@@ -598,7 +598,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
             type="button"
             onClick={() => setPreviewing(null)}
             aria-label="Close preview"
-            className="absolute right-4 top-4 rounded-full bg-white p-2 hover:bg-gray-100"
+            className="absolute right-4 top-4 rounded-full bg-white dark:bg-gray-900 p-2 hover:bg-gray-100 dark:hover:bg-gray-700"
           >
             <X className="h-6 w-6" />
           </button>

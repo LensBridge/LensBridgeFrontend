@@ -12,6 +12,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>LensBridge</title>
+    <script>
+      try {
+        const t = localStorage.getItem('theme');
+        if (t === 'dark' || (!t && matchMedia('(prefers-color-scheme:dark)').matches))
+          document.documentElement.classList.add('dark');
+      } catch {}
+    </script>
 
     <!--
       Shown only when scripting is off. The styles are inline rather than Tailwind

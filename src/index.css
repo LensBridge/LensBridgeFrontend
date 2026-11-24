@@ -1,4 +1,18 @@
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  .dark input, .dark textarea, .dark select {
+    color-scheme: dark;
+    background-color: rgb(17 24 39);
+    color: rgb(229 231 235);
+    border-color: rgb(75 85 99);
+  }
+  .dark input::placeholder, .dark textarea::placeholder {
+    color: rgb(156 163 175);
+  }
+}
+
 @layer utilities {
   .animate-float {
     animation: float 6s ease-in-out infinite;

@@ -1,7 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield, Crown } from 'lucide-react';
+import { Camera, Home, Upload, Grid3x3, Menu, X, Sparkles, User, LogOut, Shield, Crown, Sun, Moon } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { ADMIN_SECTION_PERMISSIONS, BOARD_SECTION_PERMISSIONS } from '../utils/permissions';
 
 function Header() {
@@ -9,6 +10,7 @@ function Header() {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, logout, isAdmin, isRoot, isLoading, canAny } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   /**
    * Where the shield goes.
@@ -40,20 +42,20 @@ function Header() {
         badge: 'ROOT',
         Icon: Crown,
         gradient: 'from-red-600 to-orange-500',
-        tint: 'bg-red-50 hover:bg-red-100',
+        tint: 'bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40',
       }
     : isAdmin()
     ? {
         badge: 'Admin',
         Icon: Shield,
         gradient: 'from-purple-600 to-blue-600',
-        tint: 'bg-purple-50 hover:bg-purple-100',
+        tint: 'bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/40',
       }
     : {
         badge: null,
         Icon: User,
         gradient: 'from-blue-600 to-green-600',
-        tint: 'bg-blue-50 hover:bg-blue-100',
+        tint: 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40',
       };
 
   const handleLogout = async () => {
@@ -80,7 +82,7 @@ function Header() {
   ];
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm shadow-lg border-b border-gray-200 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-900/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-lg dark:shadow-xl dark:shadow-black/20 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center h-18 relative">
           {/* Logo */}
@@ -96,7 +98,7 @@ function Header() {
                 <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
                   LensBridge
                 </span>
-                <span className="text-xs text-gray-500 -mt-1">2027</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 -mt-1">2027</span>
               </div>
             </Link>
           </div>
@@ -111,11 +113,11 @@ function Header() {
                   to={item.href}
                   className={`group relative flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                     isActive(item.href)
-                      ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                      ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg dark:shadow-xl dark:shadow-black/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-blue-600'}`} />
+                  <Icon className={`h-5 w-5 ${isActive(item.href) ? 'text-white' : 'text-gray-500 dark:text-gray-400 group-hover:text-blue-600'}`} />
                   <span>{item.name}</span>
                   {isActive(item.href) && (
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl animate-pulse opacity-20"></div>
@@ -130,6 +132,14 @@ function Header() {
 
           {/* CTA Button - Right side */}
           <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
+            {/* Dark mode toggle */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />}
+            </button>
             {user ? (
               <>
                 {/* Admin link, pointed at whichever console section is reachable */}
@@ -138,8 +148,8 @@ function Header() {
                     to={adminLink.href}
                     className={`group relative flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                       isActive(adminLink.href)
-                        ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
+                        ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg dark:shadow-xl dark:shadow-black/20'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-700'
                     }`}
                     title={adminLink.mobileLabel}
                   >
@@ -155,9 +165,9 @@ function Header() {
                 <div className="flex items-center space-x-3">
                   <Link
                     to="/profile"
-                    className="text-right hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                    className="text-right hover:bg-blue-50 dark:hover:bg-blue-900/30 p-2 rounded-lg transition-colors"
                   >
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">
                       {user.firstName} {user.lastName}
                       {identity.badge && (
                         <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r ${identity.gradient} text-white`}>
@@ -165,7 +175,7 @@ function Header() {
                         </span>
                       )}
                     </p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                   </Link>
                   <Link to="/profile" className="relative">
                     <div className={`absolute inset-0 bg-gradient-to-r ${identity.gradient} rounded-full blur-sm opacity-20`}></div>
@@ -177,7 +187,7 @@ function Header() {
                 {/* Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="group inline-flex items-center space-x-2 text-gray-600 hover:text-red-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-red-50"
+                  className="group inline-flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-red-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/30"
                 >
                   <LogOut className="h-4 w-4" />
                   <span>Sign Out</span>
@@ -187,7 +197,7 @@ function Header() {
               <>
                 {isLoading ? (
                   <div
-                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                    className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-wait select-none"
                     aria-live="polite"
                     aria-busy="true"
                     title="Validating session..."
@@ -198,7 +208,7 @@ function Header() {
                 ) : (
                   <Link
                     to="/login"
-                    className="group inline-flex items-center space-x-2 text-gray-600 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50"
+                    className="group inline-flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                   >
                     <User className="h-4 w-4" />
                     <span>Sign In</span>
@@ -206,7 +216,7 @@ function Header() {
                 )}
                 <Link
                   to="/upload"
-                  className={`group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 ${isLoading && !user ? 'opacity-70' : ''}`}
+                  className={`group inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105 ${isLoading && !user ? 'opacity-70' : ''}`}
                   aria-disabled={isLoading && !user}
                 >
                   <Sparkles className="h-4 w-4 group-hover:animate-spin" />
@@ -217,15 +227,22 @@ function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center ml-auto">
+          <div className="md:hidden flex items-center ml-auto space-x-2">
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-gray-600" />}
+            </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
               {isMobileMenuOpen ? (
-                <X className="h-6 w-6 text-gray-600" />
+                <X className="h-6 w-6 text-gray-600 dark:text-gray-300" />
               ) : (
-                <Menu className="h-6 w-6 text-gray-600" />
+                <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
               )}
             </button>
           </div>
@@ -233,7 +250,7 @@ function Header() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 bg-white/95 backdrop-blur-sm">
+          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/95 dark:bg-gray-900/95 backdrop-blur-sm">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
@@ -244,11 +261,11 @@ function Header() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                       isActive(item.href)
-                        ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg'
-                        : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50'
+                        ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-lg dark:shadow-xl dark:shadow-black/20'
+                        : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30'
                     }`}
                   >
-                    <Icon className={`h-5 w-5 ${isActive(item.href) ? 'text-white' : 'text-gray-500'}`} />
+                    <Icon className={`h-5 w-5 ${isActive(item.href) ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`} />
                     <span>{item.name}</span>
                   </Link>
                 );
@@ -260,8 +277,8 @@ function Header() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                     isActive(adminLink.href)
-                      ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-red-600 hover:bg-red-50 border border-red-200'
+                      ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg dark:shadow-xl dark:shadow-black/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-700'
                   }`}
                 >
                   <Shield className={`h-5 w-5 ${isActive(adminLink.href) ? 'text-white' : 'text-red-500'}`} />
@@ -284,7 +301,7 @@ function Header() {
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">
                         {user.firstName} {user.lastName}
                         {identity.badge && (
                           <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gradient-to-r ${identity.gradient} text-white`}>
@@ -292,15 +309,15 @@ function Header() {
                           </span>
                         )}
                       </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                      <p className="text-xs text-blue-600 font-medium">View Profile</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">View Profile</p>
                     </div>
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+                    className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200"
                   >
-                    <LogOut className="h-5 w-5 text-gray-500" />
+                    <LogOut className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     <span>Sign Out</span>
                   </button>
                 </>
@@ -308,7 +325,7 @@ function Header() {
                 <>
                   {isLoading ? (
                     <div
-                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-500 cursor-wait select-none"
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-wait select-none"
                       aria-live="polite"
                       aria-busy="true"
                       title="Validating session..."
@@ -320,16 +337,16 @@ function Header() {
                     <Link
                       to="/login"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200"
+                      className="flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-200"
                     >
-                      <User className="h-5 w-5 text-gray-500" />
+                      <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                       <span>Sign In</span>
                     </Link>
                   )}
                   <Link
                     to="/upload"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg mt-4 ${isLoading && !user ? 'opacity-70' : ''}`}
+                    className={`flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-3 rounded-xl font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 mt-4 ${isLoading && !user ? 'opacity-70' : ''}`}
                     aria-disabled={isLoading && !user}
                   >
                     <Sparkles className="h-4 w-4" />

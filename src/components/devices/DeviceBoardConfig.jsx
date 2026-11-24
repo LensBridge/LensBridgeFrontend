@@ -22,7 +22,7 @@ import { PERMISSIONS } from '../../utils/permissions';
 function SavedHint({ show }) {
   if (!show) return null;
   return (
-    <span className="hidden text-xs text-gray-500 md:inline">
+    <span className="hidden text-xs text-gray-500 dark:text-gray-400 md:inline">
       Online boards update within a minute; offline boards need a new offline bundle.
     </span>
   );
@@ -39,7 +39,7 @@ function SaveButton({ dirty, saving, saved, disabled, onSave }) {
           ? 'bg-green-600 text-white'
           : dirty
           ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-          : 'bg-gray-100 text-gray-400'
+          : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
       }`}
     >
       {saving ? (
@@ -59,7 +59,7 @@ function DiscardButton({ saving, onDiscard }) {
       type="button"
       onClick={onDiscard}
       disabled={saving}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
     >
       <RotateCcw className="h-4 w-4" />
       Discard
@@ -70,7 +70,7 @@ function DiscardButton({ saving, onDiscard }) {
 function ErrorBanner({ message }) {
   if (!message) return null;
   return (
-    <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">
       <AlertCircle className="h-4 w-4 flex-shrink-0" />
       {message}
     </div>
@@ -172,13 +172,13 @@ function DeviceBoardConfig({ deviceId, disabled }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-gray-200 p-6">
+      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-2">
-            <Settings className="h-5 w-5 text-indigo-600" />
+            <Settings className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Board Configuration</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Board Configuration</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {canWriteConfig
                   ? 'Prayer times, display, and QR settings for this device.'
                   : 'Prayer times, display, and QR settings for this device. Read-only.'}
@@ -203,7 +203,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
         <div className="p-6">
           <ErrorBanner message={error} />
           {loading ? (
-            <div className="py-10 text-center text-gray-500">
+            <div className="py-10 text-center text-gray-500 dark:text-gray-400">
               <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
               Loading config...
             </div>
@@ -213,13 +213,13 @@ function DeviceBoardConfig({ deviceId, disabled }) {
         </div>
       </section>
 
-      <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-gray-200 p-6">
+      <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-purple-600" />
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Ticker</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Ticker</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {canWriteTicker
                   ? 'Text cycled across the bottom of this board.'
                   : 'The copy scrolling along the bottom of this board. Read-only.'}
@@ -244,7 +244,7 @@ function DeviceBoardConfig({ deviceId, disabled }) {
         <div className="p-6">
           <ErrorBanner message={tickerError} />
           {loading ? (
-            <div className="py-10 text-center text-gray-500">
+            <div className="py-10 text-center text-gray-500 dark:text-gray-400">
               <Loader2 className="mx-auto mb-2 h-6 w-6 animate-spin" />
               Loading ticker...
             </div>

@@ -21,11 +21,11 @@ function SignupSuccess() {
           <h1 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
             LensBridge
           </h1>
-          <p className="text-gray-600 text-sm mt-2">Account Created</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">Account Created</p>
         </div>
 
         {/* Success Content */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
           <div className="flex justify-center mb-6">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-sm opacity-20"></div>
@@ -35,27 +35,27 @@ function SignupSuccess() {
             </div>
           </div>
 
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
             Check Your Email!
           </h2>
 
-          <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+          <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
             {message || 'We\'ve sent a confirmation email to your UofT email address. Please click the link in the email to activate your account.'}
           </p>
 
           {email && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
-              <p className="text-blue-800 text-sm font-medium">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-6">
+              <p className="text-blue-800 dark:text-blue-200 text-sm font-medium">
                 Confirmation sent to:
               </p>
-              <p className="text-blue-600 text-sm">{email}</p>
+              <p className="text-blue-600 dark:text-blue-400 text-sm">{email}</p>
             </div>
           )}
 
           <div className="space-y-3">
             <Link
               to="/login"
-              className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
             >
               <span>Go to Sign In</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -63,7 +63,7 @@ function SignupSuccess() {
 
             <Link
               to="/"
-              className="block text-gray-500 hover:text-gray-600 font-medium text-sm"
+              className="block text-gray-500 dark:text-gray-400 hover:text-gray-600 font-medium text-sm"
             >
               ← Back to Home
             </Link>
@@ -72,11 +72,11 @@ function SignupSuccess() {
 
         {/* Help Info */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Didn't receive the email? Check your spam folder or{' '}
             <a 
               href={`mailto:${import.meta.env.VITE_CONTACT_EMAIL || 'support@lensbridge.tech'}`}
-              className="text-blue-600 hover:text-blue-500 font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium"
             >
               contact support
             </a>

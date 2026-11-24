@@ -45,9 +45,9 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
   });
 
   const audienceOptions = [
-    { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700' },
-    { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700' },
-    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700' }
+    { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
+    { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' },
+    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300' }
   ];
 
   const resetForm = () => {
@@ -188,13 +188,13 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search posters..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         
@@ -214,7 +214,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
         <button
           onClick={() => setFilterAudience('all')}
           className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-            filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
           }`}
         >
           All ({safePosters.length})
@@ -224,27 +224,27 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
             key={opt.value}
             onClick={() => setFilterAudience(opt.value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             {opt.label} ({safePosters.filter(p => p.audience === opt.value).length})
           </button>
         ))}
-        <span className="ml-auto text-sm text-gray-500 py-1.5">
+        <span className="ml-auto text-sm text-gray-500 dark:text-gray-400 py-1.5">
           {safePosters.filter(isPosterActive).length} active now
         </span>
       </div>
 
       {/* Add/Edit Form */}
       {(showAddForm || editingId) && (
-        <div className={`rounded-xl border-2 p-5 ${showAddForm ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
+        <div className={`rounded-xl border-2 p-5 ${showAddForm ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200'}`}>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-semibold text-gray-900">{showAddForm ? 'New Poster' : 'Edit Poster'}</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-white">{showAddForm ? 'New Poster' : 'Edit Poster'}</h4>
             <button 
               onClick={() => { setShowAddForm(false); setEditingId(null); resetForm(); }}
-              className="p-1 hover:bg-gray-200 rounded"
+              className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
             >
-              <X className="h-5 w-5 text-gray-500" />
+              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
           
@@ -257,7 +257,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`aspect-video rounded-xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center transition-all ${
-                  dragOver ? 'border-indigo-500 bg-indigo-100' : formData.image ? 'border-green-400 bg-green-50' : 'border-gray-300 bg-white hover:border-indigo-400'
+                  dragOver ? 'border-indigo-500 bg-indigo-100' : formData.image ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-indigo-400'
                 }`}
               >
                 <input
@@ -270,15 +270,15 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 {formData.image ? (
                   <div className="relative w-full h-full">
                     <img src={formData.image} alt="Preview" className="w-full h-full object-contain rounded-lg" />
-                    <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
+                    <div className="absolute top-2 right-2 bg-green-50 dark:bg-green-900/300 text-white p-1 rounded-full">
                       <CheckCircle className="h-4 w-4" />
                     </div>
                   </div>
                 ) : (
                   <>
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500 font-medium">Drop image or click to upload</p>
-                    <p className="text-xs text-gray-400 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                    <Upload className="h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Drop image or click to upload</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
                   </>
                 )}
               </div>
@@ -287,58 +287,58 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
             {/* Form Fields */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Title *</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
                   placeholder="Poster title"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Start Date</label>
                   <input
                     type="date"
                     value={formData.startDate}
                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (last day shown)</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">End Date (last day shown)</label>
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                    className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Duration (seconds)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Duration (seconds)</label>
                 <input
                   type="number"
                   min="5"
                   max="60"
                   value={formData.duration / 1000}
                   onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) * 1000 })}
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+                  className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Audience</label>
                 <div className="flex gap-2">
                   {audienceOptions.map(opt => (
                     <button
                       key={opt.value}
                       onClick={() => setFormData({ ...formData, audience: opt.value })}
                       className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
-                        formData.audience === opt.value ? opt.color + ' border-current' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        formData.audience === opt.value ? opt.color + ' border-current' : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       {opt.label}
@@ -348,8 +348,8 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Sign-up link <span className="font-normal text-gray-400">(optional)</span>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  Sign-up link <span className="font-normal text-gray-400 dark:text-gray-500">(optional)</span>
                 </label>
                 <input
                   type="url"
@@ -357,14 +357,14 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                   value={formData.signupUrl}
                   onChange={(e) => setFormData({ ...formData, signupUrl: e.target.value })}
                   placeholder="https://forms.gle/..."
-                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white ${
-                    signupUrlError ? 'border-red-300' : 'border-gray-200'
+                  className={`w-full px-3 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900 ${
+                    signupUrlError ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'
                   }`}
                 />
                 {signupUrlError ? (
-                  <p className="mt-1 text-xs text-red-600">{signupUrlError}</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{signupUrlError}</p>
                 ) : (
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     {formData.signupUrl?.trim()
                       ? 'The board will show this poster beside a scannable QR code.'
                       : 'Leave empty to display the poster full-screen with no QR code.'}
@@ -377,7 +377,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
           <div className="flex justify-end gap-2 mt-5">
             <button
               onClick={() => { setShowAddForm(false); setEditingId(null); resetForm(); }}
-              className="px-4 py-2 text-gray-600 hover:bg-white rounded-lg"
+              className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-white rounded-lg"
             >
               Cancel
             </button>
@@ -394,21 +394,21 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
 
       {/* Posters Grid */}
       {filteredPosters.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <Image className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 font-medium">No posters found</p>
+          <p className="text-gray-500 dark:text-gray-400 font-medium">No posters found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredPosters.map(poster => (
             <div
               key={poster.id}
-              className={`bg-white rounded-xl border overflow-hidden group hover:shadow-lg transition-all ${
-                isPosterActive(poster) ? 'border-gray-200' : 'border-gray-100 opacity-60'
+              className={`bg-white dark:bg-gray-900 rounded-xl border overflow-hidden group hover:shadow-lg transition-all ${
+                isPosterActive(poster) ? 'border-gray-200 dark:border-gray-700' : 'border-gray-100 dark:border-gray-800 opacity-60'
               }`}
             >
               {/* Image */}
-              <div className="aspect-video bg-gray-100 relative">
+              <div className="aspect-video bg-gray-100 dark:bg-gray-700 relative">
                 {poster.imageUrl ? (
                   <img src={poster.imageUrl} alt={poster.title} className="w-full h-full object-cover" />
                 ) : (
@@ -421,21 +421,21 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <button
                     onClick={() => setPreviewUrl(poster.imageUrl)}
-                    className="p-2 bg-white rounded-lg hover:bg-gray-100"
+                    className="p-2 bg-white dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <Eye className="h-5 w-5 text-gray-700" />
+                    <Eye className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                   </button>
                   {canWrite && (
                     <>
                       <button
                         onClick={() => startEdit(poster)}
-                        className="p-2 bg-white rounded-lg hover:bg-gray-100"
+                        className="p-2 bg-white dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
-                        <Edit2 className="h-5 w-5 text-gray-700" />
+                        <Edit2 className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                       </button>
                       <button
                         onClick={() => handleDelete(poster.id)}
-                        className="p-2 bg-white rounded-lg hover:bg-red-50"
+                        className="p-2 bg-white dark:bg-gray-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
                       >
                         <Trash2 className="h-5 w-5 text-red-500" />
                       </button>
@@ -445,7 +445,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 
                 {/* Status Badge */}
                 {isPosterActive(poster) && (
-                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                  <div className="absolute top-2 left-2 bg-green-50 dark:bg-green-900/300 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                     Active
                   </div>
                 )}
@@ -454,10 +454,10 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
               {/* Info */}
               <div className="p-3">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h4 className="font-medium text-gray-900 line-clamp-1">{poster.title}</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-white line-clamp-1">{poster.title}</h4>
                   {getAudienceBadge(poster.audience)}
                 </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500">
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {(poster.duration || 10000) / 1000}s
@@ -479,7 +479,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
       {previewUrl && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreviewUrl(null)}>
           <img src={previewUrl} alt="Preview" className="max-w-full max-h-full rounded-lg" />
-          <button onClick={() => setPreviewUrl(null)} className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100">
+          <button onClick={() => setPreviewUrl(null)} className="absolute top-4 right-4 p-2 bg-white dark:bg-gray-900 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
             <X className="h-6 w-6" />
           </button>
         </div>

@@ -5,7 +5,7 @@ import DeviceService from '../services/DeviceService';
 import UsbStickDownloads from '../components/devices/UsbStickDownloads';
 import { CALCULATION_METHODS, TIMEZONES } from '../models/board';
 
-const input = 'mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
+const input = 'mt-2 w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 
 /** Empty or a number in range; anything else is an error message. */
 function coordinateError(value, limit, name) {
@@ -72,24 +72,24 @@ function AddBoard() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 shadow-sm">
         <div className="flex items-center gap-4">
-          <Link to="/admin/devices" className="rounded-lg p-2 text-gray-500 hover:bg-gray-100">
+          <Link to="/admin/devices" className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-indigo-600" />
-              <h1 className="text-2xl font-semibold text-gray-900">Add board</h1>
+              <Monitor className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Add board</h1>
             </div>
-            <p className="mt-1 text-sm text-gray-500">The board is set up by a USB stick. It needs no network.</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">The board is set up by a USB stick. It needs no network.</p>
           </div>
         </div>
       </div>
 
       {created ? (
         <>
-          <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-5 text-sm text-green-800">
+          <div className="flex items-start gap-3 rounded-lg border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/30 p-5 text-sm text-green-800 dark:text-green-200">
             <CheckCircle2 className="h-5 w-5 flex-shrink-0" />
             <div>
               <strong>{created.displayName}</strong> is added. Download its USB kit (with the setup file) below.{' '}
@@ -100,17 +100,17 @@ function AddBoard() {
           <UsbStickDownloads device={created} />
         </>
       ) : (
-        <form onSubmit={submit} className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          {submitError && <div className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{submitError}</div>}
+        <form onSubmit={submit} className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-sm">
+          {submitError && <div className="mb-5 rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">{submitError}</div>}
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <label className="block sm:col-span-2">
-              <span className="text-sm font-medium text-gray-700">Name</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Name</span>
               <input type="text" value={form.displayName} onChange={set('displayName')} className={input} placeholder="North Musallah" />
-              <span className="mt-1 block text-xs text-gray-500">The board shows it when its setup file is applied.</span>
-              {errors.displayName && <span className="mt-1 block text-sm text-red-600">{errors.displayName}</span>}
+              <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">The board shows it when its setup file is applied.</span>
+              {errors.displayName && <span className="mt-1 block text-sm text-red-600 dark:text-red-400">{errors.displayName}</span>}
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Audience</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Audience</span>
               <select value={form.audience} onChange={set('audience')} className={input}>
                 <option value="BOTH">Both</option>
                 <option value="BROTHERS">Brothers</option>
@@ -118,33 +118,33 @@ function AddBoard() {
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">City</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">City</span>
               <input type="text" value={form.city} onChange={set('city')} className={input} placeholder="Mississauga" />
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Latitude</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Latitude</span>
               <input type="number" step="any" value={form.latitude} onChange={set('latitude')} className={input} placeholder="43.589" />
-              {errors.latitude && <span className="mt-1 block text-sm text-red-600">{errors.latitude}</span>}
+              {errors.latitude && <span className="mt-1 block text-sm text-red-600 dark:text-red-400">{errors.latitude}</span>}
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Longitude</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Longitude</span>
               <input type="number" step="any" value={form.longitude} onChange={set('longitude')} className={input} placeholder="-79.644" />
-              {errors.longitude && <span className="mt-1 block text-sm text-red-600">{errors.longitude}</span>}
+              {errors.longitude && <span className="mt-1 block text-sm text-red-600 dark:text-red-400">{errors.longitude}</span>}
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Time zone</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Time zone</span>
               <select value={form.timezone} onChange={set('timezone')} className={input}>
                 {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
               </select>
             </label>
             <label className="block">
-              <span className="text-sm font-medium text-gray-700">Prayer time method</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Prayer time method</span>
               <select value={form.method} onChange={set('method')} className={input}>
                 {CALCULATION_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </label>
           </div>
-          <p className="mt-4 text-xs text-gray-500">Blank location fields keep the defaults; change them later on the board&apos;s page.</p>
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">Blank location fields keep the defaults; change them later on the board&apos;s page.</p>
           <div className="mt-6 flex justify-end">
             <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

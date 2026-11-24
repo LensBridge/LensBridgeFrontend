@@ -128,15 +128,15 @@ function ResetPassword() {
 
   const renderStatusIcon = () => {
     if (isValidating) {
-      return <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />;
+      return <Loader2 className="h-16 w-16 text-blue-600 dark:text-blue-400 animate-spin" />;
     }
     if (isSuccess) {
-      return <CheckCircle className="h-16 w-16 text-green-600" />;
+      return <CheckCircle className="h-16 w-16 text-green-600 dark:text-green-400" />;
     }
     if (!tokenValid) {
-      return <XCircle className="h-16 w-16 text-red-600" />;
+      return <XCircle className="h-16 w-16 text-red-600 dark:text-red-400" />;
     }
-    return <Lock className="h-16 w-16 text-blue-600" />;
+    return <Lock className="h-16 w-16 text-blue-600 dark:text-blue-400" />;
   };
 
   // Loading state while validating token
@@ -144,14 +144,14 @@ function ResetPassword() {
     return (
       <div className="flex-1 flex items-center justify-center py-8 px-4">
         <div className="max-w-md w-full text-center">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
-              <Loader2 className="h-16 w-16 text-blue-600 animate-spin" />
+              <Loader2 className="h-16 w-16 text-blue-600 dark:text-blue-400 animate-spin" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Validating Reset Link...
             </h2>
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 dark:text-gray-300 text-sm">
               Please wait while we verify your password reset token.
             </p>
           </div>
@@ -178,27 +178,27 @@ function ResetPassword() {
             <h1 className={`text-3xl font-bold text-transparent bg-gradient-to-r ${getStatusColor()} bg-clip-text`}>
               LensBridge
             </h1>
-            <p className="text-gray-600 text-sm mt-2">Password Reset</p>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">Password Reset</p>
           </div>
 
           {/* Success Content */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
               {renderStatusIcon()}
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Password Reset Successfully!
             </h2>
 
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
               Your password has been updated. You can now sign in to your LensBridge account with your new password.
             </p>
 
             <div className="space-y-3">
               <Link
                 to="/login"
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <span>Continue to Sign In</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -228,27 +228,27 @@ function ResetPassword() {
             <h1 className={`text-3xl font-bold text-transparent bg-gradient-to-r ${getStatusColor()} bg-clip-text`}>
               LensBridge
             </h1>
-            <p className="text-gray-600 text-sm mt-2">Password Reset</p>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mt-2">Password Reset</p>
           </div>
 
           {/* Error Content */}
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
               {renderStatusIcon()}
             </div>
 
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Invalid Reset Link
             </h2>
 
-            <p className="text-gray-600 text-sm mb-6 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
               {errorMessage}
             </p>
 
             <div className="space-y-3">
               <Link
                 to="/forgot-password"
-                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                className="group inline-flex items-center justify-center space-x-2 w-full bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-6 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
                 <span>Request New Reset Link</span>
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -256,7 +256,7 @@ function ResetPassword() {
 
               <Link
                 to="/login"
-                className="block text-blue-600 hover:text-blue-500 font-medium text-sm"
+                className="block text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium text-sm"
               >
                 Back to Sign In
               </Link>
@@ -284,26 +284,26 @@ function ResetPassword() {
           <h2 className="text-3xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
             Reset Your Password
           </h2>
-          <p className="text-gray-600 mt-2">Enter your new password below</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Enter your new password below</p>
         </div>
 
         {/* Reset Password Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-8">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
           {errorMessage && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{errorMessage}</p>
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+              <p className="text-red-800 dark:text-red-200 text-sm">{errorMessage}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* New Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 New Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   id="password"
@@ -314,8 +314,8 @@ function ResetPassword() {
                   onChange={handleInputChange}
                   className={`block w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
                     passwordError 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
+                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent'
                   }`}
                   placeholder="Enter your new password"
                 />
@@ -325,9 +325,9 @@ function ResetPassword() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   )}
                 </button>
               </div>
@@ -335,12 +335,12 @@ function ResetPassword() {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Confirm New Password
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -351,8 +351,8 @@ function ResetPassword() {
                   onChange={handleInputChange}
                   className={`block w-full pl-10 pr-12 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all duration-200 ${
                     passwordError 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
+                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent'
                   }`}
                   placeholder="Confirm your new password"
                 />
@@ -362,19 +362,19 @@ function ResetPassword() {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                    <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                   )}
                 </button>
               </div>
               {passwordError && (
-                <p className="mt-1 text-sm text-red-600 flex items-center">
+                <p className="mt-1 text-sm text-red-600 dark:text-red-400 flex items-center">
                   <span className="mr-1">⚠️</span>
                   {passwordError}
                 </p>
               )}
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Password must be at least 8 characters long
               </p>
             </div>
@@ -383,7 +383,7 @@ function ResetPassword() {
             <button
               type="submit"
               disabled={isLoading || passwordError || !formData.password || !formData.confirmPassword}
-              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -401,7 +401,7 @@ function ResetPassword() {
           <div className="mt-6 text-center">
             <Link 
               to="/login"
-              className="text-gray-600 hover:text-blue-600 font-medium text-sm transition-colors"
+              className="text-gray-600 dark:text-gray-300 hover:text-blue-600 font-medium text-sm transition-colors"
             >
               Remember your password? Sign in
             </Link>
@@ -410,7 +410,7 @@ function ResetPassword() {
 
         {/* MSA Info */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Exclusive platform for UTM MSA students
           </p>
         </div>

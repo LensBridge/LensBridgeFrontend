@@ -27,15 +27,15 @@ const QUOTE_KINDS = [
 const KIND_THEME = {
   emerald: {
     border: 'border-emerald-200',
-    bg: 'bg-emerald-50',
-    chip: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/30',
+    chip: 'bg-emerald-100 text-emerald-700 dark:text-emerald-300 border-emerald-200',
     chipActive: 'bg-emerald-600 text-white border-emerald-600',
     icon: 'text-emerald-600'
   },
   amber: {
     border: 'border-amber-200',
-    bg: 'bg-amber-50',
-    chip: 'bg-amber-100 text-amber-700 border-amber-200',
+    bg: 'bg-amber-50 dark:bg-amber-900/30',
+    chip: 'bg-amber-100 text-amber-700 dark:text-amber-300 border-amber-200',
     chipActive: 'bg-amber-600 text-white border-amber-600',
     icon: 'text-amber-600'
   }
@@ -324,21 +324,21 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
     <div className="flex flex-col lg:flex-row gap-6">
       {/* ----- Week selector ----- */}
       <div className="lg:w-80 flex-shrink-0">
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:sticky lg:top-24">
-          <div className="p-4 border-b border-gray-100 space-y-3">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-24">
+          <div className="p-4 border-b border-gray-100 dark:border-gray-800 space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-gray-900">Select Week</span>
+              <span className="font-medium text-gray-900 dark:text-white">Select Week</span>
               <select
                 value={selectedYear}
                 onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedWeek(null); setEditForm(null); }}
-                className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white"
+                className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1 bg-white dark:bg-gray-900"
               >
                 {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <button
               onClick={handleJumpToCurrent}
-              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg py-2 transition-colors"
+              className="w-full flex items-center justify-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 rounded-lg py-2 transition-colors"
             >
               <CircleDot className="h-4 w-4" />
               Jump to current week
@@ -348,10 +348,10 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
           <div className="max-h-[28rem] overflow-y-auto">
             {monthsWithWeeks.map(({ monthIdx, monthLabel, weeks }) => (
               <div key={monthIdx}>
-                <div className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 border-b border-gray-100">
+                <div className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/95 backdrop-blur px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
                   {monthLabel}
                 </div>
-                <ul className="divide-y divide-gray-100">
+                <ul className="divide-y divide-gray-100 dark:divide-gray-800">
                   {weeks.map(({ week, start, end }) => {
                     const hasContent = weeksWithContent.has(week);
                     const isCurrent = week === currentWeek && selectedYear === currentYear;
@@ -363,30 +363,30 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                           onClick={() => handleSelectWeek(week)}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                             isSelected ? 'bg-indigo-600 text-white'
-                              : isCurrent ? 'bg-amber-50 hover:bg-amber-100'
-                              : 'hover:bg-gray-50'
+                              : isCurrent ? 'bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100'
+                              : 'hover:bg-gray-50 dark:hover:bg-gray-800'
                           }`}
                         >
                           <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex flex-col items-center justify-center text-[10px] leading-none font-medium ${
-                            isSelected ? 'bg-white/20 text-white'
-                              : isCurrent ? 'bg-amber-200 text-amber-800'
-                              : 'bg-gray-100 text-gray-500'
+                            isSelected ? 'bg-white dark:bg-gray-900/20 text-white'
+                              : isCurrent ? 'bg-amber-200 text-amber-800 dark:text-amber-200'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                           }`}>
                             <span className="opacity-70">WK</span>
                             <span className="text-sm font-semibold mt-0.5">{week}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className={`text-sm font-medium truncate ${
-                              isSelected ? 'text-white' : isPast ? 'text-gray-400' : 'text-gray-900'
+                              isSelected ? 'text-white' : isPast ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
                             }`}>
                               {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                             </div>
                             <div className={`text-xs flex items-center gap-1.5 mt-0.5 ${
-                              isSelected ? 'text-indigo-100' : 'text-gray-500'
+                              isSelected ? 'text-indigo-100' : 'text-gray-500 dark:text-gray-400'
                             }`}>
                               {isCurrent && (
                                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                                  isSelected ? 'bg-white/20' : 'bg-amber-200 text-amber-800'
+                                  isSelected ? 'bg-white dark:bg-gray-900/20' : 'bg-amber-200 text-amber-800 dark:text-amber-200'
                                 }`}>Current</span>
                               )}
                               {hasContent ? (
@@ -395,7 +395,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                                   Content set
                                 </span>
                               ) : (
-                                <span className={isSelected ? 'text-indigo-200' : 'text-gray-400'}>Empty</span>
+                                <span className={isSelected ? 'text-indigo-200' : 'text-gray-400 dark:text-gray-500'}>Empty</span>
                               )}
                             </div>
                           </div>
@@ -409,7 +409,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
             ))}
           </div>
 
-          <div className="px-4 py-3 border-t border-gray-100 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
             <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-300" /> Current</div>
             <div className="flex items-center gap-1.5"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Has content</div>
           </div>
@@ -421,20 +421,20 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
         {!selectedWeek ? (
           <EmptyState />
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             {/* Header */}
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-wrap gap-2">
               <div>
-                <h3 className="font-semibold text-gray-900">Week {selectedWeek}, {selectedYear}</h3>
-                <p className="text-sm text-gray-500">{formatRange(selectedWeek, selectedYear)}</p>
+                <h3 className="font-semibold text-gray-900 dark:text-white">Week {selectedWeek}, {selectedYear}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{formatRange(selectedWeek, selectedYear)}</p>
               </div>
               <div className="flex items-center gap-2">
                 {canWrite && !isEditing && hasExisting && (
                   <>
-                    <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit">
+                    <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit">
                       <Edit2 className="h-4 w-4" />
                     </button>
-                    <button onClick={handleDelete} disabled={deleting} className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50" title="Delete">
+                    <button onClick={handleDelete} disabled={deleting} className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition disabled:opacity-50" title="Delete">
                       {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                     </button>
                   </>
@@ -463,7 +463,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
                 <ReadView editForm={editForm} />
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No content for this week yet</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">No content for this week yet</p>
                   {canWrite && (
                     <button onClick={() => setIsEditing(true)} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 inline-flex items-center gap-2">
                       <Plus className="h-4 w-4" /> Add Content
@@ -485,10 +485,10 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
 
 function EmptyState() {
   return (
-    <div className="bg-gray-50 rounded-xl border border-gray-200 p-12 text-center">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
       <Calendar className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-      <p className="text-gray-600 font-medium">Select a week to view or edit content</p>
-      <p className="text-sm text-gray-400 mt-1">Choose a week from the list on the left</p>
+      <p className="text-gray-600 dark:text-gray-300 font-medium">Select a week to view or edit content</p>
+      <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Choose a week from the list on the left</p>
     </div>
   );
 }
@@ -503,16 +503,16 @@ function EditView({
       <section>
         <header className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Quote className="h-5 w-5 text-gray-700" />
-            <h4 className="font-semibold text-gray-900">Quotes</h4>
-            <span className="text-xs text-gray-500">({editForm.quotes.length})</span>
+            <Quote className="h-5 w-5 text-gray-700 dark:text-gray-200" />
+            <h4 className="font-semibold text-gray-900 dark:text-white">Quotes</h4>
+            <span className="text-xs text-gray-500 dark:text-gray-400">({editForm.quotes.length})</span>
           </div>
           <div className="flex items-center gap-2">
             {QUOTE_KINDS.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
                 onClick={() => onAddQuote(value)}
-                className="flex items-center gap-1.5 text-sm text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
               >
                 <Icon className="h-3.5 w-3.5" />
                 Add {label}
@@ -524,7 +524,7 @@ function EditView({
         {editForm.quotes.length === 0 ? (
           <button
             onClick={() => onAddQuote('VERSE')}
-            className="w-full py-8 border-2 border-dashed border-gray-200 rounded-xl text-gray-500 hover:border-indigo-400 hover:text-indigo-600 text-sm flex items-center justify-center gap-2"
+            className="w-full py-8 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl text-gray-500 dark:text-gray-400 hover:border-indigo-400 hover:text-indigo-600 text-sm flex items-center justify-center gap-2"
           >
             <Plus className="h-4 w-4" /> Add your first quote
           </button>
@@ -551,38 +551,38 @@ function EditView({
       <section>
         <header className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-green-700" />
-            <h4 className="font-semibold text-gray-900">Jummah Prayers</h4>
-            <span className="text-xs text-gray-500">({editForm.jummahPrayers?.length || 0})</span>
+            <Calendar className="h-5 w-5 text-green-700 dark:text-green-300" />
+            <h4 className="font-semibold text-gray-900 dark:text-white">Jummah Prayers</h4>
+            <span className="text-xs text-gray-500 dark:text-gray-400">({editForm.jummahPrayers?.length || 0})</span>
           </div>
         </header>
 
-        <div className="border border-green-200 rounded-xl bg-green-50 p-3 space-y-2">
+        <div className="border border-green-200 dark:border-green-700 rounded-xl bg-green-50 dark:bg-green-900/30 p-3 space-y-2">
           {(editForm.jummahPrayers || []).map((prayer, i) => (
-            <div key={i} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center bg-white rounded-lg p-2 border border-gray-100">
+            <div key={i} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-100 dark:border-gray-800">
               <input
                 type="time"
                 value={prayer.prayerTime}
                 onChange={(e) => onUpdateJummah(i, { prayerTime: e.target.value })}
-                className="border border-gray-200 rounded px-2 py-1.5 text-sm sm:w-28 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm sm:w-28 focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
               <input
                 type="text"
                 value={prayer.khatib}
                 placeholder="Khatib"
                 onChange={(e) => onUpdateJummah(i, { khatib: e.target.value })}
-                className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
               <input
                 type="text"
                 value={prayer.room}
                 placeholder="Room"
                 onChange={(e) => onUpdateJummah(i, { room: e.target.value })}
-                className="flex-1 border border-gray-200 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
               <button
                 onClick={() => onRemoveJummah(i)}
-                className="self-end sm:self-auto p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                className="self-end sm:self-auto p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                 aria-label="Remove prayer time"
               >
                 <X className="h-4 w-4" />
@@ -591,7 +591,7 @@ function EditView({
           ))}
           <button
             onClick={onAddJummah}
-            className="w-full py-2 border-2 border-dashed border-green-200 rounded-lg text-green-700 hover:border-green-400 hover:bg-green-100/50 text-sm flex items-center justify-center gap-1 transition-colors"
+            className="w-full py-2 border-2 border-dashed border-green-200 dark:border-green-700 rounded-lg text-green-700 dark:text-green-300 hover:border-green-400 hover:bg-green-100/50 text-sm flex items-center justify-center gap-1 transition-colors"
           >
             <Plus className="h-4 w-4" /> Add prayer time
           </button>
@@ -599,11 +599,11 @@ function EditView({
       </section>
 
       {/* Actions */}
-      <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+      <div className="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-gray-800">
         <button
           onClick={onCancel}
           disabled={saving}
-          className="px-4 py-2 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
         >
           Cancel
         </button>
@@ -644,7 +644,7 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
           <button
             onClick={onMoveUp}
             disabled={index === 0}
-            className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Move up"
           >
             <GripVertical className="h-3 w-3 rotate-180" />
@@ -652,7 +652,7 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
           <button
             onClick={onMoveDown}
             disabled={index === total - 1}
-            className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-0.5 text-gray-400 dark:text-gray-500 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
             aria-label="Move down"
           >
             <GripVertical className="h-3 w-3" />
@@ -671,7 +671,7 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
                 key={value}
                 onClick={() => onChange({ kind: value })}
                 className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                  isActive ? t.chipActive : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  isActive ? t.chipActive : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
                 {label}
@@ -683,14 +683,14 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={onLoadSample}
-            className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1 rounded hover:bg-white/60 inline-flex items-center gap-1"
+            className="text-xs text-gray-600 dark:text-gray-300 hover:text-gray-900 px-2 py-1 rounded hover:bg-white/60 inline-flex items-center gap-1"
             title="Load random sample"
           >
             <Sparkles className="h-3 w-3" /> Sample
           </button>
           <button
             onClick={onRemove}
-            className="p-1 text-gray-400 hover:text-red-500 hover:bg-white/60 rounded"
+            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-white/60 rounded"
             aria-label="Remove quote"
           >
             <Trash2 className="h-4 w-4" />
@@ -706,7 +706,7 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
           dir="rtl"
           rows={2}
           placeholder="Arabic text..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-lg text-right bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-lg text-right bg-white dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           style={{ fontFamily: "'Amiri', serif" }}
         />
         <input
@@ -714,29 +714,29 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
           value={quote.transliteration}
           onChange={(e) => onChange({ transliteration: e.target.value })}
           placeholder="Transliteration..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm italic bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm italic bg-white dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
         <textarea
           value={quote.translation}
           onChange={(e) => onChange({ translation: e.target.value })}
           rows={2}
           placeholder="English translation..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
         <input
           type="text"
           value={quote.reference}
           onChange={(e) => onChange({ reference: e.target.value })}
           placeholder={quote.kind === 'HADITH' ? 'e.g., Sahih al-Bukhari' : 'e.g., Surah Al-Baqarah (2:152)'}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          className="w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
 
         {/* Slide duration — per quote, because a one-line verse and a long
             hadith do not deserve the same time on screen. */}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pt-1">
-          <label htmlFor={durationId} className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <Timer className="h-3.5 w-3.5 text-gray-500" />
-            Slide duration <span className="font-normal text-gray-400">(seconds)</span>
+          <label htmlFor={durationId} className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">
+            <Timer className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+            Slide duration <span className="font-normal text-gray-400 dark:text-gray-500">(seconds)</span>
           </label>
           <input
             id={durationId}
@@ -748,12 +748,12 @@ function QuoteCard({ index, quote, total, onChange, onRemove, onMoveUp, onMoveDo
             value={quote.durationSeconds ?? ''}
             onChange={(e) => setDuration(e.target.value)}
             placeholder="Auto"
-            className={`w-24 rounded-lg border px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${durationErr ? 'border-red-300' : 'border-gray-200'}`}
+            className={`w-24 rounded-lg border px-3 py-1.5 text-sm bg-white dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${durationErr ? 'border-red-300 dark:border-red-600' : 'border-gray-200 dark:border-gray-700'}`}
           />
           {durationErr ? (
-            <p className="text-xs text-red-600">{durationErr}</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{durationErr}</p>
           ) : (
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-500 dark:text-gray-400">
               {quote.durationSeconds == null
                 ? `Auto - ${QUOTE_AUTO_RANGE_LABEL}.`
                 : `Leave empty for auto. ${SLIDE_DURATION_MIN_SECONDS}-${SLIDE_DURATION_MAX_SECONDS} seconds.`}
@@ -774,7 +774,7 @@ function ReadView({ editForm }) {
     <>
       {quotes.length > 0 && (
         <section>
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Quotes</h4>
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Quotes</h4>
           <div className="space-y-3">
             {quotes.map((q, i) => <QuoteDisplay key={i} quote={q} />)}
           </div>
@@ -782,13 +782,13 @@ function ReadView({ editForm }) {
       )}
       {jummah.length > 0 && (
         <section>
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-2">Jummah Prayers</h4>
-          <div className="border border-green-200 rounded-xl bg-green-50 p-3 space-y-1">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">Jummah Prayers</h4>
+          <div className="border border-green-200 dark:border-green-700 rounded-xl bg-green-50 dark:bg-green-900/30 p-3 space-y-1">
             {jummah.map((p, i) => (
-              <div key={i} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 text-sm border border-gray-100">
+              <div key={i} className="flex items-center justify-between bg-white dark:bg-gray-900 rounded-lg px-3 py-2 text-sm border border-gray-100 dark:border-gray-800">
                 <span className="font-medium tabular-nums">{p.prayerTime}</span>
-                <span className="text-gray-700">{p.khatib || 'TBA'}</span>
-                <span className="text-gray-500">{p.room}</span>
+                <span className="text-gray-700 dark:text-gray-200">{p.khatib || 'TBA'}</span>
+                <span className="text-gray-500 dark:text-gray-400">{p.room}</span>
               </div>
             ))}
           </div>
@@ -808,17 +808,17 @@ function QuoteDisplay({ quote }) {
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`h-4 w-4 ${theme.icon}`} />
         <span className={`text-xs font-semibold uppercase tracking-wide ${theme.icon}`}>{meta.label}</span>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white/70 px-2 py-0.5 text-[10px] font-medium tabular-nums text-gray-600">
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 px-2 py-0.5 text-[10px] font-medium tabular-nums text-gray-600 dark:text-gray-300">
           <Timer className="h-3 w-3" />
           {frameDurationLabel(quote.durationSeconds)}
         </span>
       </div>
       {quote.arabic && (
-        <p dir="rtl" className="text-lg mb-2 text-gray-900" style={{ fontFamily: "'Amiri', serif" }}>{quote.arabic}</p>
+        <p dir="rtl" className="text-lg mb-2 text-gray-900 dark:text-white" style={{ fontFamily: "'Amiri', serif" }}>{quote.arabic}</p>
       )}
-      {quote.transliteration && <p className="text-sm italic text-gray-600 mb-1">{quote.transliteration}</p>}
-      {quote.translation && <p className="text-gray-800 mb-1">{quote.translation}</p>}
-      {quote.reference && <p className="text-sm font-medium text-gray-500">{quote.reference}</p>}
+      {quote.transliteration && <p className="text-sm italic text-gray-600 dark:text-gray-300 mb-1">{quote.transliteration}</p>}
+      {quote.translation && <p className="text-gray-800 dark:text-gray-100 mb-1">{quote.translation}</p>}
+      {quote.reference && <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{quote.reference}</p>}
     </div>
   );
 }

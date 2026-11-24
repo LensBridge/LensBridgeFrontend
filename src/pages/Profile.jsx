@@ -270,9 +270,9 @@ function Profile() {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
-          <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Please Sign In</h2>
-          <p className="text-gray-600">You need to be signed in to view your profile.</p>
+          <User className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Please Sign In</h2>
+          <p className="text-gray-600 dark:text-gray-300">You need to be signed in to view your profile.</p>
         </div>
       </div>
     );
@@ -285,7 +285,7 @@ function Profile() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-60"></div>
         <div className="relative text-center py-12">
           <div className="mb-4">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20">
               <User className="h-4 w-4" />
               <span>Your Profile</span>
             </div>
@@ -293,7 +293,7 @@ function Profile() {
           <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text mb-4">
             Welcome back, {user.firstName}!
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-300">
             Manage your profile information and view your uploaded content
           </p>
         </div>
@@ -301,20 +301,20 @@ function Profile() {
 
       {/* Success Message */}
       {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4">
           <div className="flex items-center space-x-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <span className="text-green-700">{success}</span>
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <span className="text-green-700 dark:text-green-300">{success}</span>
           </div>
         </div>
       )}
 
       {/* Error Message */}
       {errors.submit && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
           <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <span className="text-red-700">{errors.submit}</span>
+            <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+            <span className="text-red-700 dark:text-red-300">{errors.submit}</span>
           </div>
         </div>
       )}
@@ -322,13 +322,13 @@ function Profile() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Information */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Profile Information</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Information</h2>
               {!isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+                  className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
                 >
                   <Edit2 className="h-4 w-4" />
                   <span>Edit</span>
@@ -343,16 +343,16 @@ function Profile() {
                   <User className="h-12 w-12 text-white" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mt-4">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-4">
                 {user.firstName} {user.lastName}
               </h3>
-              <p className="text-gray-600">{user.email}</p>
+              <p className="text-gray-600 dark:text-gray-300">{user.email}</p>
             </div>
 
             {isEditing ? (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     First Name *
                   </label>
                   <input
@@ -361,17 +361,17 @@ function Profile() {
                     value={editForm.firstName}
                     onChange={handleInputChange}
                     maxLength={20}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.firstName ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 ${
+                      errors.firstName ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   {errors.firstName && (
-                    <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.firstName}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Last Name *
                   </label>
                   <input
@@ -380,40 +380,40 @@ function Profile() {
                     value={editForm.lastName}
                     onChange={handleInputChange}
                     maxLength={20}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.lastName ? 'border-red-300' : 'border-gray-300'
+                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 ${
+                      errors.lastName ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
                     }`}
                   />
                   {errors.lastName && (
-                    <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-1">{errors.lastName}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                     Email
                   </label>
                   <input
                     type="email"
                     value={user.email}
                     readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-not-allowed"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Email cannot be changed</p>
                 </div>
 
                 {user.studentNumber && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                       Student Number
                     </label>
                     <input
                       type="text"
                       value={user.studentNumber}
                       readOnly
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 cursor-not-allowed"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Student number cannot be changed</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Student number cannot be changed</p>
                   </div>
                 )}
 
@@ -441,20 +441,20 @@ function Profile() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Mail className="h-5 w-5 text-gray-500" />
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Mail className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                   <div>
-                    <p className="text-sm font-medium text-gray-700">Email</p>
-                    <p className="text-sm text-gray-600">{user.email}</p>
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Email</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{user.email}</p>
                   </div>
                 </div>
 
                 {user.studentNumber && (
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <User className="h-5 w-5 text-gray-500" />
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Student Number</p>
-                      <p className="text-sm text-gray-600">{user.studentNumber}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Student Number</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{user.studentNumber}</p>
                     </div>
                   </div>
                 )}
@@ -463,28 +463,28 @@ function Profile() {
           </div>
 
           {/* Stats Card */}
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6 mt-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Your Statistics</h3>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mt-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Your Statistics</h3>
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <Camera className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-blue-600">{stats.totalUploads}</div>
-                <div className="text-xs text-blue-700">Total Uploads</div>
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                <Camera className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.totalUploads}</div>
+                <div className="text-xs text-blue-700 dark:text-blue-300">Total Uploads</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-green-600">{stats.approvedUploads}</div>
-                <div className="text-xs text-green-700">Approved</div>
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.approvedUploads}</div>
+                <div className="text-xs text-green-700 dark:text-green-300">Approved</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg">
+              <div className="text-center p-3 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
                 <Star className="h-6 w-6 text-purple-600 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-purple-600">{stats.featuredUploads}</div>
-                <div className="text-xs text-purple-700">Featured</div>
+                <div className="text-xs text-purple-700 dark:text-purple-300">Featured</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg">
+              <div className="text-center p-3 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
                 <Clock className="h-6 w-6 text-orange-600 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-orange-600">{stats.pendingUploads}</div>
-                <div className="text-xs text-orange-700">Pending</div>
+                <div className="text-xs text-orange-700 dark:text-orange-300">Pending</div>
               </div>
             </div>
           </div>
@@ -492,12 +492,12 @@ function Profile() {
 
         {/* User Uploads */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Your Uploads</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Your Uploads</h2>
               <button
                 onClick={refreshData}
-                className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium"
+                className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium"
               >
                 <RefreshCw className="h-4 w-4" />
                 <span>Refresh</span>
@@ -507,12 +507,12 @@ function Profile() {
             {uploadsLoading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={`skeleton-${i}`} className="bg-gray-100 rounded-lg p-4 animate-pulse">
+                  <div key={`skeleton-${i}`} className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 animate-pulse">
                     <div className="flex space-x-4">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg"></div>
+                      <div className="w-16 h-16 bg-gray-200 dark:bg-gray-600 rounded-lg"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/2"></div>
                       </div>
                     </div>
                   </div>
@@ -520,9 +520,9 @@ function Profile() {
               </div>
             ) : userUploads.length === 0 ? (
               <div className="text-center py-12">
-                <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No uploads yet</h3>
-                <p className="text-gray-600 mb-6">
+                <Camera className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No uploads yet</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">
                   Start sharing your memories with the community!
                 </p>
                 <a
@@ -536,11 +536,11 @@ function Profile() {
             ) : (
               <div className="space-y-4">
                 {userUploads.map((upload) => (
-                  <div key={upload.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div key={upload.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex space-x-4">
                       {/* Thumbnail */}
                       <div 
-                        className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity relative group"
+                        className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 cursor-pointer hover:opacity-80 transition-opacity relative group"
                         onClick={() => openMediaViewer(upload)}
                       >
                         {upload.type === 'image' ? (
@@ -550,8 +550,8 @@ function Profile() {
                             className="w-full h-full object-cover" 
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <Video className="h-8 w-8 text-gray-500" />
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-gray-600">
+                            <Video className="h-8 w-8 text-gray-500 dark:text-gray-400" />
                           </div>
                         )}
                         <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -563,13 +563,13 @@ function Profile() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between">
                           <div>
-                            <h4 className="font-medium text-gray-900">
+                            <h4 className="font-medium text-gray-900 dark:text-white">
                               {upload.title || 'Untitled'}
                             </h4>
-                            <p className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
                               {upload.event || 'No Event'} • {formatDate(upload.date)}
                             </p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                               {upload.type.toUpperCase()} • by {upload.author}
                             </p>
                           </div>
@@ -577,7 +577,7 @@ function Profile() {
                           {/* Status & Actions */}
                           <div className="flex items-center space-x-2">
                             {upload.featured && (
-                              <div className="flex items-center space-x-1 bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                              <div className="flex items-center space-x-1 bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200 px-2 py-1 rounded-full text-xs font-medium">
                                 <Star className="h-3 w-3" />
                                 <span>Featured</span>
                               </div>
@@ -586,8 +586,8 @@ function Profile() {
                             {/* Show approval status */}
                             <div className={`flex items-center space-x-1 px-2 py-1 rounded-full text-xs font-medium ${
                               upload.approved
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-orange-100 text-orange-800'
+                                ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
+                                : 'bg-orange-100 text-orange-800 dark:text-orange-200'
                             }`}>
                               {upload.approved ? (
                                 <>
@@ -604,7 +604,7 @@ function Profile() {
 
                             <button
                               onClick={() => downloadFile(upload.src, `${upload.title || 'download'}.${upload.type === 'image' ? 'jpg' : 'mp4'}`)}
-                              className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                              className="p-1 text-gray-500 dark:text-gray-400 hover:text-blue-600 transition-colors"
                               title="Download"
                             >
                               <Download className="h-4 w-4" />
@@ -613,7 +613,7 @@ function Profile() {
                             <button
                               onClick={() => deleteUpload(upload.id, upload.title)}
                               disabled={deletingUpload === upload.id}
-                              className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="p-1 text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Delete"
                             >
                               {deletingUpload === upload.id ? (
@@ -675,7 +675,7 @@ function Profile() {
                   <p className="text-sm text-gray-300 mb-2">
                     By {selectedMedia.author}
                   </p>
-                  <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                  <div className="flex flex-wrap gap-4 text-xs text-gray-400 dark:text-gray-500">
                     <span>Event: {selectedMedia.event || 'No Event'}</span>
                     <span>Uploaded: {formatDate(selectedMedia.date)}</span>
                     <span>Type: {selectedMedia.type.toUpperCase()}</span>

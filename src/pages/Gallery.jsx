@@ -104,69 +104,69 @@ function Gallery() {
         </div>
         <div className="relative text-center py-16">
           <div className="mb-6">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20">
               <Sparkles className="h-4 w-4" />
               <span>Community Gallery</span>
             </div>
           </div>
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+          <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
             <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Media Gallery</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Explore amazing memories from UTM MSA events and activities shared by our vibrant community
           </p>
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Image className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {isLoading ? (
                 <div className="animate-pulse bg-gray-300 h-8 w-12 rounded mx-auto"></div>
               ) : (
                 totalElements
               )}
             </div>
-            <div className="text-sm text-gray-600">Total Media</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Total Media</div>
           </div>
           <div className="text-center">
             <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
               <Award className="h-6 w-6" />
             </div>
-            <div className="text-2xl font-bold text-gray-900">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">
               {isLoading ? (
                 <div className="animate-pulse bg-gray-300 h-8 w-12 rounded mx-auto"></div>
               ) : (
                 featuredItems.length
               )}
             </div>
-            <div className="text-sm text-gray-600">Featured</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">Featured</div>
           </div>
         </div>
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Search by title, event, or author..."
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
             />
             {searchInput && (
               <button
                 onClick={clearFilters}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors"
                 title="Clear search"
               >
                 <X className="h-4 w-4" />
@@ -176,11 +176,11 @@ function Gallery() {
 
           {/* Filter */}
           <div className="flex items-center space-x-3">
-            <Filter className="h-5 w-5 text-gray-400" />
+            <Filter className="h-5 w-5 text-gray-400 dark:text-gray-500" />
             <select
               value={selectedFilter}
               onChange={(e) => handleFilterChange(e.target.value)}
-              className="border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+              className="border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
             >
               <option value="all">All Media</option>
               <option value="featured">🌟 Featured</option>
@@ -201,12 +201,12 @@ function Gallery() {
               </button>
               
               {/* Cache Options Dropdown */}
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-48">
+              <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-900 rounded-lg shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 min-w-48">
                 <div className="p-2 space-y-1">
                   <button
                     onClick={handleRetry}
                     disabled={isLoading}
-                    className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     🔄 Refresh
                   </button>
@@ -223,8 +223,8 @@ function Gallery() {
           <div className="bg-gradient-to-br from-red-100 to-red-200 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-red-400" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Error Loading Gallery</h3>
-          <p className="text-gray-600 text-lg mb-6 max-w-md mx-auto">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Error Loading Gallery</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-lg mb-6 max-w-md mx-auto">
             {error}
           </p>
           <button
@@ -241,12 +241,12 @@ function Gallery() {
           <div className="bg-gradient-to-br from-blue-100 to-green-100 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
             <Image className="h-16 w-16 text-blue-400" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Loading Gallery...</h3>
-          <p className="text-gray-600 text-lg">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Gallery...</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
             Fetching amazing MSA moments for you
           </p>
           <div className="mt-6">
-            <div className="w-48 h-2 bg-gray-200 rounded-full mx-auto overflow-hidden">
+            <div className="w-48 h-2 bg-gray-200 dark:bg-gray-600 rounded-full mx-auto overflow-hidden">
               <div className="h-full bg-gradient-to-r from-blue-600 to-green-600 rounded-full animate-pulse"></div>
             </div>
           </div>
@@ -254,20 +254,20 @@ function Gallery() {
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
           <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-fit mx-auto mb-6">
-            <Image className="h-16 w-16 text-gray-400" />
+            <Image className="h-16 w-16 text-gray-400 dark:text-gray-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">No media found</h3>
-          <p className="text-gray-600 text-lg">
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No media found</h3>
+          <p className="text-gray-600 dark:text-gray-300 text-lg">
             Try adjusting your search terms or filters to find what you're looking for
           </p>
         </div>
       ) : (
         <div className="relative" /* removed fade-in classes to prevent hiding items */>
           {isPaginating && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
-              <div className="text-center bg-white rounded-xl shadow-lg p-6">
+            <div className="absolute inset-0 bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+              <div className="text-center bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 p-6">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                <p className="text-sm text-gray-600 font-medium">Loading...</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Loading...</p>
               </div>
             </div>
           )}
@@ -275,7 +275,7 @@ function Gallery() {
             {filteredItems.map((item) => (
               <div 
                 key={item.id} 
-                className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-200 overflow-hidden cursor-pointer"
+                className="group bg-white dark:bg-gray-900 rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-2 border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
                 onClick={() => openViewer(item)}
                 onMouseEnter={(e) => {
                   setHoveredItem(item.id);
@@ -339,7 +339,7 @@ function Gallery() {
                   
                   {/* Featured Badge */}
                   {item.featured && (
-                    <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg">
+                    <div className="absolute top-4 right-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-lg dark:shadow-xl dark:shadow-black/20">
                       <Star className="h-3 w-3" />
                       <span>Featured</span>
                     </div>
@@ -347,16 +347,16 @@ function Gallery() {
                 </div>
                 
                 <div className="p-5">
-                  <h3 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-blue-600 transition-colors">
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-lg group-hover:text-blue-600 transition-colors">
                     {item.title}
                   </h3>
-                  <p className="text-blue-600 font-medium text-sm mb-3 bg-blue-50 px-3 py-1 rounded-full w-fit">
+                  <p className="text-blue-600 dark:text-blue-400 font-medium text-sm mb-3 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded-full w-fit">
                     {item.event}
                   </p>
                   
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-2">
-                      <div className="bg-gray-100 rounded-full p-1">
+                      <div className="bg-gray-100 dark:bg-gray-700 rounded-full p-1">
                         <User className="h-3 w-3" />
                       </div>
                       <span className="font-medium">{item.author}</span>
@@ -375,15 +375,15 @@ function Gallery() {
 
       {/* Pagination Controls */}
       {!error && !isLoading && totalPages > 1 && (
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             {/* Page Size Selector */}
             <div className="flex items-center space-x-3">
-              <span className="text-sm text-gray-600 font-medium">Items per page:</span>
+              <span className="text-sm text-gray-600 dark:text-gray-300 font-medium">Items per page:</span>
               <select
                 value={pageSize}
                 onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all"
               >
                 <option value={6}>6</option>
                 <option value={12}>12</option>
@@ -393,7 +393,7 @@ function Gallery() {
             </div>
 
             {/* Page Info */}
-            <div className="text-sm text-gray-600 font-medium">
+            <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">
               Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements} items
             </div>
 
@@ -402,7 +402,7 @@ function Gallery() {
               <button
                 onClick={() => handlePageChange(0)}
                 disabled={currentPage === 0}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="First page"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -412,7 +412,7 @@ function Gallery() {
               <button
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 0}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Previous page"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -439,7 +439,7 @@ function Gallery() {
                       className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === pageNum
                           ? 'bg-gradient-to-r from-blue-600 to-green-600 text-white shadow-md'
-                          : 'border border-gray-300 hover:bg-gray-50'
+                          : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >
                       {pageNum + 1}
@@ -451,7 +451,7 @@ function Gallery() {
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage >= totalPages - 1}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Next page"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -460,7 +460,7 @@ function Gallery() {
               <button
                 onClick={() => handlePageChange(totalPages - 1)}
                 disabled={currentPage >= totalPages - 1}
-                className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Last page"
               >
                 <ChevronRight className="h-4 w-4" />
@@ -473,14 +473,14 @@ function Gallery() {
 
       {/* Featured Section - Only show on first page with no filters */}
       {featuredItems.length > 0 && currentPage === 0 && selectedFilter === 'all' && !searchTerm && (
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 dark:border-yellow-700 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="text-center mb-8">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 mb-4">
               <Star className="h-4 w-4" />
               <span>Featured Content</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Community Highlights</h2>
-            <p className="text-gray-600">
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Community Highlights</h2>
+            <p className="text-gray-600 dark:text-gray-300">
               These amazing moments have been featured on our social media
             </p>
           </div>
@@ -489,7 +489,7 @@ function Gallery() {
             {featuredItems.slice(0, 3).map((item) => (
               <div 
                 key={item.id} 
-                className="group bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 overflow-hidden cursor-pointer"
+                className="group bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105 border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
                 onClick={() => openViewer(item)}
                 onMouseEnter={(e) => {
                   if (item.type === 'video') {
@@ -535,8 +535,8 @@ function Gallery() {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
-                  <p className="text-sm text-gray-600">{item.event}</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">{item.event}</p>
                 </div>
               </div>
             ))}

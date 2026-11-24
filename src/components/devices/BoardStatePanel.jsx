@@ -13,19 +13,19 @@ import {
 import { formatRelativeTime } from '../../utils/deviceStatus';
 
 const TEXT = {
-  ok: 'text-gray-900',
-  warning: 'text-amber-800',
-  danger: 'text-red-700'
+  ok: 'text-gray-900 dark:text-white',
+  warning: 'text-amber-800 dark:text-amber-200',
+  danger: 'text-red-700 dark:text-red-300'
 };
 
 function Row({ icon, label, children, hint, level = 'ok' }) {
   return (
     <div className="flex gap-3">
-      {createElement(icon, { className: `mt-0.5 h-4 w-4 flex-shrink-0 ${level === 'ok' ? 'text-gray-400' : TEXT[level]}` })}
+      {createElement(icon, { className: `mt-0.5 h-4 w-4 flex-shrink-0 ${level === 'ok' ? 'text-gray-400 dark:text-gray-500' : TEXT[level]}` })}
       <div className="min-w-0">
-        <div className="text-sm text-gray-500">{label}</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400">{label}</div>
         <div className={`mt-0.5 font-medium ${TEXT[level]}`}>{children}</div>
-        {hint && <div className="mt-0.5 text-sm text-gray-500">{hint}</div>}
+        {hint && <div className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{hint}</div>}
       </div>
     </div>
   );
@@ -40,7 +40,7 @@ function BoardStatePanel({ device }) {
   const board = device.board;
   if (!board) {
     return (
-      <p className="text-sm text-gray-500">
+      <p className="text-sm text-gray-500 dark:text-gray-400">
         This board has not reported what it shows yet. Boards report it from agent 0.3.0 on.
       </p>
     );
@@ -103,7 +103,7 @@ function BoardStatePanel({ device }) {
           {board.syncError ? `Failing: ${board.syncError}` : 'Working'}
         </Row>
       </div>
-      <p className="flex items-center gap-1.5 text-xs text-gray-500">
+      <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
         <CheckCircle2 className="h-3.5 w-3.5" />
         Reported by the board {formatRelativeTime(device.boardReportAt)}
       </p>

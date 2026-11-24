@@ -8,9 +8,9 @@ import { useAuth } from '../../context/AuthContext';
 import { PERMISSIONS } from '../../utils/permissions';
 
 const audienceOptions = [
-  { value: 'both', label: 'Everyone', color: 'bg-purple-100 text-purple-700', border: 'border-purple-200' },
-  { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 text-blue-700', border: 'border-blue-200' },
-  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700', border: 'border-pink-200' }
+  { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-700' },
+  { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-700' },
+  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300', border: 'border-pink-200' }
 ];
 
 const formatDateTimeLocal = (timestamp) => {
@@ -20,66 +20,66 @@ const formatDateTimeLocal = (timestamp) => {
 
 function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
   return (
-    <div className={`rounded-xl border-2 p-5 space-y-4 ${isNew ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200'}`}>
+    <div className={`rounded-xl border-2 p-5 space-y-4 ${isNew ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200'}`}>
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold text-gray-900">{isNew ? 'New Event' : 'Edit Event'}</h4>
-        <button onClick={onCancel} className="p-1 hover:bg-gray-200 rounded">
-          <X className="h-5 w-5 text-gray-500" />
+        <h4 className="font-semibold text-gray-900 dark:text-white">{isNew ? 'New Event' : 'Edit Event'}</h4>
+        <button onClick={onCancel} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded">
+          <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event Name *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Event Name *</label>
           <input
             type="text"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
             placeholder="e.g., Weekly Halaqa"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Start</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Start</label>
           <input
             type="datetime-local"
             value={formatDateTimeLocal(formData.startEpochMs)}
             onChange={(e) => setFormData({ ...formData, startEpochMs: new Date(e.target.value).getTime() })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">End</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">End</label>
           <input
             type="datetime-local"
             value={formatDateTimeLocal(formData.endEpochMs)}
             onChange={(e) => setFormData({ ...formData, endEpochMs: new Date(e.target.value).getTime() })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Location *</label>
           <input
             type="text"
             value={formData.location}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
             placeholder="e.g., Room 2080"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Audience</label>
           <div className="flex gap-2">
             {audienceOptions.map(opt => (
               <button
                 key={opt.value}
                 onClick={() => setFormData({ ...formData, audience: opt.value })}
                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
-                  formData.audience === opt.value ? `${opt.color} ${opt.border}` : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                  formData.audience === opt.value ? `${opt.color} ${opt.border}` : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
               >
                 {opt.label}
@@ -89,12 +89,12 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description *</label>
           <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+            className="w-full px-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-900"
             placeholder="Brief description..."
           />
         </div>
@@ -105,16 +105,16 @@ function EventForm({ isNew, formData, setFormData, onCancel, onSave }) {
             id="allDay"
             checked={formData.allDay}
             onChange={(e) => setFormData({ ...formData, allDay: e.target.checked })}
-            className="w-4 h-4 text-indigo-600 rounded"
+            className="w-4 h-4 text-indigo-600 dark:text-indigo-400 rounded"
           />
-          <label htmlFor="allDay" className="text-sm text-gray-700">All-day event</label>
+          <label htmlFor="allDay" className="text-sm text-gray-700 dark:text-gray-200">All-day event</label>
         </div>
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
         <button
           onClick={onCancel}
-          className="px-4 py-2 text-gray-600 hover:bg-white rounded-lg"
+          className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-white rounded-lg"
         >
           Cancel
         </button>
@@ -247,13 +247,13 @@ function EventsEditor({ events, onUpdate, showMessage }) {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search events..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         
@@ -274,7 +274,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
           <button
             onClick={() => setFilterAudience('all')}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-              filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              filterAudience === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
           >
             All ({events.length})
@@ -284,19 +284,19 @@ function EventsEditor({ events, onUpdate, showMessage }) {
               key={opt.value}
               onClick={() => setFilterAudience(opt.value)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                filterAudience === opt.value ? 'bg-gray-900 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`}
             >
               {opt.label} ({events.filter(e => e.audience === opt.value).length})
             </button>
           ))}
         </div>
-        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none ml-auto">
+        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 cursor-pointer select-none ml-auto">
           <input
             type="checkbox"
             checked={hidePastEvents}
             onChange={(e) => setHidePastEvents(e.target.checked)}
-            className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+            className="w-4 h-4 text-indigo-600 dark:text-indigo-400 rounded border-gray-300 dark:border-gray-600 focus:ring-indigo-500"
           />
           Hide past events
         </label>
@@ -315,10 +315,10 @@ function EventsEditor({ events, onUpdate, showMessage }) {
 
       {/* Events List */}
       {filteredEvents.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <CalendarDays className="h-12 w-12 mx-auto text-gray-300 mb-3" />
-          <p className="text-gray-500 font-medium">No events found</p>
-          {searchTerm && <p className="text-sm text-gray-400 mt-1">Try a different search</p>}
+          <p className="text-gray-500 dark:text-gray-400 font-medium">No events found</p>
+          {searchTerm && <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Try a different search</p>}
         </div>
       ) : (
         <div className="space-y-3">
@@ -335,45 +335,45 @@ function EventsEditor({ events, onUpdate, showMessage }) {
             ) : (
               <div
                 key={event.id}
-                className={`bg-white rounded-xl border p-4 hover:shadow-md transition-shadow ${
-                  getEventStatus(event) === 'past' ? 'border-gray-100 opacity-60' : 'border-gray-200'
+                className={`bg-white dark:bg-gray-900 rounded-xl border p-4 hover:shadow-md transition-shadow ${
+                  getEventStatus(event) === 'past' ? 'border-gray-100 dark:border-gray-800 opacity-60' : 'border-gray-200 dark:border-gray-700'
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h4 className="font-semibold text-gray-900">{event.name}</h4>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">{event.name}</h4>
                       {getAudienceBadge(event.audience)}
                       {getEventStatus(event) === 'ongoing' && (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">Now</span>
+                        <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-xs font-medium rounded-full">Now</span>
                       )}
                       {getEventStatus(event) === 'past' && (
-                        <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded-full">Past</span>
+                        <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs rounded-full">Past</span>
                       )}
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300 flex-wrap">
                       <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4 text-gray-400" />
+                        <Calendar className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                         {formatDisplayDate(event.startEpochMs)}
                       </span>
                       {!event.allDay && (
                         <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4 text-gray-400" />
+                          <Clock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                           {formatDisplayTime(event.startEpochMs)} - {formatDisplayTime(event.endEpochMs)}
                         </span>
                       )}
-                      {event.allDay && <span className="text-indigo-600 font-medium">All Day</span>}
+                      {event.allDay && <span className="text-indigo-600 dark:text-indigo-400 font-medium">All Day</span>}
                       {event.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4 text-gray-400" />
+                          <MapPin className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                           {event.location}
                         </span>
                       )}
                     </div>
                     
                     {event.description && (
-                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">{event.description}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{event.description}</p>
                     )}
                   </div>
                   
@@ -381,13 +381,13 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => startEdit(event)}
-                        className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(event.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

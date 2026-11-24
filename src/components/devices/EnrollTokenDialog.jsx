@@ -33,66 +33,66 @@ function EnrollTokenDialog({ tokenResponse, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-lg bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+      <div className="w-full max-w-lg rounded-lg bg-white dark:bg-gray-900 shadow-xl dark:shadow-2xl dark:shadow-black/20">
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Enrollment token issued</h3>
-            <p className="text-sm text-gray-500">This token is shown once.</p>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Enrollment token issued</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">This token is shown once.</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="space-y-5 p-6">
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/30 p-4 text-sm text-amber-800 dark:text-amber-200">
             If this dialog is closed before copying the token, issue a new one.
           </div>
 
           <div>
-            <div className="mb-2 text-sm font-medium text-gray-700">Token</div>
+            <div className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-200">Token</div>
             <div className="break-all rounded-lg bg-gray-950 p-4 font-mono text-lg text-white">{tokenResponse.token}</div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="rounded-lg border border-gray-200 p-4">
-              <div className="text-sm text-gray-500">Expires in</div>
-              <div className="mt-1 text-2xl font-semibold text-gray-900">{remaining}</div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Expires in</div>
+              <div className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">{remaining}</div>
             </div>
-            <div className="rounded-lg border border-gray-200 p-4">
-              <div className="text-sm text-gray-500">Token ID</div>
-              <div className="mt-1 break-all font-mono text-sm text-gray-800">{tokenResponse.tokenId}</div>
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+              <div className="text-sm text-gray-500 dark:text-gray-400">Token ID</div>
+              <div className="mt-1 break-all font-mono text-sm text-gray-800 dark:text-gray-100">{tokenResponse.tokenId}</div>
             </div>
           </div>
 
           {showQr && (
-            <div className="flex justify-center rounded-lg border border-gray-200 bg-white p-5">
+            <div className="flex justify-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5">
               <QRCodeSVG value={tokenResponse.token} size={190} />
             </div>
           )}
 
-          <div className="rounded-lg bg-gray-50 p-4">
+          <div className="rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <div className="text-sm font-medium text-gray-700">Run this on the board (over SSH)</div>
-              <button type="button" onClick={() => copy('command', command)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+              <div className="text-sm font-medium text-gray-700 dark:text-gray-200">Run this on the board (over SSH)</div>
+              <button type="button" onClick={() => copy('command', command)} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <Copy className="h-4 w-4" />
                 {copied === 'command' ? 'Copied' : 'Copy command'}
               </button>
             </div>
-            <code className="block break-all rounded bg-white p-3 text-sm text-gray-800">{command}</code>
+            <code className="block break-all rounded bg-white dark:bg-gray-900 p-3 text-sm text-gray-800 dark:text-gray-100">{command}</code>
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 px-6 py-4">
-          <button type="button" onClick={() => copy('token', tokenResponse.token)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <div className="flex flex-wrap justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
+          <button type="button" onClick={() => copy('token', tokenResponse.token)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <Copy className="h-4 w-4" />
             {copied === 'token' ? 'Copied' : 'Copy token'}
           </button>
-          <button type="button" onClick={() => setShowQr((value) => !value)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={() => setShowQr((value) => !value)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <QrCode className="h-4 w-4" />
             {showQr ? 'Hide QR' : 'Show QR'}
           </button>
-          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+          <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
             <Printer className="h-4 w-4" />
             Print
           </button>

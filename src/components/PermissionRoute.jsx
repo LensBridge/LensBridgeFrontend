@@ -28,7 +28,7 @@ function PermissionRoute({ children, anyOf, allOf, label = 'this page' }) {
       <div className="flex-1 flex items-center justify-center py-8">
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-indigo-600" />
-          <p className="text-gray-600">Checking permissions...</p>
+          <p className="text-gray-600 dark:text-gray-300">Checking permissions...</p>
         </div>
       </div>
     );
@@ -44,22 +44,22 @@ function PermissionRoute({ children, anyOf, allOf, label = 'this page' }) {
   if (!allowed) {
     return (
       <div className="flex flex-1 items-center justify-center py-8">
-        <div className="mx-auto w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+        <div className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 p-8 text-center shadow-xl dark:shadow-2xl dark:shadow-black/20">
           <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100">
             <ShieldAlert className="h-10 w-10 text-amber-600" />
           </div>
-          <h2 className="mb-3 text-2xl font-bold text-gray-900">Not permitted</h2>
-          <p className="mb-4 text-gray-600">
+          <h2 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">Not permitted</h2>
+          <p className="mb-4 text-gray-600 dark:text-gray-300">
             Your account doesn&apos;t have access to {label}.
           </p>
-          <p className="mb-2 text-sm text-gray-500">
+          <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
             {allOf ? 'Requires all of:' : 'Requires one of:'}
           </p>
           <div className="mb-6 flex flex-wrap justify-center gap-1.5">
             {required.map((permission) => (
               <code
                 key={permission}
-                className="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700"
+                className="rounded bg-gray-100 dark:bg-gray-700 px-2 py-1 font-mono text-xs text-gray-700 dark:text-gray-200"
               >
                 {permission}
               </code>

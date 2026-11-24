@@ -12,9 +12,9 @@ function CommandOutput({ command }) {
 
   if (!output) {
     return command.errorMessage ? (
-      <pre className="whitespace-pre-wrap rounded-lg bg-red-50 p-3 text-sm text-red-700">{command.errorMessage}</pre>
+      <pre className="whitespace-pre-wrap rounded-lg bg-red-50 dark:bg-red-900/30 p-3 text-sm text-red-700 dark:text-red-300">{command.errorMessage}</pre>
     ) : (
-      <div className="text-sm text-gray-500">No output yet.</div>
+      <div className="text-sm text-gray-500 dark:text-gray-400">No output yet.</div>
     );
   }
 
@@ -24,12 +24,12 @@ function CommandOutput({ command }) {
         <img
           src={`data:image/png;base64,${output.base64}`}
           alt="Device screenshot"
-          className="max-h-[520px] w-full rounded-lg border border-gray-200 object-contain bg-gray-50"
+          className="max-h-[520px] w-full rounded-lg border border-gray-200 dark:border-gray-700 object-contain bg-gray-50 dark:bg-gray-800"
         />
         <button
           type="button"
           onClick={() => downloadBase64Png(output.base64, `${command.deviceId || 'device'}-${command.id}.png`)}
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
         >
           <Download className="h-4 w-4" />
           Download
@@ -51,17 +51,17 @@ function CommandOutput({ command }) {
     return (
       <div className="space-y-2 text-sm">
         {output.checkError && (
-          <div className="rounded-lg bg-amber-50 p-3 text-amber-800">
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-900/30 p-3 text-amber-800 dark:text-amber-200">
             Could not check for updates: {output.checkError}
             {output.results.length === 0 && <div className="mt-1">Nothing was installed. Check the board&apos;s internet connection and try again.</div>}
           </div>
         )}
         {output.results.length === 0 ? (
-          !output.checkError && <div className="text-gray-600">Nothing to install: the board app and agent are up to date.</div>
+          !output.checkError && <div className="text-gray-600 dark:text-gray-300">Nothing to install: the board app and agent are up to date.</div>
         ) : (
           <ul className="space-y-1">
             {output.results.map((result, index) => (
-              <li key={`${result.file}-${index}`} className={result.action === 'rejected' ? 'text-red-700' : 'text-gray-700'}>
+              <li key={`${result.file}-${index}`} className={result.action === 'rejected' ? 'text-red-700 dark:text-red-300' : 'text-gray-700 dark:text-gray-200'}>
                 <span className="font-medium">{result.action}</span>: {result.message}
               </li>
             ))}
@@ -72,7 +72,7 @@ function CommandOutput({ command }) {
   }
 
   return (
-    <pre className="max-h-[360px] overflow-auto rounded-lg bg-gray-50 p-4 text-xs text-gray-700">
+    <pre className="max-h-[360px] overflow-auto rounded-lg bg-gray-50 dark:bg-gray-800 p-4 text-xs text-gray-700 dark:text-gray-200">
       {JSON.stringify(output, null, 2)}
     </pre>
   );

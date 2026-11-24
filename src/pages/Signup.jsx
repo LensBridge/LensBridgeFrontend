@@ -100,16 +100,16 @@ function Signup() {
           <h2 className="text-2xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">
             Join LensBridge
           </h2>
-          <p className="text-gray-600 text-sm mt-1">Create your UTM MSA account</p>
+          <p className="text-gray-600 dark:text-gray-300 text-sm mt-1">Create your UTM MSA account</p>
         </div>
 
         {/* Signup Form */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="firstName" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   First Name
                 </label>
                 <input
@@ -119,12 +119,12 @@ function Signup() {
                   required
                   value={formData.firstName}
                   onChange={handleInputChange}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-sm"
                   placeholder="First name"
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="lastName" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Last Name
                 </label>
                 <input
@@ -134,7 +134,7 @@ function Signup() {
                   required
                   value={formData.lastName}
                   onChange={handleInputChange}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-sm"
                   placeholder="Last name"
                 />
               </div>
@@ -142,12 +142,12 @@ function Signup() {
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="email" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                 UofT Email Address
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-gray-400" />
+                  <Mail className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                 </div>
                 <input
                   id="email"
@@ -158,14 +158,14 @@ function Signup() {
                   onChange={handleInputChange}
                   className={`block w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-200 text-sm ${
                     emailError 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500 focus:border-transparent'
+                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent'
                   }`}
                   placeholder="your.email@mail.utoronto.ca"
                 />
               </div>
               {emailError && (
-                <p className="mt-1 text-xs text-red-600 flex items-center">
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400 flex items-center">
                   <span className="mr-1">⚠️</span>
                   {emailError}
                 </p>
@@ -174,7 +174,7 @@ function Signup() {
 
             {/* Student ID */}
             <div>
-              <label htmlFor="studentId" className="block text-xs font-medium text-gray-700 mb-1">
+              <label htmlFor="studentId" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Student Number
               </label>
               <input
@@ -184,7 +184,7 @@ function Signup() {
                 required
                 value={formData.studentId}
                 onChange={handleInputChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-sm"
                 placeholder="1234567890"
               />
             </div>
@@ -192,12 +192,12 @@ function Signup() {
             {/* Password Fields */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="password" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="password" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-gray-400" />
+                    <Lock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   </div>
                   <input
                     id="password"
@@ -206,7 +206,7 @@ function Signup() {
                     required
                     value={formData.password}
                     onChange={handleInputChange}
-                    className="block w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                    className="block w-full pl-9 pr-9 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-sm"
                     placeholder="Password"
                   />
                   <button
@@ -215,20 +215,20 @@ function Signup() {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
                     {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                     )}
                   </button>
                 </div>
               </div>
               <div>
-                <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700 mb-1">
+                <label htmlFor="confirmPassword" className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Confirm Password
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-4 w-4 text-gray-400" />
+                    <Lock className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                   </div>
                   <input
                     id="confirmPassword"
@@ -237,7 +237,7 @@ function Signup() {
                     required
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="block w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm"
+                    className="block w-full pl-9 pr-9 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200 text-sm"
                     placeholder="Confirm"
                   />
                   <button
@@ -246,9 +246,9 @@ function Signup() {
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <EyeOff className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                     ) : (
-                      <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      <Eye className="h-4 w-4 text-gray-400 dark:text-gray-500 hover:text-gray-600" />
                     )}
                   </button>
                 </div>
@@ -263,15 +263,15 @@ function Signup() {
                 type="checkbox"
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
+                className="h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded mt-0.5"
               />
-              <label htmlFor="agree" className="text-xs text-gray-600 leading-tight">
+              <label htmlFor="agree" className="text-xs text-gray-600 dark:text-gray-300 leading-tight">
                 I agree to the{' '}
-                <Link to="/terms-of-service" className="text-blue-600 hover:text-blue-500 font-medium">
+                <Link to="/terms-of-service" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy-policy" className="text-blue-600 hover:text-blue-500 font-medium">
+                <Link to="/privacy-policy" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium">
                   Privacy Policy
                 </Link>
                 . I confirm I am a current UTM MSA student.
@@ -282,7 +282,7 @@ function Signup() {
             <button
               type="submit"
               disabled={isLoading || !agreed}
-              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-2.5 px-4 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
+              className="group w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white py-2.5 px-4 rounded-lg font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
             >
               {isLoading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -298,9 +298,9 @@ function Signup() {
 
           {/* Login Link */}
           <div className="mt-4 text-center">
-            <p className="text-gray-600 text-xs">
+            <p className="text-gray-600 dark:text-gray-300 text-xs">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+              <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-500 font-medium">
                 Sign in
               </Link>
             </p>
@@ -309,7 +309,7 @@ function Signup() {
 
         {/* MSA Info */}
         <div className="mt-4 text-center">
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
             Exclusive platform for UTM MSA students
           </p>
         </div>

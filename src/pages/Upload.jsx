@@ -259,16 +259,16 @@ function Upload() {
       <div className="max-w-2xl mx-auto">
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-green-50 opacity-60 rounded-3xl"></div>
-          <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 p-12 text-center">
+          <div className="relative bg-white dark:bg-gray-900/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-lg opacity-20"></div>
-              <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto shadow-xl">
+              <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto shadow-xl dark:shadow-2xl dark:shadow-black/20">
                 <Check className="h-12 w-12 text-white" />
               </div>
             </div>
             
             <div className="mb-6">
-              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg mb-4">
+              <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-green-600 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 mb-4">
                 <Check className="h-4 w-4" />
                 <span>Upload Complete</span>
               </div>
@@ -278,14 +278,14 @@ function Upload() {
               Upload Successful!
             </h2>
             
-            <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg leading-relaxed">
               Thank you for sharing your memories! We'll review your submission
               and may feature it on our social media.
             </p>
             
             <button
               onClick={() => setUploadComplete(false)}
-              className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-4 rounded-xl hover:scale-105 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl inline-flex items-center space-x-2"
+              className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-4 rounded-xl hover:scale-105 transition-all duration-300 font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl inline-flex items-center space-x-2"
             >
               <UploadIcon className="h-5 w-5" />
               <span>Upload More</span>
@@ -309,7 +309,7 @@ function Upload() {
         </div>
         <div className="relative text-center py-10">
           <div className="mb-4">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20">
               <UploadIcon className="h-4 w-4" />
               <span>Share Your Memories</span>
             </div>
@@ -324,7 +324,7 @@ function Upload() {
                 className="h-14 md:h-16 lg:h-18 w-auto mx-auto opacity-80"
               />
             </div>
-            <p className="text-sm text-gray-600 font-medium italic">
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium italic">
               In the name of Allah, the Most Gracious, the Most Merciful
             </p>
           </div>
@@ -333,9 +333,9 @@ function Upload() {
             Upload Your Media
           </h1>
           
-          <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto leading-relaxed">
             Share your UTM MSA event photos and videos with the community. 
-            <span className="block mt-1 text-sm text-gray-500">
+            <span className="block mt-1 text-sm text-gray-500 dark:text-gray-400">
               Choose whether to be credited or remain anonymous.
             </span>
           </p>
@@ -343,13 +343,13 @@ function Upload() {
           {/* Visual Elements */}
           <div className="flex justify-center items-center space-x-6 mt-6 opacity-60">
             <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
-              <Image className="h-5 w-5 text-blue-600" />
+              <Image className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="bg-gradient-to-br from-green-100 to-blue-100 p-2 rounded-xl">
-              <Video className="h-5 w-5 text-green-600" />
+              <Video className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
-              <Users className="h-5 w-5 text-blue-600" />
+              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
         </div>
@@ -358,23 +358,23 @@ function Upload() {
       <form onSubmit={handleSubmit} className="space-y-6 fade-in-up scale-in" ref={addRevealRef}>
         {/* Error Display */}
         {(errors.fetch || errors.upload || fileErrors.length > 0) && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-red-800 mb-2">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
                   {errors.fetch ? "Loading Error" : "Upload Error"}
                 </h3>
                 {errors.fetch && (
                   <div className="mb-3">
-                    <p className="text-sm text-red-700">{errors.fetch}</p>
+                    <p className="text-sm text-red-700 dark:text-red-300">{errors.fetch}</p>
                     <button
                       type="button"
                       onClick={() => {
                         setErrors(prev => ({ ...prev, fetch: null }));
                         fetchEventsFromAPI();
                       }}
-                      className="mt-2 inline-flex items-center space-x-1 text-sm text-red-600 hover:text-red-800 font-medium"
+                      className="mt-2 inline-flex items-center space-x-1 text-sm text-red-600 dark:text-red-400 hover:text-red-800 font-medium"
                     >
                       <RefreshCw className="h-4 w-4" />
                       <span>Retry</span>
@@ -382,12 +382,12 @@ function Upload() {
                   </div>
                 )}
                 {errors.upload && (
-                  <p className="text-sm text-red-700 mb-2">{errors.upload}</p>
+                  <p className="text-sm text-red-700 dark:text-red-300 mb-2">{errors.upload}</p>
                 )}
                 {fileErrors.length > 0 && (
                   <div>
-                    <p className="text-sm text-red-700 mb-1">File errors:</p>
-                    <ul className="text-sm text-red-600 list-disc list-inside space-y-1">
+                    <p className="text-sm text-red-700 dark:text-red-300 mb-1">File errors:</p>
+                    <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside space-y-1">
                       {fileErrors.map((error, index) => (
                         <li key={index}>{error}</li>
                       ))}
@@ -397,7 +397,7 @@ function Upload() {
               </div>
             </div>
             {validationErrors.event && (
-              <p className="text-xs text-red-600 mt-1 flex items-center">
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 {validationErrors.event}
               </p>
@@ -406,31 +406,31 @@ function Upload() {
         )}
 
         {/* File Upload Area */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <UploadIcon className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Select Files
             </h2>
           </div>
 
           {/* Upload Limits Display */}
           {uploadLimits && (
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-3 mb-4 border border-blue-200">
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-3 mb-4 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-2">
-                  <span className="font-medium text-gray-700">Your upload limits:</span>
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                  <span className="font-medium text-gray-700 dark:text-gray-200">Your upload limits:</span>
+                  <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
                     {uploadLimits.role}
                   </span>
                 </div>
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 dark:text-white">
                   Max {uploadLimits.maxSizeMB}MB per file
                 </span>
               </div>
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
                 Supported: {uploadLimits.allowedContentTypes.join(', ').replace(/\w+\//g, '')}
                 {uploadLimits.videoMaxDurationSeconds && (
                   <span> • Videos up to {Math.floor(uploadLimits.videoMaxDurationSeconds / 60)}min</span>
@@ -443,7 +443,7 @@ function Upload() {
             className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
               isDragging
                 ? "border-blue-500 bg-gradient-to-br from-blue-50 to-green-50 scale-105"
-                : "border-gray-300 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50"
+                : "border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -452,25 +452,25 @@ function Upload() {
             {isProcessingFiles ? (
               <>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-600 mb-2">Processing files...</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-gray-600 dark:text-gray-300 mb-2">Processing files...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Converting HEIC images for preview
                 </p>
               </>
             ) : (
               <>
-                <UploadIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 mb-2">
+                <UploadIcon className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-300 mb-2">
                   Drag and drop your files here, or{" "}
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-blue-600 hover:text-blue-700 font-medium underline"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 font-medium underline"
                   >
                     browse
                   </button>
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   Supports: Images (JPG, PNG, HEIC) and Videos (MP4, MOV, AVI)
                   up to 100MB
                 </p>
@@ -491,7 +491,7 @@ function Upload() {
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 hover:border-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl">
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl">
                     {file.type === "image" ? (
                       file.preview ? (
                         <img
@@ -527,10 +527,10 @@ function Upload() {
                       <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl mb-3">
                         <Image className="h-6 w-6 text-white" />
                       </div>
-                      <p className="text-xs text-gray-700 font-semibold truncate w-full">
+                      <p className="text-xs text-gray-700 dark:text-gray-200 font-semibold truncate w-full">
                         {file.file.name}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {(file.file.size / 1024 / 1024).toFixed(1)} MB
                       </p>
                     </div>
@@ -538,11 +538,11 @@ function Upload() {
                   <button
                     type="button"
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-110"
+                    className="absolute -top-2 -right-2 bg-red-50 dark:bg-red-900/300 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl hover:scale-110"
                   >
                     <X className="h-4 w-4" />
                   </button>
-                  <p className="text-xs text-gray-700 mt-2 truncate font-medium text-center">
+                  <p className="text-xs text-gray-700 dark:text-gray-200 mt-2 truncate font-medium text-center">
                     {file.file.name}
                   </p>
                 </div>
@@ -552,12 +552,12 @@ function Upload() {
         </div>
 
         {/* User Details Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Users className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               User Details
             </h2>
           </div>
@@ -571,13 +571,13 @@ function Upload() {
                   name="isAnon"
                   checked={formData.isAnon}
                   onChange={handleInputChange}
-                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="mt-1 h-4 w-4 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                     Submit anonymously
                   </span>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Check this if you don't want your name to appear if your
                     content is featured in the gallery
                   </p>
@@ -590,14 +590,14 @@ function Upload() {
               <label
                 htmlFor="instagram"
                 className={`block text-sm font-medium mb-2 transition-colors ${
-                  formData.isAnon ? 'text-gray-400' : 'text-gray-700'
+                  formData.isAnon ? 'text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-200'
                 }`}
               >
                 Instagram Handle
               </label>
               <div className="relative">
                 <span className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors ${
-                  formData.isAnon ? 'text-gray-300' : 'text-gray-500'
+                  formData.isAnon ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   @
                 </span>
@@ -610,22 +610,22 @@ function Upload() {
                   disabled={formData.isAnon}
                   className={`w-full pl-8 pr-3 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                     formData.isAnon
-                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700 cursor-not-allowed'
                       : validationErrors.instagram
-                      ? 'border-red-300 focus:ring-red-500 bg-red-50'
-                      : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
+                      ? 'border-red-300 dark:border-red-600 focus:ring-red-500 bg-red-50 dark:bg-red-900/30'
+                      : 'border-gray-200 dark:border-gray-700 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300'
                   }`}
                   placeholder={formData.isAnon ? 'Hidden for anonymous submissions' : 'your_instagram_handle'}
                 />
               </div>
               {validationErrors.instagram && !formData.isAnon && (
-                <p className="text-xs text-red-600 mt-1 flex items-center">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center">
                   <AlertCircle className="h-3 w-3 mr-1" />
                   {validationErrors.instagram}
                 </p>
               )}
               <p className={`text-xs mt-1 transition-colors ${
-                formData.isAnon ? 'text-gray-400' : 'text-gray-500'
+                formData.isAnon ? 'text-gray-400 dark:text-gray-500' : 'text-gray-500 dark:text-gray-400'
               }`}>
                 {formData.isAnon 
                   ? 'Instagram handle is disabled for anonymous submissions'
@@ -637,12 +637,12 @@ function Upload() {
         </div>
 
         {/* Event Details Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Calendar className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Event Details
             </h2>
           </div>
@@ -651,7 +651,7 @@ function Upload() {
           <div>
             <label
               htmlFor="event"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
             >
               Event Name *
             </label>
@@ -659,50 +659,50 @@ function Upload() {
               <button
                 type="button"
                 onClick={() => setEventDropdownOpen(!eventDropdownOpen)}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white text-left flex items-center justify-between transition-all duration-200 ${
+                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent bg-white dark:bg-gray-900 text-left flex items-center justify-between transition-all duration-200 ${
                   validationErrors.event
-                    ? 'border-red-300 focus:ring-red-500 bg-red-50'
-                    : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300'
+                    ? 'border-red-300 dark:border-red-600 focus:ring-red-500 bg-red-50 dark:bg-red-900/30'
+                    : 'border-gray-200 dark:border-gray-700 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300'
                 }`}
                 disabled={loadingEvents}
               >
                 <span
-                  className={formData.event ? "text-gray-900" : "text-gray-500"}
+                  className={formData.event ? "text-gray-900 dark:text-white" : "text-gray-500 dark:text-gray-400"}
                 >
                   {loadingEvents
                     ? "Loading events..."
                     : formData.event || "Select an event"}
                 </span>
                 <ChevronDown
-                  className={`h-5 w-5 text-gray-400 transition-transform ${
+                  className={`h-5 w-5 text-gray-400 dark:text-gray-500 transition-transform ${
                     eventDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
               </button>
 
               {eventDropdownOpen && !loadingEvents && (
-                <div className="absolute z-10 w-full mt-2 bg-white border-2 border-gray-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-900 border-2 border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl max-h-60 overflow-y-auto">
                   {events.length > 0 ? (
                     events.map((event) => (
                       <button
                         key={event.id}
                         type="button"
                         onClick={() => handleEventSelect(event.name, event.id)}
-                        className="w-full px-4 py-3 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 focus:bg-gradient-to-r focus:from-blue-50 focus:to-green-50 focus:outline-none border-b border-gray-100 last:border-b-0 transition-all duration-200"
+                        className="w-full px-4 py-3 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 focus:bg-gradient-to-r focus:from-blue-50 focus:to-green-50 focus:outline-none border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-all duration-200"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-900">{event.name}</span>
+                          <span className="text-gray-900 dark:text-white">{event.name}</span>
                           <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">
                               {formatDate(event.date)}
                             </span>
                             <span
                               className={`px-2 py-1 text-xs rounded-full ${
                                 event.status === "ONGOING"
-                                  ? "bg-green-100 text-green-800"
+                                  ? "bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200"
                                   : event.status === "PAST"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-blue-100 text-blue-800"
+                                  ? "bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200"
+                                  : "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200"
                               }`}
                             >
                               {event.status}
@@ -712,7 +712,7 @@ function Upload() {
                       </button>
                     ))
                   ) : (
-                    <div className="px-3 py-2 text-gray-500 text-center">
+                    <div className="px-3 py-2 text-gray-500 dark:text-gray-400 text-center">
                       No events available
                     </div>
                   )}
@@ -720,7 +720,7 @@ function Upload() {
               )}
             </div>
             {validationErrors.event && (
-              <p className="text-xs text-red-600 mt-1 flex items-center">
+              <p className="text-xs text-red-600 dark:text-red-400 mt-1 flex items-center">
                 <AlertCircle className="h-3 w-3 mr-1" />
                 {validationErrors.event}
               </p>
@@ -731,7 +731,7 @@ function Upload() {
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2"
             >
               Description (Optional)
             </label>
@@ -741,7 +741,7 @@ function Upload() {
               value={formData.description}
               onChange={handleInputChange}
               rows={4}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 transition-all duration-200"
+              className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 hover:border-gray-300 transition-all duration-200"
               placeholder="Tell us about these photos/videos..."
             />
           </div>
@@ -749,19 +749,19 @@ function Upload() {
         </div>
 
         {/* Terms and Consent Section */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Check className="h-5 w-5 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
               Terms & Consent
             </h2>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 p-4 mb-4">
-            <h3 className="text-base font-semibold text-gray-800 mb-2">Media Usage Agreement</h3>
-            <div className="text-sm text-gray-700 space-y-2">
+          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 dark:border-blue-700 p-4 mb-4">
+            <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Media Usage Agreement</h3>
+            <div className="text-sm text-gray-700 dark:text-gray-200 space-y-2">
               <p>By uploading your media, you agree that:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>UTM MSA may use your submitted media for promotional purposes on social media platforms</li>
@@ -773,29 +773,29 @@ function Upload() {
           </div>
 
           <div className="space-y-4">
-            <label className="flex items-start space-x-3 p-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 transition-all duration-200 cursor-pointer">
+            <label className="flex items-start space-x-3 p-4 rounded-xl border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 transition-all duration-200 cursor-pointer">
               <input
                 type="checkbox"
                 name="consent"
                 checked={formData.consent}
                 onChange={handleInputChange}
-                className={`mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-all duration-200 ${
-                  validationErrors.consent ? 'ring-2 ring-red-500 border-red-300' : ''
+                className={`mt-1 h-5 w-5 text-blue-600 dark:text-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded transition-all duration-200 ${
+                  validationErrors.consent ? 'ring-2 ring-red-500 border-red-300 dark:border-red-600' : ''
                 }`}
               />
               <div className="flex-1">
-                <span className="text-base font-medium text-gray-800">
+                <span className="text-base font-medium text-gray-800 dark:text-gray-100">
                   I consent to the Media Usage Agreement *
                 </span>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                   Required - This confirms you understand and agree to how your media may be used
                 </p>
               </div>
             </label>
             
             {validationErrors.consent && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-700 flex items-center">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                <p className="text-sm text-red-700 dark:text-red-300 flex items-center">
                   <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                   {validationErrors.consent}
                 </p>
@@ -805,7 +805,7 @@ function Upload() {
         </div>
 
         {/* Intention Renewal Reminder */}
-        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 p-6 text-center shadow-xl">
+        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 dark:border-green-700 p-6 text-center shadow-xl dark:shadow-2xl dark:shadow-black/20">
           <div className="mb-6">
             <div className="bg-gradient-to-r from-green-600 to-blue-600 p-3 rounded-full w-fit mx-auto mb-4">
               <span className="text-2xl">🤲</span>
@@ -813,23 +813,23 @@ function Upload() {
             <h3 className="text-2xl font-bold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text mb-3">
               Intention Reminder
             </h3>
-            <p className="text-gray-700 mb-4">
+            <p className="text-gray-700 dark:text-gray-200 mb-4">
               Before uploading, take a moment to renew your niyyah:
             </p>
-            <blockquote className="text-2xl md:text-3xl text-gray-800 font-arabic leading-relaxed mb-2 text-center">
+            <blockquote className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-arabic leading-relaxed mb-2 text-center">
               إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ
               مَا نَوَى{" "}
             </blockquote>
-            <p className="text-base text-gray-700 italic mb-2 text-center">
+            <p className="text-base text-gray-700 dark:text-gray-200 italic mb-2 text-center">
               "The reward of deeds depends upon the intentions and every person
               will get the reward according to what he has intended"{" "}
             </p>
-            <p className="text-sm text-gray-600 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
               <a
                 href="https://sunnah.com/bukhari:1"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 underline transition-colors"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 underline transition-colors"
               >
                 Sahih al-Bukhari 1
               </a>
@@ -842,10 +842,10 @@ function Upload() {
           <button
             type="submit"
             disabled={!isFormValid || isUploading}
-            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl ${
+            className={`inline-flex items-center space-x-2 px-8 py-4 rounded-xl font-semibold transition-all duration-200 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl ${
               isFormValid && !isUploading
                 ? "bg-gradient-to-r from-blue-600 to-green-600 text-white hover:scale-105"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-gray-300 text-gray-500 dark:text-gray-400 cursor-not-allowed"
             }`}
           >
             {isUploading ? (
@@ -862,7 +862,7 @@ function Upload() {
           </button>
 
           {!isFormValid && !isUploading && (
-            <p className="mt-2 text-sm text-gray-500 flex items-center justify-center space-x-1">
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center space-x-1">
               <AlertCircle className="h-4 w-4" />
               <span>
                 Please fill in all required fields and upload at least one file
@@ -873,12 +873,12 @@ function Upload() {
 
         {/* Upload Progress */}
         {isUploading && (
-          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
                 <UploadIcon className="h-5 w-5 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                 Upload Progress
               </h2>
             </div>
@@ -886,38 +886,38 @@ function Upload() {
             {/* Overall Progress */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                <span className="text-sm font-medium text-gray-700">{uploadProgress}%</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Overall Progress</span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{uploadProgress}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                 <div 
                   className="bg-gradient-to-r from-blue-600 to-green-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
               {currentStage && (
-                <p className="text-sm text-gray-600 mt-2">{currentStage}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{currentStage}</p>
               )}
             </div>
 
             {/* Individual File Progress */}
             {Object.keys(fileProgresses).length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">File Details</h3>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">File Details</h3>
                 {Object.entries(fileProgresses).map(([fileName, progressData]) => (
-                  <div key={fileName} className="bg-gray-50 rounded-lg p-3">
+                  <div key={fileName} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700 truncate">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
                         {progressData.fileIndex}. {fileName}
                       </span>
                       {progressData.progress && (
-                        <span className="text-sm font-medium text-gray-700">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           {progressData.progress}%
                         </span>
                       )}
                     </div>
                     {progressData.progress && (
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
                         <div 
                           className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-300"
                           style={{ width: `${progressData.progress}%` }}
@@ -925,7 +925,7 @@ function Upload() {
                       </div>
                     )}
                     {progressData.stage && (
-                      <p className="text-xs text-gray-500 mt-1">{progressData.stage}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{progressData.stage}</p>
                     )}
                   </div>
                 ))}

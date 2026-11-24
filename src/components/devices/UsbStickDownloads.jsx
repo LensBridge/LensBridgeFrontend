@@ -57,27 +57,27 @@ function UsbStickDownloads({ device }) {
   const spinnerOr = (what, Icon) => (busy === what ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />);
 
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <section className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-6 shadow-sm">
       <div className="mb-5 flex items-center gap-2">
-        <Usb className="h-5 w-5 text-indigo-600" />
-        <h2 className="text-lg font-semibold text-gray-900">USB stick</h2>
+        <Usb className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">USB stick</h2>
       </div>
-      <p className="mb-4 text-sm text-gray-500">
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
         The <strong>USB kit</strong> is a zip with one <code className="font-mono">MusallahBoard</code> folder: this board&apos;s
         content for the coming days and the latest board app and agent{canSetUp ? ', and its setup file if you tick it' : ''}.
         Content you edit later reaches an offline board only with a new stick.
       </p>
 
-      {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <div className="mb-4 rounded-lg border border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-4 py-3 text-sm text-red-700 dark:text-red-300">{error}</div>}
       {notice && (
-        <div className="mb-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="mb-4 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           {notice}
         </div>
       )}
 
       <div className="flex flex-wrap items-end gap-4">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
           Days of content
           <input
             type="number"
@@ -87,11 +87,11 @@ function UsbStickDownloads({ device }) {
             disabled={Boolean(busy)}
             onChange={(event) => setDays(event.target.value)}
             onBlur={() => setDays(clampDays(days))}
-            className="mt-2 block w-24 rounded-lg border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 block w-24 rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
           />
         </label>
         {canSetUp && (
-          <div className="space-y-2 text-sm text-gray-700">
+          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={includeSetup} onChange={(e) => setIncludeSetup(e.target.checked)} />
               Include the setup file (a new board, or a replaced SD card)
@@ -110,25 +110,25 @@ function UsbStickDownloads({ device }) {
           {busy === 'kit' ? 'Building kit...' : 'Download USB kit'}
         </button>
         {canSetUp && (
-          <button type="button" onClick={downloadSetup} disabled={Boolean(busy)} className={`${button} border border-gray-300 text-gray-700 hover:bg-gray-50`}>
+          <button type="button" onClick={downloadSetup} disabled={Boolean(busy)} className={`${button} border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800`}>
             {spinnerOr('setup', FileKey)}
             Download setup file only
           </button>
         )}
-        <button type="button" onClick={downloadContent} disabled={Boolean(busy)} className={`${button} border border-gray-300 text-gray-700 hover:bg-gray-50`}>
+        <button type="button" onClick={downloadContent} disabled={Boolean(busy)} className={`${button} border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800`}>
           {spinnerOr('content', Download)}
           Download content only
         </button>
       </div>
       {online && canSetUp && (
-        <p className="mt-3 text-xs text-gray-500">
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
           Each online setup file replaces the previous one: only the newest can connect the board.
         </p>
       )}
 
-      <div className="mt-6 flex flex-wrap items-start justify-between gap-3 rounded-lg bg-gray-50 p-4">
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-3 rounded-lg bg-gray-50 dark:bg-gray-800 p-4">
         <VolunteerCard steps={volunteerSteps(device.displayName)} />
-        <button type="button" onClick={() => printVolunteerCard(device.displayName)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+        <button type="button" onClick={() => printVolunteerCard(device.displayName)} className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
           <Printer className="h-4 w-4" />
           Print
         </button>

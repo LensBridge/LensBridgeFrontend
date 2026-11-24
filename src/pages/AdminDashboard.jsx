@@ -618,12 +618,12 @@ function AdminDashboard() {
   const StatusBadge = memo(({ approved, featured }) => (
     <div className="flex gap-2">
       <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-        approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+        approved ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200'
       }`}>
         {approved ? 'Approved' : 'Pending'}
       </span>
       {featured && (
-        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+        <span className="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200">
           Featured
         </span>
       )}
@@ -632,11 +632,11 @@ function AdminDashboard() {
 
   // Memoized UploadRow component - CRITICAL for performance
   const UploadRow = memo(({ upload }) => (
-    <tr key={upload.uuid} className="hover:bg-gray-50">
+    <tr key={upload.uuid} className="hover:bg-gray-50 dark:hover:bg-gray-800">
       <td className="px-4 py-4 whitespace-nowrap">
         <div className="flex items-center">
           <div 
-            className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group"
+            className="h-12 w-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600 cursor-pointer hover:opacity-80 transition-opacity relative group"
             onClick={() => openMediaViewer(upload)}
           >
             {upload.contentType === 'IMAGE' ? (
@@ -655,7 +655,7 @@ function AdminDashboard() {
               </div>
             ) : (
               <div className="h-full w-full flex items-center justify-center">
-                <Image className="h-6 w-6 text-gray-400" />
+                <Image className="h-6 w-6 text-gray-400 dark:text-gray-500" />
               </div>
             )}
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -666,19 +666,19 @@ function AdminDashboard() {
       </td>
       <td className="px-4 py-4">
         <div className="space-y-1">
-          <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+          <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-xs">
             {upload.uploadDescription || 'No description'}
           </div>
-          <div className="text-xs text-gray-500 truncate">
+          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
             {upload.fileName}
           </div>
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-gray-400 dark:text-gray-500">
             {upload.contentType}
-            {upload.anon && <span className="text-blue-600 font-medium ml-2">• Anonymous</span>}
+            {upload.anon && <span className="text-blue-600 dark:text-blue-400 font-medium ml-2">• Anonymous</span>}
           </div>
           {upload.anon ? (
             <div className="text-xs">
-              <span className="text-gray-500 italic">Anonymous</span>
+              <span className="text-gray-500 dark:text-gray-400 italic">Anonymous</span>
               <div 
                 className="inline-block cursor-help group ml-1"
                 title="Hover to reveal uploader identity"
@@ -689,14 +689,14 @@ function AdminDashboard() {
               </div>
             </div>
           ) : (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-gray-600 dark:text-gray-300">
               {getDisplayName(upload)}
               {upload.instagramHandle && (
                 <a 
                   href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
                   title="View Instagram profile"
                 >
                   @{upload.instagramHandle.replace('@', '')}
@@ -708,16 +708,16 @@ function AdminDashboard() {
         </div>
       </td>
       <td className="px-4 py-4">
-        <div className="text-xs font-mono text-gray-600 break-all">
+        <div className="text-xs font-mono text-gray-600 dark:text-gray-300 break-all">
           {upload.uuid}
         </div>
       </td>
       <td className="px-4 py-4">
         <div className="space-y-1">
-          <div className="text-sm font-medium text-gray-900">
+          <div className="text-sm font-medium text-gray-900 dark:text-white">
             {upload.eventName || 'No Event'}
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             {formatDate(upload.createdDate)}
           </div>
         </div>
@@ -787,22 +787,22 @@ function AdminDashboard() {
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-60"></div>
         <div className="relative flex flex-col items-center justify-center text-center py-12 px-4">
           <div className="mb-4 flex justify-center">
-            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+            <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20">
               <Crown className="h-4 w-4" />
               <span>Admin Dashboard</span>
               {isRoot() && (
-                <div className="ml-2 bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                <div className="ml-2 bg-yellow-50 dark:bg-yellow-900/300 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
                   ROOT
                 </div>
               )}
             </div>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 max-w-4xl">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-2 max-w-4xl">
             <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               LensBridge Admin
             </span>
           </h1>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Welcome back, {user?.firstName || 'Admin'}! Manage your platform
             {isRoot() && (
               <span className="block text-sm text-yellow-600 font-medium mt-1">
@@ -832,32 +832,32 @@ function AdminDashboard() {
           </div>
           {/* Quick Actions */}
           <div className="mt-4 flex flex-wrap gap-2 justify-center">
-            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">Ctrl+R</kbd>
-            <span className="text-xs text-gray-500">Refresh</span>
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded border">Ctrl+R</kbd>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Refresh</span>
             <span className="text-gray-300 mx-2">•</span>
-            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 text-gray-600 rounded border">
+            <kbd className="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded border">
               Ctrl+1-{Math.max(visibleTabs.length, 1)}
             </kbd>
-            <span className="text-xs text-gray-500">Switch tabs</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Switch tabs</span>
           </div>
         </div>
       </div>
 
       {/* Enhanced Messages */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center space-x-2">
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-300 flex items-center space-x-2">
           <AlertTriangle className="h-5 w-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700 flex items-center space-x-2">
+        <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg text-green-700 dark:text-green-300 flex items-center space-x-2">
           <CheckCircle className="h-5 w-5 flex-shrink-0" />
           <span>{success}</span>
         </div>
       )}
       {loading && (
-        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 flex items-center space-x-2">
+        <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-700 dark:text-blue-300 flex items-center space-x-2">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
           <span>Processing your request...</span>
         </div>
@@ -868,43 +868,43 @@ function AdminDashboard() {
           platform rather than as a section they cannot see. */}
       {canAny([...TAB_PERMISSIONS.uploads, ...TAB_PERMISSIONS.events]) && (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 text-center">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
             <Image className="h-6 w-6" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.totalUploads}</div>
-          <div className="text-sm text-gray-600">Total Uploads</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalUploads}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Total Uploads</div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 text-center">
           <div className="bg-gradient-to-r from-green-600 to-emerald-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
             <CheckCircle className="h-6 w-6" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.approvedUploads}</div>
-          <div className="text-sm text-gray-600">Approved</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.approvedUploads}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Approved</div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 text-center">
           <div className="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
             <Star className="h-6 w-6" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.featuredUploads}</div>
-          <div className="text-sm text-gray-600">Featured</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.featuredUploads}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Featured</div>
         </div>
         
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 text-center">
+        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 text-center">
           <div className="bg-gradient-to-r from-orange-600 to-red-500 text-white rounded-full p-3 w-fit mx-auto mb-3">
             <Calendar className="h-6 w-6" />
           </div>
-          <div className="text-2xl font-bold text-gray-900">{stats.totalEvents}</div>
-          <div className="text-sm text-gray-600">Events</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalEvents}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Events</div>
         </div>
       </div>
       )}
 
       {/* Navigation Tabs */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
-        <div className="border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 mb-8">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="flex space-x-8 px-6 overflow-x-auto">
             {visibleTabs.map(({ id, label, icon: Icon }) => (
               <button
@@ -912,8 +912,8 @@ function AdminDashboard() {
                 onClick={() => setActiveTab(id)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 whitespace-nowrap ${
                   activeTab === id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <Icon className="h-4 w-4" />
@@ -923,21 +923,21 @@ function AdminDashboard() {
             {canAny(BOARD_SECTION_PERMISSIONS) && (
               <Link
                 to="/admin/board"
-                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
+                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
               >
                 <Monitor className="h-4 w-4" />
                 <span>Board Management</span>
-                <ExternalLink className="h-3 w-3 text-gray-400" />
+                <ExternalLink className="h-3 w-3 text-gray-400 dark:text-gray-500" />
               </Link>
             )}
             {can(PERMISSIONS.BOARD_DEVICE_READ) && (
               <Link
                 to="/admin/devices"
-                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
+                className="py-4 px-2 border-b-2 font-medium text-sm flex items-center space-x-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap"
               >
                 <Monitor className="h-4 w-4" />
                 <span>Board Devices</span>
-                <ExternalLink className="h-3 w-3 text-gray-400" />
+                <ExternalLink className="h-3 w-3 text-gray-400 dark:text-gray-500" />
               </Link>
             )}
           </nav>
@@ -977,13 +977,13 @@ function AdminDashboard() {
                   Your browser does not support the video tag.
                 </video>
               ) : (
-                <div className="bg-white p-8 rounded-lg">
+                <div className="bg-white dark:bg-gray-900 p-8 rounded-lg">
                   <div className="text-center">
-                    <Image className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-lg font-medium text-gray-900 mb-2">
+                    <Image className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                    <p className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                       {selectedMedia.fileName}
                     </p>
-                    <p className="text-gray-600 mb-4">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
                       Preview not available for this file type
                     </p>
                     <button
@@ -1006,7 +1006,7 @@ function AdminDashboard() {
                   <p className="text-sm text-gray-300 mb-2">
                     {selectedMedia.uploadDescription || 'No description'}
                   </p>
-                  <div className="flex flex-wrap gap-4 text-xs text-gray-400">
+                  <div className="flex flex-wrap gap-4 text-xs text-gray-400 dark:text-gray-500">
                     <span>Type: {selectedMedia.contentType}</span>
                     <span>Uploaded: {formatDate(selectedMedia.createdDate)}</span>
                     <span>Event: {selectedMedia.eventName || 'No Event'}</span>
@@ -1105,8 +1105,8 @@ function AdminDashboard() {
         {/* Enhanced Header with Mini Stats */}
         <div className="flex justify-between items-start">
           <div>
-            <h3 className="text-xl font-bold text-gray-900">Upload Management</h3>
-            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">Upload Management</h3>
+            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-600 dark:text-gray-300">
               <span>📊 {approvalRate}% approval rate</span>
               {pendingCount > 0 && (
                 <span className="text-orange-600 font-medium">
@@ -1126,7 +1126,7 @@ function AdminDashboard() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="border-b border-gray-200">
+        <div className="border-b border-gray-200 dark:border-gray-700">
           <nav className="flex space-x-8">
             {[
               { id: 'all', label: 'All Uploads', count: stats.totalUploads },
@@ -1143,15 +1143,15 @@ function AdminDashboard() {
                 }}
                 className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                   uploadFilter === id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
                 <span>{label}</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                   uploadFilter === id 
-                    ? 'bg-blue-100 text-blue-800' 
-                    : 'bg-gray-100 text-gray-600'
+                    ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200' 
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
                 }`}>
                   {count || 0}
                 </span>
@@ -1164,30 +1164,30 @@ function AdminDashboard() {
         <div className="hidden lg:block">
           {/* Desktop Table View */}
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-20">
                     Media
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Details & Author
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-40">
                     Upload UUID
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-32">
                     Event & Date
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-28">
                     Status
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-40">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                 {uploads.content.map((upload) => (
                   <UploadRow key={upload.uuid} upload={upload} />
                 ))}
@@ -1199,11 +1199,11 @@ function AdminDashboard() {
         {/* Mobile Card View */}
         <div className="lg:hidden space-y-4">
           {uploads.content.map((upload) => (
-            <div key={upload.uuid} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+            <div key={upload.uuid} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
               <div className="flex space-x-3">
                 {/* Media Thumbnail */}
                 <div 
-                  className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 cursor-pointer hover:opacity-80 transition-opacity relative group flex-shrink-0"
+                  className="h-16 w-16 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600 cursor-pointer hover:opacity-80 transition-opacity relative group flex-shrink-0"
                   onClick={() => openMediaViewer(upload)}
                 >
                   {upload.contentType === 'IMAGE' ? (
@@ -1221,7 +1221,7 @@ function AdminDashboard() {
                     </div>
                   ) : (
                     <div className="h-full w-full flex items-center justify-center">
-                      <Image className="h-8 w-8 text-gray-400" />
+                      <Image className="h-8 w-8 text-gray-400 dark:text-gray-500" />
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1233,15 +1233,15 @@ function AdminDashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1 min-w-0 mr-2">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                      <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {upload.uploadDescription || 'No description'}
                       </h3>
-                      <p className="text-xs text-gray-500 truncate">{upload.fileName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{upload.fileName}</p>
                     </div>
                     <StatusBadge approved={upload.approved} featured={upload.featured} />
                   </div>
 
-                  <div className="space-y-1 text-xs text-gray-600">
+                  <div className="space-y-1 text-xs text-gray-600 dark:text-gray-300">
                     <div>Event: {upload.eventName || 'No Event'}</div>
                     <div>Date: {formatDate(upload.createdDate)}</div>
                     <div>Type: {upload.contentType}</div>
@@ -1249,7 +1249,7 @@ function AdminDashboard() {
                     {/* Author Info */}
                     {upload.anon ? (
                       <div>
-                        Author: <span className="text-gray-500 italic">Anonymous</span>
+                        Author: <span className="text-gray-500 dark:text-gray-400 italic">Anonymous</span>
                         <span 
                           className="ml-1 bg-black text-black select-none hover:bg-transparent hover:text-gray-600 transition-all duration-200 px-1 rounded cursor-help"
                           title="Hover to reveal uploader identity"
@@ -1265,7 +1265,7 @@ function AdminDashboard() {
                             href={`https://instagram.com/${upload.instagramHandle.replace('@', '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 ml-1 inline-flex items-center gap-1 transition-colors"
                             title="View Instagram profile"
                           >
                             @{upload.instagramHandle.replace('@', '')}
@@ -1332,7 +1332,7 @@ function AdminDashboard() {
         {/* Pagination */}
         {uploads.totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 dark:text-gray-200">
               Showing {uploadPage * uploadSize + 1} to {Math.min((uploadPage + 1) * uploadSize, uploads.totalElements)} of {uploads.totalElements} results
             </div>
             <div className="flex space-x-2">
@@ -1343,11 +1343,11 @@ function AdminDashboard() {
                   fetchUploads(newPage, uploadFilter);
                 }}
                 disabled={uploadPage === 0}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="px-3 py-2 text-sm font-medium text-gray-700">
+              <span className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200">
                 Page {uploadPage + 1} of {uploads.totalPages}
               </span>
               <button
@@ -1357,7 +1357,7 @@ function AdminDashboard() {
                   fetchUploads(newPage, uploadFilter);
                 }}
                 disabled={uploadPage >= uploads.totalPages - 1}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -1372,7 +1372,7 @@ function AdminDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-gray-900">Event Management</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Event Management</h3>
           <button
             onClick={() => setShowCreateEvent(!showCreateEvent)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -1384,33 +1384,33 @@ function AdminDashboard() {
 
         {/* Create Event Form */}
         {showCreateEvent && (
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h4 className="text-lg font-semibold text-gray-900 mb-4">Create New Event</h4>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Create New Event</h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <input
                 type="text"
                 placeholder="Event Name"
                 value={newEvent.eventName}
                 onChange={(e) => setNewEvent({ ...newEvent, eventName: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               <input
                 type="date"
                 value={newEvent.eventDate}
                 onChange={(e) => setNewEvent({ ...newEvent, eventDate: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               />
               <input
                 type="time"
                 value={newEvent.eventTime || ''}
                 onChange={(e) => setNewEvent({ ...newEvent, eventTime: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                 placeholder="Event Time"
               />
               <select
                 value={newEvent.status}
                 onChange={(e) => setNewEvent({ ...newEvent, status: e.target.value })}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
               >
                 <option value="ONGOING">Ongoing</option>
                 <option value="COMPLETED">Completed</option>
@@ -1438,19 +1438,19 @@ function AdminDashboard() {
         {/* Events List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {events.map((event) => (
-            <div key={event.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div key={event.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-lg font-semibold text-gray-900">{event.name}</h4>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{event.name}</h4>
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  event.status === 'UPCOMING' ? 'bg-yellow-100 text-yellow-800' :
-                  event.status === 'ONGOING' ? 'bg-green-100 text-green-800' :
-                  event.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
-                  'bg-red-100 text-red-800'
+                  event.status === 'UPCOMING' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200' :
+                  event.status === 'ONGOING' ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200' :
+                  event.status === 'COMPLETED' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200' :
+                  'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
                 }`}>
                   {event.status}
                 </span>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-300 text-sm">
                 Date: {formatDate(event.date)}
               </p>
             </div>
@@ -1464,12 +1464,12 @@ function renderAuditTab() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h3 className="text-xl font-bold text-gray-900">Audit Logs</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Audit Logs</h3>
         <div className="flex space-x-3">
           <select
             value={selectedAction}
             onChange={(e) => setSelectedAction(e.target.value)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           >
             <option value="">All Actions</option>
             {auditActions.map((action) => (
@@ -1487,24 +1487,24 @@ function renderAuditTab() {
       </div>
 
       {/* Date Range Filter */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Start Date</label>
             <input
               type="datetime-local"
               value={dateRange.start}
               onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">End Date</label>
             <input
               type="datetime-local"
               value={dateRange.end}
               onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
           </div>
           <div>
@@ -1520,46 +1520,46 @@ function renderAuditTab() {
 
       {/* Audit Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Timestamp
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Admin
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Action
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Entity
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Details
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
             {audits.content.map((audit) => (
-              <tr key={audit.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr key={audit.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {formatDate(audit.timestamp)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                   {audit.adminEmail}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <AuditActionBadge action={audit.action} />
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500">
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                   <div>{AUDIT_ENTITY_LABELS[audit.targetEntityType] ?? audit.targetEntityType}</div>
-                  <div className="font-mono text-xs text-gray-400 break-all">{audit.targetEntityId}</div>
+                  <div className="font-mono text-xs text-gray-400 dark:text-gray-500 break-all">{audit.targetEntityId}</div>
                 </td>
                 {/* Without this, "issued a command" and "screenshotted a prayer
                     space" are the same log line, as are granting
                     board:content:read and granting iam:role:grant. */}
-                <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
+                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-200 max-w-md">
                   {audit.details ? (
                     <span className="font-mono text-xs break-words">{audit.details}</span>
                   ) : (
@@ -1575,24 +1575,24 @@ function renderAuditTab() {
       {/* Audit Pagination */}
       {audits.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-700">
+          <div className="text-sm text-gray-700 dark:text-gray-200">
             Showing {auditPage * auditSize + 1} to {Math.min((auditPage + 1) * auditSize, audits.totalElements)} of {audits.totalElements} results
           </div>
           <div className="flex space-x-2">
             <button
               onClick={() => setAuditPage(Math.max(0, auditPage - 1))}
               disabled={auditPage === 0}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 disabled:opacity-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="px-3 py-2 text-sm font-medium text-gray-700">
+            <span className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200">
               Page {auditPage + 1} of {audits.totalPages}
             </span>
             <button
               onClick={() => setAuditPage(Math.min(audits.totalPages - 1, auditPage + 1))}
               disabled={auditPage >= audits.totalPages - 1}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 disabled:opacity-50"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -1607,8 +1607,8 @@ function renderAuditTab() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <Shield className="h-16 w-16 text-red-500 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 mb-2">Not permitted</h3>
-        <p className="text-gray-600 max-w-md">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Not permitted</h3>
+        <p className="text-gray-600 dark:text-gray-300 max-w-md">
           Your account no longer holds a permission this section requires. Sign in again, or ask
           whoever administers the console for the grant.
         </p>
@@ -1623,8 +1623,8 @@ function renderAuditTab() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Users className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold text-gray-900">User Management</h3>
+            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">User Management</h3>
           </div>
           <div className="flex items-center space-x-3">
             {can(PERMISSIONS.IAM_USER_WRITE) && (
@@ -1649,54 +1649,54 @@ function renderAuditTab() {
         {/* Search Bar */}
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+            <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
           </div>
           <input
             type="text"
             placeholder="Search users by name, email, or student number..."
             value={userSearchTerm}
             onChange={(e) => handleUserSearch(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
           />
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Student Number
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Roles
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Permissions
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
                 {users.content.map((row) => {
                   const directCount = row.directPermissions?.length ?? 0;
                   const effectiveCount = row.effectivePermissions?.length ?? 0;
                   const self = isSelf(row);
 
                   return (
-                    <tr key={row.id} className="hover:bg-gray-50">
+                    <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-10 w-10">
@@ -1707,22 +1707,22 @@ function renderAuditTab() {
                             </div>
                           </div>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">
                               {row.firstName} {row.lastName}
                               {self && (
-                                <span className="ml-2 text-xs font-normal text-gray-400">(you)</span>
+                                <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">(you)</span>
                               )}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
                               ID: {row.id}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                         {row.studentNumber}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                         {row.email}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -1733,16 +1733,16 @@ function renderAuditTab() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <div className="text-gray-900">{effectiveCount} effective</div>
+                        <div className="text-gray-900 dark:text-white">{effectiveCount} effective</div>
                         {directCount > 0 && (
-                          <div className="text-xs text-indigo-600">{directCount} direct</div>
+                          <div className="text-xs text-indigo-600 dark:text-indigo-400">{directCount} direct</div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           row.verified
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                            ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
+                            : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200'
                         }`}>
                           {row.verified ? (
                             <>
@@ -1769,7 +1769,7 @@ function renderAuditTab() {
                                   setSelectedUser(row);
                                   setUserAction('add-role');
                                 }}
-                                className="text-green-600 hover:text-green-900"
+                                className="text-green-600 dark:text-green-400 hover:text-green-900"
                                 title="Add Role"
                               >
                                 <Plus className="h-4 w-4" />
@@ -1791,7 +1791,7 @@ function renderAuditTab() {
                                   setSelectedUser(row);
                                   setUserAction('permissions');
                                 }}
-                                className="text-indigo-600 hover:text-indigo-900"
+                                className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900"
                                 title="Direct permissions"
                               >
                                 <KeyRound className="h-4 w-4" />
@@ -1801,7 +1801,7 @@ function renderAuditTab() {
                           {!row.verified && can(PERMISSIONS.IAM_USER_WRITE) && (
                             <button
                               onClick={() => verifyUser(row.id)}
-                              className="text-blue-600 hover:text-blue-900"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-900"
                               title="Verify User"
                             >
                               <CheckCircle className="h-4 w-4" />
@@ -1819,9 +1819,9 @@ function renderAuditTab() {
           {/* Empty State */}
           {users.content.length === 0 && !loading && (
             <div className="text-center py-12">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-              <p className="text-gray-500">
+              <Users className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No users found</h3>
+              <p className="text-gray-500 dark:text-gray-400">
                 {userSearchTerm ? 'Try adjusting your search criteria.' : 'No users are currently in the system.'}
               </p>
             </div>
@@ -1831,7 +1831,7 @@ function renderAuditTab() {
         {/* Pagination */}
         {users.totalPages > 1 && (
           <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 dark:text-gray-200">
               Showing {userPage * userSize + 1} to {Math.min((userPage + 1) * userSize, users.totalElements)} of {users.totalElements} users
             </div>
             <div className="flex items-center space-x-2">
@@ -1842,11 +1842,11 @@ function renderAuditTab() {
                   fetchUsers(newPage);
                 }}
                 disabled={userPage === 0 || loading}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="text-sm text-gray-700">
+              <span className="text-sm text-gray-700 dark:text-gray-200">
                 Page {userPage + 1} of {users.totalPages}
               </span>
               <button
@@ -1856,7 +1856,7 @@ function renderAuditTab() {
                   fetchUsers(newPage);
                 }}
                 disabled={userPage >= users.totalPages - 1 || loading}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>

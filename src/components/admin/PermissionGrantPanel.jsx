@@ -66,31 +66,31 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
 
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] flex flex-col shadow-xl">
-        <div className="flex items-start justify-between border-b border-gray-200 p-6">
+      <div className="bg-white dark:bg-gray-900 rounded-lg max-w-3xl w-full max-h-[90vh] flex flex-col shadow-xl dark:shadow-2xl dark:shadow-black/20">
+        <div className="flex items-start justify-between border-b border-gray-200 dark:border-gray-700 p-6">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Direct Permissions</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Direct Permissions</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {targetUser.firstName} {targetUser.lastName} · {targetUser.email}
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+          <button onClick={onClose} className="text-gray-400 dark:text-gray-500 hover:text-gray-600">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-px bg-gray-200 border-b border-gray-200">
-          <div className="bg-white px-6 py-3">
-            <div className="text-2xl font-bold text-gray-900">{effective.size}</div>
-            <div className="text-xs text-gray-500">Effective</div>
+        <div className="grid grid-cols-3 gap-px bg-gray-200 dark:bg-gray-600 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-white dark:bg-gray-900 px-6 py-3">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{effective.size}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Effective</div>
           </div>
-          <div className="bg-white px-6 py-3">
-            <div className="text-2xl font-bold text-gray-900">{roleDerivedCount}</div>
-            <div className="text-xs text-gray-500">From roles</div>
+          <div className="bg-white dark:bg-gray-900 px-6 py-3">
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{roleDerivedCount}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">From roles</div>
           </div>
-          <div className="bg-white px-6 py-3">
-            <div className="text-2xl font-bold text-indigo-600">{direct.size}</div>
-            <div className="text-xs text-gray-500">Direct grants</div>
+          <div className="bg-white dark:bg-gray-900 px-6 py-3">
+            <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{direct.size}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">Direct grants</div>
           </div>
         </div>
 
@@ -98,8 +98,8 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
           <div
             className={`m-6 mb-0 border rounded-lg p-3 flex items-start gap-2 text-sm ${
               result.ok
-                ? 'bg-green-50 border-green-200 text-green-800'
-                : 'bg-red-50 border-red-200 text-red-800'
+                ? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-200'
+                : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-200'
             }`}
           >
             {!result.ok && <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />}
@@ -109,17 +109,17 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {groups.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               You hold no permission this user is missing, and they hold none you can see.
             </p>
           )}
 
           {groups.map(([domain, entries]) => (
             <div key={domain}>
-              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                 {DOMAIN_LABELS[domain] ?? domain}
               </h4>
-              <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
                 {entries.map((permission) => {
                   const authority = permission.authority;
                   const isDirect = direct.has(authority);
@@ -133,25 +133,25 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
                     >
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <code className="font-mono text-sm text-gray-900">{authority}</code>
+                          <code className="font-mono text-sm text-gray-900 dark:text-white">{authority}</code>
                           {isDirect ? (
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
                               Direct grant
                             </span>
                           ) : isEffective ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                               From role
                             </span>
                           ) : null}
                           {SENSITIVE_PERMISSIONS.has(authority) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:text-amber-200">
                               <ShieldAlert className="h-3 w-3 mr-1" />
                               Sensitive
                             </span>
                           )}
                         </div>
                         {PERMISSION_DESCRIPTIONS[authority] && (
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {PERMISSION_DESCRIPTIONS[authority]}
                           </p>
                         )}
@@ -177,7 +177,7 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
                             Grant
                           </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                          <span className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                             <Lock className="h-3 w-3" />
                             {isDirect ? 'You do not hold this' : 'Not revocable here'}
                           </span>

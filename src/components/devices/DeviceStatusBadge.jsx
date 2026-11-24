@@ -2,10 +2,10 @@ import { Circle, Wifi, WifiOff, Ban, Usb } from 'lucide-react';
 
 function DeviceStatusBadge({ status }) {
   const styles = {
-    online: 'bg-green-100 text-green-700 border-green-200',
-    offline: 'bg-gray-100 text-gray-700 border-gray-200',
-    revoked: 'bg-red-100 text-red-700 border-red-200',
-    usb: 'bg-blue-50 text-blue-700 border-blue-200'
+    online: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700',
+    offline: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-700',
+    revoked: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700',
+    usb: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700'
   };
   const icons = {
     online: Wifi,
