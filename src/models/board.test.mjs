@@ -18,11 +18,14 @@ import { test } from 'node:test';
 
 import {
   AGENDA_DURATION_AUTO,
+  DEFAULT_DEVICE_CONFIG,
   SLIDE_DURATION_MAX_SECONDS,
   SLIDE_DURATION_MIN_SECONDS,
+  THEME_MODES,
   frameDurationLabel,
   quoteDurationError,
   slideDurationErrors,
+  themeModeOf,
   toDeviceConfigPatch,
   toQuoteDurationSeconds
 } from './board.js';
@@ -94,4 +97,20 @@ test('a null agenda duration is auto on the way in, not an error', () => {
   assert.deepEqual(slideDurationErrors({ agendaDurationSeconds: 3 }), {
     agendaDurationSeconds: 'Must be between 5 and 120 seconds.'
   });
+});
+
+test('the theme mode is sent to the config endpoint', () => {
+  assert.equal(toDeviceConfigPatch({ themeMode: 'DARK' }).themeMode, 'DARK');
+  assert.equal('darkModeAfterIsha' in toDeviceConfigPatch({ darkModeAfterIsha: true }), false);
+});
+
+test('a new board defaults to the auto theme mode', () => {
+  assert.equal(DEFAULT_DEVICE_CONFIG.themeMode, 'AUTO');
+  assert.deepEqual(THEME_MODES.map((m) => m.value), ['LIGHT', 'DARK', 'AUTO']);
+});
+
+test('an unknown or missing theme mode reads as auto', () => {
+  assert.equal(themeModeOf('LIGHT'), 'LIGHT');
+  assert.equal(themeModeOf(undefined), 'AUTO');
+  assert.equal(themeModeOf('SEPIA'), 'AUTO');
 });

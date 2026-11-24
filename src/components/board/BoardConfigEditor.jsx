@@ -1,20 +1,22 @@
 import { memo, useCallback, useState } from 'react';
-import { MapPin, Moon, MessageSquare, Plus, Timer, Trash2 } from 'lucide-react';
+import { MapPin, MessageSquare, Moon, Plus, Sun, SunMoon, Timer, Trash2 } from 'lucide-react';
 import {
   AGENDA_AUTO_RANGE_LABEL,
   CALCULATION_METHODS,
   DEFAULT_AGENDA_DURATION_SECONDS,
   SLIDE_DURATION_MAX_SECONDS,
   SLIDE_DURATION_MIN_SECONDS,
+  THEME_MODES,
   TIMEZONES,
-  slideDurationErrors
+  slideDurationErrors,
+  themeModeOf
 } from '../../models/board';
 
 /**
  * BoardConfigEditor — edits one device's DeviceConfig, minus the ticker.
  *
  * The fields here are exactly the ones UpdateBoardConfigRequest accepts:
- * location, darkModeAfterIsha, agendaDurationSeconds, nextPrayerDurationSeconds.
+ * location, themeMode, agendaDurationSeconds, nextPrayerDurationSeconds.
  * Anything else is dropped server-side without an error, so adding a control
  * for a field the backend doesn't have produces a setting that silently never
  * applies — which is how poster-cycle and refresh-after-Isha lingered here.
@@ -50,6 +52,43 @@ function Toggle({ checked, onChange, label, disabled }) {
     </button>
   );
 }
+
+/**
+ * One choice out of a few, as a row of buttons. Marked up as a radio group so
+ * a screen reader announces it as one control with the current choice.
+ */
+function Segmented({ options, value, onChange, label, disabled }) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1"
+    >
+      {options.map((o) => {
+        const selected = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            disabled={disabled}
+            onClick={() => onChange(o.value)}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+              selected ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {o.icon && <o.icon className="h-4 w-4" />}
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+const THEME_MODE_ICONS = { LIGHT: Sun, DARK: Moon, AUTO: SunMoon };
+const THEME_MODE_OPTIONS = THEME_MODES.map((m) => ({ ...m, icon: THEME_MODE_ICONS[m.value] }));
 
 function Field({ label, hint, error, children }) {
   return (
@@ -223,20 +262,23 @@ function BoardConfigEditor({ config, onUpdate, readOnly = false }) {
         </div>
       </section>
 
-      {/* Night mode */}
+      {/* Theme mode */}
       <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <header className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
           <div className="flex items-center gap-2">
-            <Moon className="h-5 w-5 text-indigo-600" />
+            <SunMoon className="h-5 w-5 text-indigo-600" />
             <div>
-              <h3 className="font-semibold text-gray-900">Night Mode</h3>
-              <p className="text-xs text-gray-500">Dims the board after Isha</p>
+              <h3 className="font-semibold text-gray-900">Theme</h3>
+              <p className="text-xs text-gray-500">
+                {THEME_MODES.find((m) => m.value === themeModeOf(config.themeMode)).description}
+              </p>
             </div>
           </div>
-          <Toggle
-            checked={!!config.darkModeAfterIsha}
-            onChange={(v) => setField('darkModeAfterIsha', v)}
-            label="Enable night mode after Isha"
+          <Segmented
+            options={THEME_MODE_OPTIONS}
+            value={themeModeOf(config.themeMode)}
+            onChange={(v) => setField('themeMode', v)}
+            label="Theme mode"
             disabled={readOnly}
           />
         </header>

@@ -20,7 +20,7 @@ import WeeklyContentEditor from '../components/board/WeeklyContentEditor';
  * BoardManagement — the content that feeds every board.
  *
  * Scope note: everything here is fleet-wide and audience-scoped. Per-device
- * settings (location, night mode, ticker text) live on the device itself —
+ * settings (location, theme mode, ticker text) live on the device itself —
  * see /admin/devices/:deviceId.
  *
  * The route guard decides who gets in at all; every tab, button, and counter
