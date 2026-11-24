@@ -47,7 +47,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
   const audienceOptions = [
     { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
     { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' },
-    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300' }
+    { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300' }
   ];
 
   const resetForm = () => {
@@ -257,7 +257,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
                 className={`aspect-video rounded-xl border-2 border-dashed cursor-pointer flex flex-col items-center justify-center transition-all ${
-                  dragOver ? 'border-indigo-500 bg-indigo-100' : formData.image ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-indigo-400'
+                  dragOver ? 'border-indigo-500 bg-indigo-100 dark:bg-indigo-900/40' : formData.image ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-indigo-400'
                 }`}
               >
                 <input

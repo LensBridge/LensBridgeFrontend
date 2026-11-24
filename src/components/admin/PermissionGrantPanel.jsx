@@ -135,7 +135,7 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
                         <div className="flex flex-wrap items-center gap-2">
                           <code className="font-mono text-sm text-gray-900 dark:text-white">{authority}</code>
                           {isDirect ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300">
                               Direct grant
                             </span>
                           ) : isEffective ? (
@@ -144,7 +144,7 @@ function PermissionGrantPanel({ targetUser, permissions, heldPermissions, onGran
                             </span>
                           ) : null}
                           {SENSITIVE_PERMISSIONS.has(authority) && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:text-amber-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200">
                               <ShieldAlert className="h-3 w-3 mr-1" />
                               Sensitive
                             </span>

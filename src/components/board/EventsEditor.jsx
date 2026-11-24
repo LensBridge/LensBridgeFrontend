@@ -10,7 +10,7 @@ import { PERMISSIONS } from '../../utils/permissions';
 const audienceOptions = [
   { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-700' },
   { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300', border: 'border-blue-200 dark:border-blue-700' },
-  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300', border: 'border-pink-200' }
+  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300', border: 'border-pink-200 dark:border-pink-700' }
 ];
 
 const formatDateTimeLocal = (timestamp) => {
@@ -381,7 +381,7 @@ function EventsEditor({ events, onUpdate, showMessage }) {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => startEdit(event)}
-                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 dark:text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 rounded-lg transition-colors"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>

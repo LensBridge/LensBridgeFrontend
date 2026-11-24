@@ -10,11 +10,11 @@
 
 /** Badge classes per tone. */
 export const AUDIT_TONE_CLASSES = {
-  content: 'bg-blue-100 text-blue-800',
-  destructive: 'bg-red-100 text-red-800',
-  fleet: 'bg-indigo-100 text-indigo-800',
-  access: 'bg-amber-100 text-amber-800',
-  neutral: 'bg-gray-100 text-gray-700',
+  content: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300',
+  destructive: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300',
+  fleet: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300',
+  access: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300',
+  neutral: 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300',
 };
 
 const AUDIT_ACTION_TONES = {

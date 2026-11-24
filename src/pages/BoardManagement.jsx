@@ -39,9 +39,9 @@ const SECTIONS = [
 const ROLE_PRECEDENCE = ['ROOT', 'BOARD_ADMIN', 'BOARD_EDITOR', 'BOARD_VIEWER', 'ADMIN'];
 
 const ROLE_BADGE_CLASS = {
-  root: 'bg-amber-100 text-amber-700 dark:text-amber-300',
-  elevated: 'bg-indigo-100 text-indigo-700 dark:text-indigo-300',
-  standard: 'bg-emerald-100 text-emerald-700 dark:text-emerald-300',
+  root: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+  elevated: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300',
+  standard: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
   readonly: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
 };
 
@@ -285,7 +285,7 @@ function BoardManagement() {
                           isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 font-medium text-indigo-700 dark:text-indigo-300' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                         }`}
                       >
-                        <div className={`rounded-lg p-2 ${isActive ? 'bg-indigo-100' : 'bg-gray-100 dark:bg-gray-700'}`}>
+                        <div className={`rounded-lg p-2 ${isActive ? 'bg-indigo-100 dark:bg-indigo-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
                           <Icon className={`h-4 w-4 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-500 dark:text-gray-400'}`} />
                         </div>
                         <div className="flex-1">

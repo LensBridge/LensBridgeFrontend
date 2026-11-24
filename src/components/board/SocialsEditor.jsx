@@ -37,7 +37,7 @@ import SocialFramePreview from './SocialFramePreview';
 const audienceOptions = [
   { value: 'both', label: 'Everyone', color: 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300' },
   { value: 'brothers', label: 'Brothers', color: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' },
-  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 text-pink-700 dark:text-pink-300' }
+  { value: 'sisters', label: 'Sisters', color: 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300' }
 ];
 
 const EMPTY_FORM = {
@@ -322,7 +322,7 @@ function SocialsEditor({ socials = [], onUpdate, showMessage }) {
                       onClick={() => setFormData({ ...formData, type: opt.value })}
                       className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${
                         formData.type === opt.value
-                          ? 'border-indigo-300 bg-indigo-100 text-indigo-700 dark:text-indigo-300'
+                          ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                       }`}
                     >

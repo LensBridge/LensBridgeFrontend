@@ -45,7 +45,7 @@ function PermissionRoute({ children, anyOf, allOf, label = 'this page' }) {
     return (
       <div className="flex flex-1 items-center justify-center py-8">
         <div className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-gray-900 p-8 text-center shadow-xl dark:shadow-2xl dark:shadow-black/20">
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/40">
             <ShieldAlert className="h-10 w-10 text-amber-600" />
           </div>
           <h2 className="mb-3 text-2xl font-bold text-gray-900 dark:text-white">Not permitted</h2>

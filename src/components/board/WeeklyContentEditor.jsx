@@ -26,16 +26,16 @@ const QUOTE_KINDS = [
 
 const KIND_THEME = {
   emerald: {
-    border: 'border-emerald-200',
+    border: 'border-emerald-200 dark:border-emerald-700',
     bg: 'bg-emerald-50 dark:bg-emerald-900/30',
-    chip: 'bg-emerald-100 text-emerald-700 dark:text-emerald-300 border-emerald-200',
+    chip: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700',
     chipActive: 'bg-emerald-600 text-white border-emerald-600',
     icon: 'text-emerald-600'
   },
   amber: {
-    border: 'border-amber-200',
+    border: 'border-amber-200 dark:border-amber-700',
     bg: 'bg-amber-50 dark:bg-amber-900/30',
-    chip: 'bg-amber-100 text-amber-700 dark:text-amber-300 border-amber-200',
+    chip: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700',
     chipActive: 'bg-amber-600 text-white border-amber-600',
     icon: 'text-amber-600'
   }
@@ -431,7 +431,7 @@ function WeeklyContentEditor({ weeklyContent, onUpdate, showMessage }) {
               <div className="flex items-center gap-2">
                 {canWrite && !isEditing && hasExisting && (
                   <>
-                    <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition" title="Edit">
+                    <button onClick={() => setIsEditing(true)} className="p-2 text-gray-500 dark:text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 rounded-lg transition" title="Edit">
                       <Edit2 className="h-4 w-4" />
                     </button>
                     <button onClick={handleDelete} disabled={deleting} className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition disabled:opacity-50" title="Delete">
@@ -512,7 +512,7 @@ function EditView({
               <button
                 key={value}
                 onClick={() => onAddQuote(value)}
-                className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/40 transition-colors"
               >
                 <Icon className="h-3.5 w-3.5" />
                 Add {label}
