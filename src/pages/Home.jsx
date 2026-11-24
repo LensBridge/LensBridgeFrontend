@@ -635,8 +635,8 @@ function Home() {
       <div className="py-20 bg-gradient-to-br from-blue-600 to-green-600 fade-in-up scale-in" ref={addRevealRef}>
         <div className="text-center text-white">
           <div className="mb-8">
-            <div className="bg-white dark:bg-gray-900/20 backdrop-blur-sm p-4 rounded-full w-fit mx-auto">
-              <TrendingUp className="h-12 w-12" />
+            <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-fit mx-auto">
+              <TrendingUp className="h-12 w-12 text-white" />
             </div>
           </div>
           <h2 className="text-5xl font-bold mb-6">Ready to Share Your Story?</h2>

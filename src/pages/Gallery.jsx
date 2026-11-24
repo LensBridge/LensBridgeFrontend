@@ -220,7 +220,7 @@ function Gallery() {
       {/* Gallery Grid */}
       {error ? (
         <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
-          <div className="bg-gradient-to-br from-red-100 to-red-200 rounded-full p-8 w-fit mx-auto mb-6">
+          <div className="bg-gradient-to-br from-red-100 to-red-200 dark:from-red-900/40 dark:to-red-800/40 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-red-400" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Error Loading Gallery</h3>
@@ -238,7 +238,7 @@ function Gallery() {
         </div>
       ) : isLoading ? (
         <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
-          <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:to-green-900/40 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
+          <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:from-blue-900/40 dark:to-green-900/40 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
             <Image className="h-16 w-16 text-blue-400" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Gallery...</h3>
@@ -253,7 +253,7 @@ function Gallery() {
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
-          <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-full p-8 w-fit mx-auto mb-6">
+          <div className="bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 rounded-full p-8 w-fit mx-auto mb-6">
             <Image className="h-16 w-16 text-gray-400 dark:text-gray-500" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">No media found</h3>
