@@ -82,7 +82,7 @@ function Header() {
   ];
 
   return (
-    <header className="bg-white dark:bg-gray-900/95 dark:bg-gray-900/95 backdrop-blur-sm shadow-lg dark:shadow-xl dark:shadow-black/20 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-900/95 backdrop-blur-sm shadow-lg dark:shadow-xl dark:shadow-black/20 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center h-18 relative">
           {/* Logo */}
@@ -250,7 +250,7 @@ function Header() {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/95 dark:bg-gray-900/95 backdrop-blur-sm">
+          <div className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/95 backdrop-blur-sm">
             <nav className="flex flex-col space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;

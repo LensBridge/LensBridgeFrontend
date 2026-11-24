@@ -784,14 +784,14 @@ function AdminDashboard() {
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
       <div className="relative overflow-hidden mb-8 rounded-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-60"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-60 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 dark:opacity-30"></div>
         <div className="relative flex flex-col items-center justify-center text-center py-12 px-4">
           <div className="mb-4 flex justify-center">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20">
               <Crown className="h-4 w-4" />
               <span>Admin Dashboard</span>
               {isRoot() && (
-                <div className="ml-2 bg-yellow-50 dark:bg-yellow-900/300 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
+                <div className="ml-2 bg-yellow-500 text-yellow-900 px-2 py-1 rounded-full text-xs font-bold">
                   ROOT
                 </div>
               )}

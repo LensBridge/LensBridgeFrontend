@@ -258,8 +258,8 @@ function Upload() {
     return (
       <div className="max-w-2xl mx-auto">
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-green-50 opacity-60 rounded-3xl"></div>
-          <div className="relative bg-white dark:bg-gray-900/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-green-50 opacity-60 dark:from-green-900/30 dark:via-blue-900/30 dark:to-green-900/30 dark:opacity-30 rounded-3xl"></div>
+          <div className="relative bg-white dark:bg-gray-900/90 backdrop-blur-sm rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-700 p-12 text-center">
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-lg opacity-20"></div>
               <div className="relative bg-gradient-to-r from-green-600 to-blue-600 p-6 rounded-full w-fit mx-auto shadow-xl dark:shadow-2xl dark:shadow-black/20">
@@ -300,7 +300,7 @@ function Upload() {
     <div className="max-w-4xl mx-auto" ref={topRef}>
       {/* Header Section */}
       <div className="relative overflow-hidden mb-8 fade-in-up scale-in" ref={addRevealRef}>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 dark:from-blue-900/30 dark:via-green-900/30 dark:to-blue-900/30 dark:opacity-30 animate-gradient"></div>
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
@@ -342,13 +342,13 @@ function Upload() {
 
           {/* Visual Elements */}
           <div className="flex justify-center items-center space-x-6 mt-6 opacity-60">
-            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:to-green-900/40 p-2 rounded-xl">
               <Image className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="bg-gradient-to-br from-green-100 to-blue-100 p-2 rounded-xl">
+            <div className="bg-gradient-to-br from-green-100 to-blue-100 dark:to-blue-900/40 p-2 rounded-xl">
               <Video className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
-            <div className="bg-gradient-to-br from-blue-100 to-green-100 p-2 rounded-xl">
+            <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:to-green-900/40 p-2 rounded-xl">
               <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
@@ -406,7 +406,7 @@ function Upload() {
         )}
 
         {/* File Upload Area */}
-        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <UploadIcon className="h-5 w-5 text-white" />
@@ -418,7 +418,7 @@ function Upload() {
 
           {/* Upload Limits Display */}
           {uploadLimits && (
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-3 mb-4 border border-blue-200 dark:border-blue-700">
+            <div className="bg-gradient-to-r from-blue-50 dark:from-blue-900/30 to-green-50 dark:to-green-900/30 rounded-lg p-3 mb-4 border border-blue-200 dark:border-blue-700">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center space-x-2">
                   <span className="font-medium text-gray-700 dark:text-gray-200">Your upload limits:</span>
@@ -442,8 +442,8 @@ function Upload() {
           <div
             className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 ${
               isDragging
-                ? "border-blue-500 bg-gradient-to-br from-blue-50 to-green-50 scale-105"
-                : "border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50"
+                ? "border-blue-500 bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-green-50 dark:to-green-900/30 scale-105"
+                : "border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gradient-to-br hover:from-gray-50 dark:hover:from-gray-800 hover:to-blue-50 dark:hover:to-blue-900/30"
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -491,7 +491,7 @@ function Upload() {
             <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {files.map((file) => (
                 <div key={file.id} className="relative group">
-                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl">
+                  <div className="aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-gray-50 dark:from-gray-800 to-gray-100 dark:to-gray-700 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-300 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl">
                     {file.type === "image" ? (
                       file.preview ? (
                         <img
@@ -508,7 +508,7 @@ function Upload() {
                         />
                       ) : null
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-green-50 dark:to-green-900/30">
                         <div className="bg-gradient-to-r from-blue-600 to-green-600 p-3 rounded-xl">
                           <Video className="h-8 w-8 text-white" />
                         </div>
@@ -516,7 +516,7 @@ function Upload() {
                     )}
                     {/* Fallback for images that can't be previewed (like HEIC) */}
                     <div
-                      className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-gray-50 to-blue-50"
+                      className="w-full h-full flex flex-col items-center justify-center text-center p-4 bg-gradient-to-br from-gray-50 dark:from-gray-800 to-blue-50 dark:to-blue-900/30"
                       style={{
                         display:
                           file.type === "image" && !file.preview
@@ -538,7 +538,7 @@ function Upload() {
                   <button
                     type="button"
                     onClick={() => removeFile(file.id)}
-                    className="absolute -top-2 -right-2 bg-red-50 dark:bg-red-900/300 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl hover:scale-110"
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl hover:scale-110"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -552,7 +552,7 @@ function Upload() {
         </div>
 
         {/* User Details Section */}
-        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Users className="h-5 w-5 text-white" />
@@ -637,7 +637,7 @@ function Upload() {
         </div>
 
         {/* Event Details Section */}
-        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Calendar className="h-5 w-5 text-white" />
@@ -688,7 +688,7 @@ function Upload() {
                         key={event.id}
                         type="button"
                         onClick={() => handleEventSelect(event.name, event.id)}
-                        className="w-full px-4 py-3 text-left hover:bg-gradient-to-r hover:from-blue-50 hover:to-green-50 focus:bg-gradient-to-r focus:from-blue-50 focus:to-green-50 focus:outline-none border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-all duration-200"
+                        className="w-full px-4 py-3 text-left hover:bg-gradient-to-r hover:from-blue-50 dark:hover:from-blue-900/30 hover:to-green-50 dark:hover:to-green-900/30 focus:bg-gradient-to-r focus:from-blue-50 dark:focus:from-blue-900/30 focus:to-green-50 dark:focus:to-green-900/30 focus:outline-none border-b border-gray-100 dark:border-gray-800 last:border-b-0 transition-all duration-200"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-gray-900 dark:text-white">{event.name}</span>
@@ -749,7 +749,7 @@ function Upload() {
         </div>
 
         {/* Terms and Consent Section */}
-        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
+        <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
               <Check className="h-5 w-5 text-white" />
@@ -759,7 +759,7 @@ function Upload() {
             </h2>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-blue-200 dark:border-blue-700 p-4 mb-4">
+          <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-green-50 dark:to-green-900/30 rounded-xl border border-blue-200 dark:border-blue-700 p-4 mb-4">
             <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100 mb-2">Media Usage Agreement</h3>
             <div className="text-sm text-gray-700 dark:text-gray-200 space-y-2">
               <p>By uploading your media, you agree that:</p>
@@ -805,7 +805,7 @@ function Upload() {
         </div>
 
         {/* Intention Renewal Reminder */}
-        <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 rounded-2xl border-2 border-green-200 dark:border-green-700 p-6 text-center shadow-xl dark:shadow-2xl dark:shadow-black/20">
+        <div className="bg-gradient-to-br from-green-50 dark:from-green-900/30 via-white dark:via-gray-900 to-blue-50 dark:to-blue-900/30 rounded-2xl border-2 border-green-200 dark:border-green-700 p-6 text-center shadow-xl dark:shadow-2xl dark:shadow-black/20">
           <div className="mb-6">
             <div className="bg-gradient-to-r from-green-600 to-blue-600 p-3 rounded-full w-fit mx-auto mb-4">
               <span className="text-2xl">🤲</span>
@@ -873,7 +873,7 @@ function Upload() {
 
         {/* Upload Progress */}
         {isUploading && (
-          <div className="bg-white dark:bg-gray-900/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
+          <div className="bg-white dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="bg-gradient-to-r from-blue-600 to-green-600 p-2 rounded-xl">
                 <UploadIcon className="h-5 w-5 text-white" />

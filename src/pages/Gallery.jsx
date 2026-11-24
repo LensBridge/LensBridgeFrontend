@@ -95,7 +95,7 @@ function Gallery() {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="relative overflow-hidden mb-12 fade-in-up scale-in" ref={addRevealRef}>
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 animate-gradient"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 opacity-70 dark:from-blue-900/30 dark:via-green-900/30 dark:to-blue-900/30 dark:opacity-30 animate-gradient"></div>
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
@@ -119,7 +119,7 @@ function Gallery() {
       </div>
 
       {/* Stats Bar */}
-      <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="bg-white dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="text-center">
             <div className="bg-gradient-to-r from-blue-600 to-green-600 text-white rounded-full p-3 w-fit mx-auto mb-3">
@@ -151,7 +151,7 @@ function Gallery() {
       </div>
 
       {/* Search and Filter Bar */}
-      <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="bg-white dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
         <div className="flex flex-col md:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -238,7 +238,7 @@ function Gallery() {
         </div>
       ) : isLoading ? (
         <div className="text-center py-20 fade-in-up scale-in" ref={addRevealRef}>
-          <div className="bg-gradient-to-br from-blue-100 to-green-100 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
+          <div className="bg-gradient-to-br from-blue-100 to-green-100 dark:to-green-900/40 rounded-full p-8 w-fit mx-auto mb-6 animate-pulse">
             <Image className="h-16 w-16 text-blue-400" />
           </div>
           <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Loading Gallery...</h3>
@@ -264,7 +264,7 @@ function Gallery() {
       ) : (
         <div className="relative" /* removed fade-in classes to prevent hiding items */>
           {isPaginating && (
-            <div className="absolute inset-0 bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
+            <div className="absolute inset-0 bg-white dark:bg-gray-900/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-2xl">
               <div className="text-center bg-white dark:bg-gray-900 rounded-xl shadow-lg dark:shadow-xl dark:shadow-black/20 p-6">
                 <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                 <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">Loading...</p>
@@ -375,7 +375,7 @@ function Gallery() {
 
       {/* Pagination Controls */}
       {!error && !isLoading && totalPages > 1 && (
-        <div className="bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="bg-white dark:bg-gray-900/70 backdrop-blur-sm rounded-2xl shadow-lg dark:shadow-xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-6 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
             {/* Page Size Selector */}
             <div className="flex items-center space-x-3">
@@ -473,7 +473,7 @@ function Gallery() {
 
       {/* Featured Section - Only show on first page with no filters */}
       {featuredItems.length > 0 && currentPage === 0 && selectedFilter === 'all' && !searchTerm && (
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl p-8 border border-yellow-200 dark:border-yellow-700 mb-8 fade-in-up scale-in" ref={addRevealRef}>
+        <div className="bg-gradient-to-br from-yellow-50 dark:from-yellow-900/30 to-orange-50 dark:to-orange-900/30 rounded-2xl p-8 border border-yellow-200 dark:border-yellow-700 mb-8 fade-in-up scale-in" ref={addRevealRef}>
           <div className="text-center mb-8">
             <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg dark:shadow-xl dark:shadow-black/20 mb-4">
               <Star className="h-4 w-4" />

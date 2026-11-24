@@ -270,7 +270,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 {formData.image ? (
                   <div className="relative w-full h-full">
                     <img src={formData.image} alt="Preview" className="w-full h-full object-contain rounded-lg" />
-                    <div className="absolute top-2 right-2 bg-green-50 dark:bg-green-900/300 text-white p-1 rounded-full">
+                    <div className="absolute top-2 right-2 bg-green-500 text-white p-1 rounded-full">
                       <CheckCircle className="h-4 w-4" />
                     </div>
                   </div>
@@ -445,7 +445,7 @@ function PostersEditor({ posters = [], onUpdate, showMessage }) {
                 
                 {/* Status Badge */}
                 {isPosterActive(poster) && (
-                  <div className="absolute top-2 left-2 bg-green-50 dark:bg-green-900/300 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                  <div className="absolute top-2 left-2 bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
                     Active
                   </div>
                 )}

@@ -34,7 +34,7 @@ function App() {
     <ThemeProvider>
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 dark:from-blue-900/30 via-white to-green-50 dark:to-green-900/30 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 flex flex-col">
           <Header />
           <main className="container mx-auto px-4 py-8 flex-grow">
             <Routes>

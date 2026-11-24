@@ -144,7 +144,7 @@ function ResetPassword() {
     return (
       <div className="flex-1 flex items-center justify-center py-8 px-4">
         <div className="max-w-md w-full text-center">
-          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
+          <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
               <Loader2 className="h-16 w-16 text-blue-600 dark:text-blue-400 animate-spin" />
             </div>
@@ -182,7 +182,7 @@ function ResetPassword() {
           </div>
 
           {/* Success Content */}
-          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
+          <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
               {renderStatusIcon()}
             </div>
@@ -232,7 +232,7 @@ function ResetPassword() {
           </div>
 
           {/* Error Content */}
-          <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
+          <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
             <div className="flex justify-center mb-6">
               {renderStatusIcon()}
             </div>
@@ -288,7 +288,7 @@ function ResetPassword() {
         </div>
 
         {/* Reset Password Form */}
-        <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
+        <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/20 border border-gray-200 dark:border-gray-700 p-8">
           {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
               <p className="text-red-800 dark:text-red-200 text-sm">{errorMessage}</p>

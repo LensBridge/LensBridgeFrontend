@@ -808,7 +808,7 @@ function QuoteDisplay({ quote }) {
       <div className="flex items-center gap-2 mb-3">
         <Icon className={`h-4 w-4 ${theme.icon}`} />
         <span className={`text-xs font-semibold uppercase tracking-wide ${theme.icon}`}>{meta.label}</span>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/70 dark:bg-gray-900/70 px-2 py-0.5 text-[10px] font-medium tabular-nums text-gray-600 dark:text-gray-300">
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/70 px-2 py-0.5 text-[10px] font-medium tabular-nums text-gray-600 dark:text-gray-300">
           <Timer className="h-3 w-3" />
           {frameDurationLabel(quote.durationSeconds)}
         </span>

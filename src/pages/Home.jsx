@@ -184,7 +184,7 @@ function Home() {
                 </button>
                 <button
                   onClick={handleConfirmYes}
-                  className="flex-1 bg-red-50 dark:bg-red-900/300 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all duration-300"
+                  className="flex-1 bg-red-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-red-600 transition-all duration-300"
                 >
                   Yes, I'm sure
                 </button>
@@ -264,7 +264,7 @@ function Home() {
                 Cookie Monster has declared you "a danger to baked goods everywhere."
               </p>
               {/* Event Card */}
-              <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-3 sm:p-8 mb-3 sm:mb-6 border-2 border-blue-100 shadow-lg dark:shadow-xl dark:shadow-black/20">
+              <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 via-indigo-50 dark:via-indigo-900/30 to-purple-50 dark:to-purple-900/30 rounded-2xl p-3 sm:p-8 mb-3 sm:mb-6 border-2 border-blue-100 shadow-lg dark:shadow-xl dark:shadow-black/20">
                 {/* Event Title */}
                 <div className="mb-3 sm:mb-6">
                   <h3 className="text-lg sm:text-3xl font-bold text-gray-900 dark:text-white mb-1">
@@ -277,28 +277,28 @@ function Home() {
                 
                 {/* Event Details Grid */}
                 <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
-                  <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                  <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
                     <div className="text-2xl sm:text-3xl mb-1">📅</div>
                     <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium">Date & Time</div>
                     <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">Fri, Nov 14</div>
                     <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">3:30-5:30 PM</div>
                   </div>
                   
-                  <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                  <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
                     <div className="text-2xl sm:text-3xl mb-1">📍</div>
                     <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium">Location</div>
                     <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">Board Room</div>
                     <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">Student Centre</div>
                   </div>
                   
-                  <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                  <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
                     <div className="text-2xl sm:text-3xl mb-1">💰</div>
                     <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium">Cost</div>
                     <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">$12/person</div>
                     <div className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">Materials incl.</div>
                   </div>
                   
-                  <div className="bg-white dark:bg-gray-900/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
+                  <div className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-xl p-2 sm:p-4 shadow-sm">
                     <div className="text-2xl sm:text-3xl mb-1">🍪</div>
                     <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 font-medium">What You Get</div>
                     <div className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">2 Cookies</div>
@@ -342,7 +342,7 @@ function Home() {
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         {/* Animated gradient backdrop */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-70 animate-gradient" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-70 dark:from-blue-900/30 dark:via-indigo-900/30 dark:to-purple-900/30 dark:opacity-30 animate-gradient" />
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-500/30 to-green-400/20 rounded-full blur-3xl animate-orb-1" />
@@ -389,7 +389,7 @@ function Home() {
       <div className="py-16 bg-white dark:bg-gray-900 fade-in-up scale-in" ref={addRevealRef}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
             <div className="group">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="bg-gradient-to-br from-blue-50 dark:from-blue-900/30 to-indigo-100 dark:to-indigo-900/40 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Camera className="h-8 w-8" />
               </div>
@@ -401,7 +401,7 @@ function Home() {
           </div>
           
           <div className="group">
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="bg-gradient-to-br from-green-50 dark:from-green-900/30 to-emerald-100 dark:to-emerald-900/40 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Users className="h-8 w-8" />
               </div>
@@ -413,7 +413,7 @@ function Home() {
           </div>
           
           <div className="group">
-            <div className="bg-gradient-to-br from-purple-50 to-pink-100 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="bg-gradient-to-br from-purple-50 dark:from-purple-900/30 to-pink-100 dark:to-pink-900/40 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Star className="h-8 w-8" />
               </div>
@@ -425,7 +425,7 @@ function Home() {
           </div>
           
           <div className="group">
-            <div className="bg-gradient-to-br from-orange-50 to-red-100 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div className="bg-gradient-to-br from-orange-50 dark:from-orange-900/30 to-red-100 dark:to-red-900/40 p-8 rounded-3xl shadow-lg dark:shadow-xl dark:shadow-black/20 hover:shadow-xl transition-all duration-300 hover:scale-105">
               <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-full p-4 w-fit mx-auto mb-4 group-hover:animate-pulse">
                 <Heart className="h-8 w-8" />
               </div>
@@ -439,7 +439,7 @@ function Home() {
       </div>
 
       {/* Features Section */}
-      <div className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="py-20 bg-gradient-to-br from-gray-50 dark:from-gray-800 to-blue-50 dark:to-blue-900/30 fade-in-up scale-in" ref={addRevealRef}>
         <div className="text-center mb-16">
           <h2 className="text-5xl font-bold text-gray-900 dark:text-white mb-4">
             Why Upload to <span className="text-transparent bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text">LensBridge</span>?
@@ -551,7 +551,7 @@ function Home() {
       </div>
 
       {/* Sadaqa Jariyah Section */}
-      <div className="py-16 bg-gradient-to-r from-green-50 to-blue-50 border-t border-b border-green-200 dark:border-green-700 fade-in-up scale-in" ref={addRevealRef}>
+      <div className="py-16 bg-gradient-to-r from-green-50 dark:from-green-900/30 to-blue-50 dark:to-blue-900/30 border-t border-b border-green-200 dark:border-green-700 fade-in-up scale-in" ref={addRevealRef}>
         <div className="max-w-3xl mx-auto text-center px-4">
           <div className="flex justify-center mb-4">
             <Heart className="h-10 w-10 text-green-600 dark:text-green-400" />
