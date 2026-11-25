@@ -67,7 +67,7 @@ const emptyQuote = (kind = 'VERSE') => ({
 const emptyJummahPrayer = () => ({
   prayerTime: '13:30',
   khatib: '',
-  room: 'Main Musallah'
+  room: 'Spiegel Hall'
 });
 
 // ---------------------------------------------------------------------------
@@ -559,34 +559,45 @@ function EditView({
 
         <div className="border border-green-200 dark:border-green-700 rounded-xl bg-green-50 dark:bg-green-900/30 p-3 space-y-2">
           {(editForm.jummahPrayers || []).map((prayer, i) => (
-            <div key={i} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-100 dark:border-gray-800">
+            // Wraps to fit the column rather than the window: this editor sits
+            // in a narrow column even on a wide screen, where a `sm:` row did
+            // not fit and pushed the room and the remove button out of the box.
+            // Text inputs need an explicit min width to shrink in a flex row;
+            // the room and its remove button wrap as one, so the button never
+            // ends up alone on a line.
+            <div key={i} className="flex flex-wrap gap-2 items-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-100 dark:border-gray-800">
               <input
                 type="time"
                 value={prayer.prayerTime}
+                aria-label="Prayer time"
                 onChange={(e) => onUpdateJummah(i, { prayerTime: e.target.value })}
-                className="border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm sm:w-28 focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-32 max-w-full shrink-0 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
               <input
                 type="text"
                 value={prayer.khatib}
                 placeholder="Khatib"
+                aria-label="Khatib"
                 onChange={(e) => onUpdateJummah(i, { khatib: e.target.value })}
-                className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="flex-1 basis-40 min-w-[9rem] border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
               />
-              <input
-                type="text"
-                value={prayer.room}
-                placeholder="Room"
-                onChange={(e) => onUpdateJummah(i, { room: e.target.value })}
-                className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-              />
-              <button
-                onClick={() => onRemoveJummah(i)}
-                className="self-end sm:self-auto p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                aria-label="Remove prayer time"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex flex-1 basis-52 min-w-[11rem] items-center gap-2">
+                <input
+                  type="text"
+                  value={prayer.room}
+                  placeholder="Room"
+                  aria-label="Room"
+                  onChange={(e) => onUpdateJummah(i, { room: e.target.value })}
+                  className="flex-1 min-w-0 border border-gray-200 dark:border-gray-700 rounded px-2 py-1.5 text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                <button
+                  onClick={() => onRemoveJummah(i)}
+                  className="shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
+                  aria-label="Remove prayer time"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           ))}
           <button
